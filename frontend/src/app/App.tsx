@@ -1,0 +1,78 @@
+import { ConfigProvider, Layout, theme } from 'antd'
+import { BrowserRouter, Route, Routes } from 'react-router'
+import { AuthProvider } from '../shared/auth/AuthContext'
+import RequireAuth from '../shared/auth/RequireAuth'
+import CustomerDetailPage from '../modules/customers/CustomerDetailPage'
+import CustomerFormPage from '../modules/customers/CustomerFormPage'
+import CustomerListPage from '../modules/customers/CustomerListPage'
+import CustomerSkuMappingFormPage from '../modules/products/CustomerSkuMappingFormPage'
+import CustomerSkuMappingsPage from '../modules/products/CustomerSkuMappingsPage'
+import ProductFormPage from '../modules/products/ProductFormPage'
+import ProductListPage from '../modules/products/ProductListPage'
+import VendorListPage from '../modules/vendors/VendorListPage'
+import SettingsPage from '../modules/settings/SettingsPage'
+import ExportOrderDetailPage from '../modules/export-orders/ExportOrderDetailPage'
+import ExportOrderEditPage from '../modules/export-orders/ExportOrderEditPage'
+import ExportOrderListPage from '../modules/export-orders/ExportOrderListPage'
+import AppHeader from './AppHeader'
+import AppSidebar from './AppSidebar'
+import DashboardPage from './DashboardPage'
+
+const { Content } = Layout
+
+function AuthenticatedShell() {
+  return (
+    <BrowserRouter>
+      <Layout style={{ minHeight: '100vh' }}>
+        <AppSidebar />
+        <Layout>
+          <AppHeader />
+          <Content style={{ padding: 24, background: '#f5f7fa' }}>
+            <Routes>
+              <Route path="/" element={<DashboardPage />} />
+              <Route path="/customers" element={<CustomerListPage />} />
+              <Route path="/customers/new" element={<CustomerFormPage />} />
+              <Route path="/customers/:id" element={<CustomerDetailPage />} />
+              <Route path="/customers/:id/edit" element={<CustomerFormPage />} />
+              <Route path="/products" element={<ProductListPage />} />
+              <Route path="/products/mappings" element={<CustomerSkuMappingsPage />} />
+              <Route path="/products/mappings/new" element={<CustomerSkuMappingFormPage />} />
+              <Route path="/products/mappings/:id/edit" element={<CustomerSkuMappingFormPage />} />
+              <Route path="/products/new" element={<ProductFormPage />} />
+              <Route path="/products/:id/edit" element={<ProductFormPage />} />
+              <Route path="/vendors" element={<VendorListPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/export-orders" element={<ExportOrderListPage />} />
+              <Route path="/export-orders/:id" element={<ExportOrderDetailPage />} />
+              <Route path="/export-orders/:id/edit" element={<ExportOrderEditPage />} />
+              <Route path="/export-orders/:id/:tab" element={<ExportOrderDetailPage />} />
+            </Routes>
+          </Content>
+        </Layout>
+      </Layout>
+    </BrowserRouter>
+  )
+}
+
+export default function App() {
+  return (
+    <ConfigProvider
+      theme={{
+        token: {
+          fontSize: 16,
+          controlHeight: 40,
+          colorPrimary: '#155eef',
+          borderRadius: 8,
+          colorBgLayout: '#f5f7fa',
+        },
+        algorithm: theme.defaultAlgorithm,
+      }}
+    >
+      <AuthProvider>
+        <RequireAuth>
+          <AuthenticatedShell />
+        </RequireAuth>
+      </AuthProvider>
+    </ConfigProvider>
+  )
+}
