@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { MemoryRouter } from 'react-router'
 import VendorListPage from './VendorListPage'
 import * as vendorsApi from './api'
 import type { VendorListResponse } from './types'
@@ -23,7 +24,11 @@ describe('VendorListPage', () => {
   it('renders vendors from the API', async () => {
     mockedApi.listVendors.mockResolvedValue(response)
 
-    render(<VendorListPage />)
+    render(
+      <MemoryRouter>
+        <VendorListPage />
+      </MemoryRouter>,
+    )
 
     expect(await screen.findByText('Acme Vendor')).toBeInTheDocument()
     expect(screen.getByText('V1')).toBeInTheDocument()
@@ -34,7 +39,11 @@ describe('VendorListPage', () => {
   it('searches by code or name', async () => {
     mockedApi.listVendors.mockResolvedValue(response)
 
-    render(<VendorListPage />)
+    render(
+      <MemoryRouter>
+        <VendorListPage />
+      </MemoryRouter>,
+    )
     await screen.findByText('Acme Vendor')
 
     fireEvent.change(screen.getByPlaceholderText('Search by code or name'), {

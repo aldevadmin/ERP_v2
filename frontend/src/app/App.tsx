@@ -11,6 +11,9 @@ import ProductFormPage from '../modules/products/ProductFormPage'
 import ProductListPage from '../modules/products/ProductListPage'
 import VendorListPage from '../modules/vendors/VendorListPage'
 import SettingsPage from '../modules/settings/SettingsPage'
+import ProductionPage from '../modules/production/ProductionPage'
+import PackingPage from '../modules/packing/PackingPage'
+import InventoryPage from '../modules/inventory/InventoryPage'
 import ExportOrderDetailPage from '../modules/export-orders/ExportOrderDetailPage'
 import ExportOrderEditPage from '../modules/export-orders/ExportOrderEditPage'
 import ExportOrderListPage from '../modules/export-orders/ExportOrderListPage'
@@ -41,6 +44,9 @@ function AuthenticatedShell() {
               <Route path="/products/new" element={<ProductFormPage />} />
               <Route path="/products/:id/edit" element={<ProductFormPage />} />
               <Route path="/vendors" element={<VendorListPage />} />
+              <Route path="/production" element={<ProductionPage />} />
+              <Route path="/packing" element={<PackingPage />} />
+              <Route path="/inventory" element={<InventoryPage />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/export-orders" element={<ExportOrderListPage />} />
               <Route path="/export-orders/:id" element={<ExportOrderDetailPage />} />

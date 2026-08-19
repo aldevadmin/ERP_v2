@@ -1,13 +1,13 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Avatar, Dropdown, Layout, Menu, Space, Typography } from 'antd'
 import {
-  AppstoreOutlined,
   DashboardOutlined,
+  DatabaseOutlined,
+  DeploymentUnitOutlined,
   FileTextOutlined,
+  InboxOutlined,
   LogoutOutlined,
   SettingOutlined,
-  ShopOutlined,
-  TeamOutlined,
 } from '@ant-design/icons'
 import { Link, useLocation } from 'react-router'
 import { useAuth } from '../shared/auth/AuthContext'
@@ -15,21 +15,31 @@ import { useAuth } from '../shared/auth/AuthContext'
 const { Sider } = Layout
 const { Text } = Typography
 
-const NAV_ITEMS = [
+type NavItem = { key: string; icon: ReactNode; label: ReactNode } | { type: 'divider' }
+
+const NAV_ITEMS: NavItem[] = [
   { key: '/', icon: <DashboardOutlined />, label: <Link to="/">Dashboard</Link> },
   {
     key: '/export-orders',
     icon: <FileTextOutlined />,
     label: <Link to="/export-orders">Export Orders</Link>,
   },
-  { key: '/customers', icon: <TeamOutlined />, label: <Link to="/customers">Customers</Link> },
-  { key: '/products', icon: <AppstoreOutlined />, label: <Link to="/products">Products</Link> },
-  { key: '/vendors', icon: <ShopOutlined />, label: <Link to="/vendors">Vendors</Link> },
+  {
+    key: '/production',
+    icon: <DeploymentUnitOutlined />,
+    label: <Link to="/production">Production</Link>,
+  },
+  { key: '/packing', icon: <InboxOutlined />, label: <Link to="/packing">Packing</Link> },
+  { key: '/inventory', icon: <DatabaseOutlined />, label: <Link to="/inventory">Inventory</Link> },
+  { type: 'divider' },
   { key: '/settings', icon: <SettingOutlined />, label: <Link to="/settings">Settings</Link> },
 ]
 
 function selectedKeyFor(pathname: string): string {
-  const match = NAV_ITEMS.filter((item) => item.key !== '/' && pathname.startsWith(item.key))
+  const match = NAV_ITEMS.filter(
+    (item): item is Extract<NavItem, { key: string }> =>
+      'key' in item && item.key !== '/' && pathname.startsWith(item.key),
+  )
   return match[0]?.key ?? '/'
 }
 
