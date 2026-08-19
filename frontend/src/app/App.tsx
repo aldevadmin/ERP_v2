@@ -10,6 +10,12 @@ import CustomerSkuMappingsPage from '../modules/products/CustomerSkuMappingsPage
 import ProductFormPage from '../modules/products/ProductFormPage'
 import ProductListPage from '../modules/products/ProductListPage'
 import VendorListPage from '../modules/vendors/VendorListPage'
+import MaterialFormPage from '../modules/materials/MaterialFormPage'
+import MaterialListPage from '../modules/materials/MaterialListPage'
+import ProcessCategoryFormPage from '../modules/processes/ProcessCategoryFormPage'
+import ProcessCategoryListPage from '../modules/processes/ProcessCategoryListPage'
+import ProcessFormPage from '../modules/processes/ProcessFormPage'
+import ProcessListPage from '../modules/processes/ProcessListPage'
 import SettingsPage from '../modules/settings/SettingsPage'
 import ProductionPage from '../modules/production/ProductionPage'
 import PackingPage from '../modules/packing/PackingPage'
@@ -44,6 +50,15 @@ function AuthenticatedShell() {
               <Route path="/products/new" element={<ProductFormPage />} />
               <Route path="/products/:id/edit" element={<ProductFormPage />} />
               <Route path="/vendors" element={<VendorListPage />} />
+              <Route path="/materials" element={<MaterialListPage />} />
+              <Route path="/materials/new" element={<MaterialFormPage />} />
+              <Route path="/materials/:id/edit" element={<MaterialFormPage />} />
+              <Route path="/process-categories" element={<ProcessCategoryListPage />} />
+              <Route path="/process-categories/new" element={<ProcessCategoryFormPage />} />
+              <Route path="/process-categories/:id/edit" element={<ProcessCategoryFormPage />} />
+              <Route path="/processes" element={<ProcessListPage />} />
+              <Route path="/processes/new" element={<ProcessFormPage />} />
+              <Route path="/processes/:id/edit" element={<ProcessFormPage />} />
               <Route path="/production" element={<ProductionPage />} />
               <Route path="/packing" element={<PackingPage />} />
               <Route path="/inventory" element={<InventoryPage />} />

@@ -12,6 +12,8 @@ urlpatterns: list[Any] = [
     path("api/v1/", include("apps.customers.urls")),
     path("api/v1/", include("apps.products.urls")),
     path("api/v1/", include("apps.vendors.urls")),
+    path("api/v1/", include("apps.materials.urls")),
+    path("api/v1/", include("apps.processes.urls")),
     path("api/v1/", include("apps.export_orders.urls")),
 ]
 
