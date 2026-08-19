@@ -49,7 +49,7 @@ function sum(values: number[]): number {
   return values.reduce((total, value) => total + value, 0)
 }
 
-export default function ExportOrderPlanningV2Tab({ exportOrderId }: { exportOrderId: number }) {
+export default function ExportOrderPlanningTab({ exportOrderId }: { exportOrderId: number }) {
   const [planRows, setPlanRows] = useState<SKUSupplyPlanSummary[]>([])
   const [planLoading, setPlanLoading] = useState(true)
   const [drafts, setDrafts] = useState<Record<number, { useStock: number; produce: number; procure: number }>>({})
@@ -230,7 +230,7 @@ export default function ExportOrderPlanningV2Tab({ exportOrderId }: { exportOrde
 
   return (
     <SectionCard
-      title="Planning v2"
+      title="Planning"
       extra={
         <Space>
           <Button loading={saving} onClick={() => void handleSavePlanning()}>

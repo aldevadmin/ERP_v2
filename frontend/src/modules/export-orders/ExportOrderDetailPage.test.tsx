@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import ExportOrderDetailPage from './ExportOrderDetailPage'
 import * as exportOrdersApi from './api'
@@ -184,77 +184,6 @@ describe('ExportOrderDetailPage', () => {
 
     await waitFor(() => expect(mockedApi.listExportOrderLines).toHaveBeenCalledWith(1))
     expect(await screen.findByText('Add Line')).toBeInTheDocument()
-  })
-
-  it('renders the SKU planning table by default when switching to the Planning tab', async () => {
-    mockedApi.getExportOrder.mockResolvedValue(order)
-    mockedApi.listExportOrderNotes.mockResolvedValue([])
-    mockedApi.listSkuSupplyPlans.mockResolvedValue([])
-    mockedAccountsApi.listEmployees.mockResolvedValue({
-      count: 0,
-      next: null,
-      previous: null,
-      results: [],
-    })
-    mockedAccountsApi.listTeams.mockResolvedValue({ count: 0, next: null, previous: null, results: [] })
-
-    render(
-      <MemoryRouter>
-        <ExportOrderDetailPage />
-      </MemoryRouter>,
-    )
-    await screen.findByRole('heading', { name: 'EO-2026-0001' })
-
-    fireEvent.click(screen.getByRole('tab', { name: 'Planning' }))
-
-    await waitFor(() => expect(mockedApi.listSkuSupplyPlans).toHaveBeenCalledWith(1))
-    expect((await screen.findAllByText('Need to Produce')).length).toBeGreaterThan(0)
-  })
-
-  it('renders each packing-material sub-tab when switching to it within Planning', async () => {
-    mockedApi.getExportOrder.mockResolvedValue(order)
-    mockedApi.listExportOrderNotes.mockResolvedValue([])
-    mockedApi.listSkuSupplyPlans.mockResolvedValue([])
-    mockedApi.listPackingMaterialRequirements.mockResolvedValue([])
-    mockedAccountsApi.listEmployees.mockResolvedValue({
-      count: 0,
-      next: null,
-      previous: null,
-      results: [],
-    })
-    mockedAccountsApi.listTeams.mockResolvedValue({ count: 0, next: null, previous: null, results: [] })
-
-    const { container } = render(
-      <MemoryRouter>
-        <ExportOrderDetailPage />
-      </MemoryRouter>,
-    )
-    await screen.findByRole('heading', { name: 'EO-2026-0001' })
-
-    fireEvent.click(screen.getByRole('tab', { name: 'Planning' }))
-    await waitFor(() => expect(mockedApi.listSkuSupplyPlans).toHaveBeenCalledWith(1))
-
-    // AntD Tabs keeps previously-rendered panes mounted (hidden) once
-    // visited, so later assertions must scope to the currently active
-    // pane rather than the whole document. Planning nests a second Tabs
-    // inside the outer one's active pane, so the *last* `.ant-tabs-content-
-    // active` match (innermost) is the one actually showing this sub-tab.
-    for (const [tabName, materialType] of [
-      ['Cartons', 'CARTON'],
-      ['Pouches', 'POUCH'],
-      ['Retail Stickers', 'RETAIL_STICKER'],
-      ['Box Labels', 'BOX_LABEL'],
-    ] as const) {
-      fireEvent.click(screen.getByRole('tab', { name: tabName }))
-
-      await waitFor(() =>
-        expect(mockedApi.listPackingMaterialRequirements).toHaveBeenCalledWith(1, materialType),
-      )
-      const activePanes = container.querySelectorAll('.ant-tabs-content-active')
-      const activePane = activePanes[activePanes.length - 1] as HTMLElement
-      expect(activePane).not.toBeNull()
-      expect(await within(activePane).findByText('Total Required')).toBeInTheDocument()
-    }
   })
 
   it('renders the SKU readiness table when switching to the Fulfilment tab', async () => {

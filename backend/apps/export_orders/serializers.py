@@ -1088,12 +1088,16 @@ class ShipmentLineSerializer(serializers.ModelSerializer):
 
 class LoadingTransactionSerializer(serializers.ModelSerializer):
     """`validate()` enforces the XOR cartons/pouches rule (same shape as
-    `PackingTransactionSerializer`) plus business-rules.md §7's variance
-    rule, now evaluated against the *cumulative* total this entry would
-    produce — `variance_reason` is required whenever the shipment line's
-    running `actual_loaded_cartons` (after this save) doesn't exactly
-    match `planned_cartons`. Needs the parent `shipment_line` from context
-    on create (there's no `instance` yet to read it from).
+    `PackingTransactionSerializer`). `variance_reason` is present but
+    **not required** — the Loading tab rebuild reframed loading as
+    frequent real-time partial updates (every 15-30 minutes, eventually
+    barcode-scan-driven), not a single end-of-day snapshot, so requiring
+    an explanation every time the running total doesn't yet match
+    `planned_cartons` would block the normal, expected case. Superseded
+    the earlier "required whenever the cumulative total differs from
+    planned" rule (business-rules.md §7) — over/under vs. plan stays
+    purely informational (readiness table's Balance/Status columns),
+    never blocks a save.
     """
 
     entered_by = serializers.CharField(source="created_by.username", read_only=True)
@@ -1119,9 +1123,6 @@ class LoadingTransactionSerializer(serializers.ModelSerializer):
         entry_type = attrs.get("entry_type", instance.entry_type if instance else None)
         cartons = attrs.get("cartons_loaded", instance.cartons_loaded if instance else None)
         pouches = attrs.get("pouches_loaded", instance.pouches_loaded if instance else None)
-        variance_reason = attrs.get(
-            "variance_reason", instance.variance_reason if instance else ""
-        )
 
         if entry_type == LoadingTransaction.EntryType.CARTON_LOADED:
             if not cartons or cartons <= 0:
@@ -1140,23 +1141,6 @@ class LoadingTransactionSerializer(serializers.ModelSerializer):
             if cartons:
                 raise serializers.ValidationError(
                     {"cartons_loaded": "Cannot be set for a Pouches Loaded entry."}
-                )
-
-        if entry_type == LoadingTransaction.EntryType.CARTON_LOADED:
-            shipment_line = instance.shipment_line if instance else self.context["shipment_line"]
-            planned = shipment_line.planned_cartons
-            existing_total = shipment_line.actual_loaded_cartons
-            if instance is not None:
-                existing_total -= instance.cartons_loaded or 0
-            projected_total = existing_total + (cartons or 0)
-            if planned is not None and projected_total != planned and not variance_reason:
-                raise serializers.ValidationError(
-                    {
-                        "variance_reason": (
-                            "A reason is required when the loaded total differs from the "
-                            "loadable quantity."
-                        )
-                    }
                 )
         return attrs
 

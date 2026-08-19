@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import ExportOrderPlanningV2Tab from './ExportOrderPlanningV2Tab'
+import ExportOrderPlanningTab from './ExportOrderPlanningTab'
 import * as exportOrdersApi from './api'
 import type { PackingMaterialRequirementSummary, SKUSupplyPlanSummary } from './types'
 
@@ -80,11 +80,11 @@ function setupMocks() {
   })
 }
 
-describe('ExportOrderPlanningV2Tab', () => {
+describe('ExportOrderPlanningTab', () => {
   it('renders the line item planning and packing material tables', async () => {
     setupMocks()
 
-    render(<ExportOrderPlanningV2Tab exportOrderId={1} />)
+    render(<ExportOrderPlanningTab exportOrderId={1} />)
 
     expect(await screen.findAllByText('CUST-SKU-1')).not.toHaveLength(0)
     expect(screen.getAllByText('20,000 pcs').length).toBeGreaterThan(0)
@@ -96,7 +96,7 @@ describe('ExportOrderPlanningV2Tab', () => {
     setupMocks()
     mockedApi.updateSkuSupplyPlan.mockResolvedValue({ ...planRow, quantity_from_stock: 5000 })
 
-    render(<ExportOrderPlanningV2Tab exportOrderId={1} />)
+    render(<ExportOrderPlanningTab exportOrderId={1} />)
     await screen.findAllByText('CUST-SKU-1')
 
     fireEvent.change(screen.getByLabelText('Use Stock — CUST-SKU-1'), { target: { value: '5000' } })
@@ -117,7 +117,7 @@ describe('ExportOrderPlanningV2Tab', () => {
       materialRow({ material_type: 'CARTON', available_stock: 1500 }),
     )
 
-    render(<ExportOrderPlanningV2Tab exportOrderId={1} />)
+    render(<ExportOrderPlanningTab exportOrderId={1} />)
     await screen.findAllByText('CUST-SKU-1')
 
     fireEvent.change(screen.getByLabelText('Available — CUST-SKU-1 — Cartons'), {
@@ -142,7 +142,7 @@ describe('ExportOrderPlanningV2Tab', () => {
       materialRow({ material_type: 'CARTON', manual_to_procure_qty: 900, to_procure_qty: 900 }),
     )
 
-    render(<ExportOrderPlanningV2Tab exportOrderId={1} />)
+    render(<ExportOrderPlanningTab exportOrderId={1} />)
     await screen.findAllByText('CUST-SKU-1')
 
     fireEvent.change(screen.getByLabelText('To Procure — CUST-SKU-1 — Cartons'), {
@@ -160,7 +160,7 @@ describe('ExportOrderPlanningV2Tab', () => {
   it('disables Place Order once the manual To Procure override is fully covered', async () => {
     setupMocks()
 
-    render(<ExportOrderPlanningV2Tab exportOrderId={1} />)
+    render(<ExportOrderPlanningTab exportOrderId={1} />)
     await screen.findAllByText('CUST-SKU-1')
 
     fireEvent.change(screen.getByLabelText('To Procure — CUST-SKU-1 — Cartons'), {
@@ -173,7 +173,7 @@ describe('ExportOrderPlanningV2Tab', () => {
   it('shows a not-available message for Generate Material POs', async () => {
     setupMocks()
 
-    render(<ExportOrderPlanningV2Tab exportOrderId={1} />)
+    render(<ExportOrderPlanningTab exportOrderId={1} />)
     await screen.findAllByText('CUST-SKU-1')
 
     fireEvent.click(screen.getByRole('button', { name: /Generate Material POs/ }))

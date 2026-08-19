@@ -17,16 +17,40 @@ import { InboxOutlined, InfoCircleOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import SectionCard from '../../shared/components/SectionCard'
 import AddLoadingTransactionModal from './AddLoadingTransactionModal'
+import AddToShipmentModal from './AddToShipmentModal'
 import FulfilmentStatusTag, { type FulfilmentReadinessStatus } from './FulfilmentStatusTag'
 import {
+  listExportOrderLines,
   listLoadingTransactionsLog,
   listShipmentLines,
   listShipments,
   listSkuSupplyPlans,
 } from './api'
-import type { LoadingTransactionLogEntry, Shipment, ShipmentLine, SKUSupplyPlanSummary } from './types'
+import type {
+  ExportOrderLine,
+  LoadingTransactionLogEntry,
+  Shipment,
+  ShipmentLine,
+  SKUSupplyPlanSummary,
+} from './types'
 
 const { Text } = Typography
+
+/** One readiness-table row — either a real `ShipmentLine` already planned
+ * onto the selected shipment, or an order line with no allocation there
+ * yet (`shipmentLine: null`) — surfaced instead of silently omitted, so a
+ * SKU never just vanishes from the tab because nobody's planned it onto
+ * this shipment (business-rules.md §7 / ui-spec.md §8).
+ */
+interface ReadinessRow {
+  key: string
+  exportOrderLineId: number
+  customer_sku_code: string
+  product_name: string | null
+  product_sku_code: string | null
+  required_cartons: number | null
+  shipmentLine: ShipmentLine | null
+}
 
 function formatDateTime(value: string | null): string {
   return value ? dayjs(value).format('DD MMM YYYY, hh:mm A') : '—'
@@ -48,6 +72,7 @@ export default function ExportOrderLoadingTab({ exportOrderId }: { exportOrderId
   const [lines, setLines] = useState<ShipmentLine[]>([])
   const [linesLoading, setLinesLoading] = useState(false)
   const [supplyPlans, setSupplyPlans] = useState<SKUSupplyPlanSummary[]>([])
+  const [allOrderLines, setAllOrderLines] = useState<ExportOrderLine[]>([])
 
   const [transactions, setTransactions] = useState<LoadingTransactionLogEntry[]>([])
   const [transactionsTotal, setTransactionsTotal] = useState(0)
@@ -56,6 +81,7 @@ export default function ExportOrderLoadingTab({ exportOrderId }: { exportOrderId
   const [transactionsSkuFilter, setTransactionsSkuFilter] = useState<number | undefined>(undefined)
 
   const [editingLine, setEditingLine] = useState<ShipmentLine | null>(null)
+  const [addingOrderLine, setAddingOrderLine] = useState<ExportOrderLine | null>(null)
 
   useEffect(() => {
     setShipmentsLoading(true)
@@ -65,6 +91,10 @@ export default function ExportOrderLoadingTab({ exportOrderId }: { exportOrderId
         setSelectedShipmentId((prev) => prev ?? data[0]?.id ?? null)
       })
       .finally(() => setShipmentsLoading(false))
+  }, [exportOrderId])
+
+  useEffect(() => {
+    listExportOrderLines(exportOrderId).then(setAllOrderLines)
   }, [exportOrderId])
 
   const loadLines = useCallback(() => {
@@ -106,12 +136,37 @@ export default function ExportOrderLoadingTab({ exportOrderId }: { exportOrderId
 
   const planByLine = new Map(supplyPlans.map((plan) => [plan.export_order_line, plan]))
 
+  const plannedOrderLineIds = new Set(lines.map((l) => l.export_order_line))
+  const readinessRows: ReadinessRow[] = [
+    ...lines.map((l) => ({
+      key: `planned-${l.id}`,
+      exportOrderLineId: l.export_order_line,
+      customer_sku_code: l.customer_sku_code,
+      product_name: l.product_name,
+      product_sku_code: l.product_sku_code,
+      required_cartons: l.required_cartons,
+      shipmentLine: l,
+    })),
+    ...allOrderLines
+      .filter((ol) => !plannedOrderLineIds.has(ol.id))
+      .map((ol) => ({
+        key: `unplanned-${ol.id}`,
+        exportOrderLineId: ol.id,
+        customer_sku_code: ol.customer_sku_code,
+        product_name: ol.product_name,
+        product_sku_code: ol.product_sku_code,
+        required_cartons: ol.required_cartons,
+        shipmentLine: null,
+      })),
+  ]
+
   const skuOptions = lines.map((line) => ({
     value: line.export_order_line,
     label: `${line.customer_sku_code}${line.product_name ? ` — ${line.product_name}` : ''}`,
   }))
 
   const closeModal = () => setEditingLine(null)
+  const closeAddToShipmentModal = () => setAddingOrderLine(null)
 
   const handleCreated = () => {
     message.success('Loading updated.')
@@ -119,6 +174,12 @@ export default function ExportOrderLoadingTab({ exportOrderId }: { exportOrderId
     void loadLines()
     setTransactionsPage(1)
     void loadTransactions()
+  }
+
+  const handleAddedToShipment = () => {
+    message.success('Added to shipment.')
+    closeAddToShipmentModal()
+    void loadLines()
   }
 
   const selectedShipment = shipments.find((s) => s.id === selectedShipmentId) ?? null
@@ -161,14 +222,14 @@ export default function ExportOrderLoadingTab({ exportOrderId }: { exportOrderId
           />
         }
       >
-        <Table<ShipmentLine>
-          rowKey="id"
+        <Table<ReadinessRow>
+          rowKey="key"
           loading={linesLoading}
-          dataSource={lines}
+          dataSource={readinessRows}
           pagination={false}
           scroll={{ x: 'max-content' }}
           style={{ marginBottom: 16 }}
-          locale={{ emptyText: 'No SKUs planned on this shipment yet.' }}
+          locale={{ emptyText: 'No SKUs on this order yet.' }}
           columns={[
             {
               title: 'SKU',
@@ -189,21 +250,28 @@ export default function ExportOrderLoadingTab({ exportOrderId }: { exportOrderId
             },
             {
               title: 'Loadable Qty',
-              dataIndex: 'planned_qty',
-              render: (v: number) => `${v.toLocaleString()} pcs`,
+              key: 'loadable',
+              render: (_, record) =>
+                record.shipmentLine ? `${record.shipmentLine.planned_qty.toLocaleString()} pcs` : '—',
             },
             {
               title: 'Loaded Qty',
-              dataIndex: 'actual_loaded_qty',
-              render: (v: number) => (
-                <Text style={{ color: '#389e0d' }}>{v.toLocaleString()} pcs</Text>
-              ),
+              key: 'loaded',
+              render: (_, record) =>
+                record.shipmentLine ? (
+                  <Text style={{ color: '#389e0d' }}>
+                    {record.shipmentLine.actual_loaded_qty.toLocaleString()} pcs
+                  </Text>
+                ) : (
+                  '—'
+                ),
             },
             {
               title: 'Balance',
               key: 'balance',
               render: (_, record) => {
-                const balance = record.planned_qty - record.actual_loaded_qty
+                if (!record.shipmentLine) return '—'
+                const balance = record.shipmentLine.planned_qty - record.shipmentLine.actual_loaded_qty
                 return (
                   <Text strong={balance > 0} type={balance > 0 ? 'danger' : undefined}>
                     {balance.toLocaleString()} pcs
@@ -213,17 +281,17 @@ export default function ExportOrderLoadingTab({ exportOrderId }: { exportOrderId
             },
             {
               title: 'Last Update',
-              dataIndex: 'last_loading_transaction_at',
-              render: (v: string | null) => formatDateTime(v),
+              key: 'lastUpdate',
+              render: (_, record) =>
+                formatDateTime(record.shipmentLine?.last_loading_transaction_at ?? null),
             },
             {
               title: 'Progress',
               key: 'progress',
               render: (_, record) => {
-                const percent =
-                  record.planned_qty > 0
-                    ? Math.round((record.actual_loaded_qty / record.planned_qty) * 100)
-                    : 0
+                if (!record.shipmentLine) return '—'
+                const { planned_qty, actual_loaded_qty } = record.shipmentLine
+                const percent = planned_qty > 0 ? Math.round((actual_loaded_qty / planned_qty) * 100) : 0
                 return (
                   <Progress
                     percent={percent}
@@ -237,23 +305,39 @@ export default function ExportOrderLoadingTab({ exportOrderId }: { exportOrderId
             {
               title: 'Status',
               key: 'status',
-              render: (_, record) => (
-                <FulfilmentStatusTag status={computeStatus(record, planByLine.get(record.export_order_line))} />
-              ),
+              render: (_, record) =>
+                record.shipmentLine ? (
+                  <FulfilmentStatusTag
+                    status={computeStatus(record.shipmentLine, planByLine.get(record.exportOrderLineId))}
+                  />
+                ) : (
+                  <Tag>Not Planned</Tag>
+                ),
             },
             {
               title: 'Actions',
               key: 'actions',
-              render: (_, record) => (
-                <Button
-                  type="primary"
-                  size="small"
-                  disabled={record.planned_cartons === null}
-                  onClick={() => setEditingLine(record)}
-                >
-                  Update Loading
-                </Button>
-              ),
+              render: (_, record) =>
+                record.shipmentLine ? (
+                  <Button
+                    type="primary"
+                    size="small"
+                    disabled={record.shipmentLine.planned_cartons === null}
+                    onClick={() => setEditingLine(record.shipmentLine)}
+                  >
+                    Update Loading
+                  </Button>
+                ) : (
+                  <Button
+                    size="small"
+                    onClick={() => {
+                      const orderLine = allOrderLines.find((ol) => ol.id === record.exportOrderLineId)
+                      if (orderLine) setAddingOrderLine(orderLine)
+                    }}
+                  >
+                    Add to Shipment
+                  </Button>
+                ),
             },
           ]}
         />
@@ -403,6 +487,15 @@ export default function ExportOrderLoadingTab({ exportOrderId }: { exportOrderId
           </Space>
         </Card>
       </div>
+
+      <AddToShipmentModal
+        open={addingOrderLine !== null}
+        exportOrderId={exportOrderId}
+        shipmentId={selectedShipmentId ?? 0}
+        orderLine={addingOrderLine}
+        onClose={closeAddToShipmentModal}
+        onCreated={handleAddedToShipment}
+      />
 
       <AddLoadingTransactionModal
         open={editingLine !== null}

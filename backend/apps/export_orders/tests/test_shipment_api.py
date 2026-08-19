@@ -313,7 +313,11 @@ def test_planned_cartons_derived_from_packing_config(order):
     assert response.json()["planned_cartons"] == 10
 
 
-def test_reason_required_when_actual_differs_from_planned(order, cartonized_line):
+def test_partial_load_succeeds_without_a_reason(order, cartonized_line):
+    """A running total short of planned is the normal, expected case now —
+    loading is frequent real-time partial updates, not a single end-of-day
+    snapshot — so no reason is required to save it (business-rules.md §7,
+    superseding the earlier rule)."""
     client = _client_as("Export Coordinator", "coord12")
     shipment = Shipment.objects.create(shipment_number="EO-2026-0001-S01", export_order=order)
     create_response = client.post(
@@ -329,11 +333,16 @@ def test_reason_required_when_actual_differs_from_planned(order, cartonized_line
         format="json",
     )
 
-    assert response.status_code == 400
-    assert "variance_reason" in response.json()
+    assert response.status_code == 201, response.json()
+    line_response = client.get(_line_detail_url(order, shipment, line_id))
+    assert line_response.json()["loading_status"] == "SHORT_LOADED"
+    assert line_response.json()["difference_cartons"] == -2
+    assert line_response.json()["actual_loaded_qty"] == 300
 
 
-def test_reason_accepted_with_valid_choice(order, cartonized_line):
+def test_reason_still_accepted_when_provided(order, cartonized_line):
+    """variance_reason is optional now, not required — but a caller can
+    still supply one and it's stored."""
     client = _client_as("Export Coordinator", "coord13")
     shipment = Shipment.objects.create(shipment_number="EO-2026-0001-S01", export_order=order)
     create_response = client.post(
@@ -355,10 +364,7 @@ def test_reason_accepted_with_valid_choice(order, cartonized_line):
     )
 
     assert response.status_code == 201, response.json()
-    line_response = client.get(_line_detail_url(order, shipment, line_id))
-    assert line_response.json()["loading_status"] == "SHORT_LOADED"
-    assert line_response.json()["difference_cartons"] == -2
-    assert line_response.json()["actual_loaded_qty"] == 300
+    assert response.json()["variance_reason"] == "PACKING_SHORTAGE"
 
 
 def test_exact_match_needs_no_reason(order, cartonized_line):

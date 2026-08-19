@@ -155,47 +155,30 @@ def test_post_rejected_when_pouches_set_for_carton_loaded(order, shipment, shipm
     assert "pouches_loaded" in response.json()
 
 
-def test_second_partial_entry_still_requires_reason_until_exact(order, shipment, shipment_line_a):
-    """Documented interim limitation (models.py LoadingTransaction
-    docstring): a still-in-progress partial entry needs a reason too,
-    same as the old single-snapshot rule always treated a not-yet-matching
-    total as a variance. Planned = 10 cartons.
+def test_repeated_partial_entries_never_require_a_reason(order, shipment, shipment_line_a):
+    """Loading is frequent real-time partial updates now (every 15-30
+    minutes, eventually barcode-scan-driven), not a single end-of-day
+    snapshot — every entry succeeds without a reason, whether or not the
+    running total matches planned yet. Planned = 10 cartons.
     """
     client = _client_as("Export Coordinator", "coord5")
-    client.post(
+    first = client.post(
         _transactions_url(order, shipment, shipment_line_a.id),
-        {
-            "date": "2026-01-06",
-            "entry_type": "CARTON_LOADED",
-            "cartons_loaded": 9,
-            "variance_reason": "PACKING_SHORTAGE",
-        },
+        {"date": "2026-01-06", "entry_type": "CARTON_LOADED", "cartons_loaded": 9},
         format="json",
     )
+    assert first.status_code == 201, first.json()
 
-    # A second entry that still leaves the total short (9 + 0.. covered
-    # below) — attempting it without a reason is rejected.
-    response = client.post(
+    second = client.post(
         _transactions_url(order, shipment, shipment_line_a.id),
         {"date": "2026-01-07", "entry_type": "CARTON_LOADED", "cartons_loaded": 2},
         format="json",
     )
-
-    assert response.status_code == 400
-    assert "variance_reason" in response.json()
-
-    # Completing the total to exactly match planned (9 + 1 = 10) needs no
-    # reason — the rejected attempt above was never saved.
-    final = client.post(
-        _transactions_url(order, shipment, shipment_line_a.id),
-        {"date": "2026-01-08", "entry_type": "CARTON_LOADED", "cartons_loaded": 1},
-        format="json",
-    )
-    assert final.status_code == 201, final.json()
+    assert second.status_code == 201, second.json()
 
     shipment_line_a.refresh_from_db()
-    assert shipment_line_a.actual_loaded_cartons == 10
-    assert shipment_line_a.loading_status == ShipmentLine.LoadingStatus.EXACT
+    assert shipment_line_a.actual_loaded_cartons == 11
+    assert shipment_line_a.loading_status == ShipmentLine.LoadingStatus.EXCESS_LOADED
 
 
 def test_patch_correction_recomputes_cumulative_without_reason(order, shipment, shipment_line_a):

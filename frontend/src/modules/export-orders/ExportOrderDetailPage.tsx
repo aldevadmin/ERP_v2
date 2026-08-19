@@ -29,7 +29,6 @@ import ExportOrderLoadingTab from './ExportOrderLoadingTab'
 import ExportOrderOverviewTab from './ExportOrderOverviewTab'
 import ExportOrderPackingTab from './ExportOrderPackingTab'
 import ExportOrderPlanningTab from './ExportOrderPlanningTab'
-import ExportOrderPlanningV2Tab from './ExportOrderPlanningV2Tab'
 import ExportOrderShippingTab from './ExportOrderShippingTab'
 import { advanceExportOrder, cancelExportOrder, getExportOrder } from './api'
 import type { ExportOrder } from './types'
@@ -235,11 +234,6 @@ export default function ExportOrderDetailPage() {
               children: <ExportOrderPlanningTab exportOrderId={order.id} />,
             },
             {
-              key: 'planning-v2',
-              label: 'Planning v2',
-              children: <ExportOrderPlanningV2Tab exportOrderId={order.id} />,
-            },
-            {
               key: 'fulfilment',
               label: 'Fulfilment',
               children: <ExportOrderFulfilmentTab exportOrderId={order.id} />,
@@ -250,14 +244,14 @@ export default function ExportOrderDetailPage() {
               children: <ExportOrderPackingTab exportOrderId={order.id} />,
             },
             {
-              key: 'loading',
-              label: 'Loading',
-              children: <ExportOrderLoadingTab exportOrderId={order.id} />,
-            },
-            {
               key: 'shipping',
               label: 'Shipping',
               children: <ExportOrderShippingTab exportOrderId={order.id} />,
+            },
+            {
+              key: 'loading',
+              label: 'Loading',
+              children: <ExportOrderLoadingTab exportOrderId={order.id} />,
             },
           ]}
         />

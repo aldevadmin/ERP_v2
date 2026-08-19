@@ -268,16 +268,6 @@ export function listPackingMaterialRequirements(
   )
 }
 
-export function getPackingMaterialRequirement(
-  exportOrderId: number,
-  lineId: number,
-  materialType: PackingMaterialType,
-): Promise<PackingMaterialRequirement> {
-  return apiFetch<PackingMaterialRequirement>(
-    `/export-orders/${exportOrderId}/lines/${lineId}/packing-material-requirements/${materialType}/`,
-  )
-}
-
 export function updatePackingMaterialRequirement(
   exportOrderId: number,
   lineId: number,
