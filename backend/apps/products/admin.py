@@ -5,8 +5,8 @@ from .models import CustomerSKUMapping, CustomerSKUMappingFile, Product
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ("sku_code", "name", "base_unit", "is_active")
-    list_filter = ("is_active",)
+    list_display = ("sku_code", "name", "base_unit", "stage", "is_active")
+    list_filter = ("stage", "is_active")
     search_fields = ("sku_code", "name")
 
 

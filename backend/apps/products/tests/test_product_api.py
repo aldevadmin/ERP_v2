@@ -78,9 +78,7 @@ def test_update_product(organization):
     )
     client = _client_as("Manager/Admin", "mgr1")
 
-    response = client.patch(
-        f"/api/v1/products/{product.id}/", {"is_active": False}, format="json"
-    )
+    response = client.patch(f"/api/v1/products/{product.id}/", {"is_active": False}, format="json")
 
     assert response.status_code == 200
     product.refresh_from_db()
@@ -120,6 +118,42 @@ def test_filter_by_is_active(organization):
 
     codes = [p["sku_code"] for p in response.json()["results"]]
     assert codes == ["INA"]
+
+
+def test_filter_by_stage(organization):
+    Product.objects.create(
+        sku_code="FIN",
+        name="Finished Plate",
+        base_unit="Piece",
+        organization=organization,
+        stage=Product.Stage.FINISHED_GOOD,
+    )
+    Product.objects.create(
+        sku_code="SEMI",
+        name="Untrimmed Plate",
+        base_unit="Piece",
+        organization=organization,
+        stage=Product.Stage.SEMI_FINISHED,
+    )
+    client = _client_as("Export Coordinator", "coord6")
+
+    response = client.get("/api/v1/products/?stage=SEMI_FINISHED")
+
+    codes = [p["sku_code"] for p in response.json()["results"]]
+    assert codes == ["SEMI"]
+
+
+def test_stage_defaults_to_finished_good(organization):
+    client = _client_as("Export Coordinator", "coord7")
+
+    response = client.post(
+        "/api/v1/products/",
+        {"sku_code": "SKU-6", "name": "Areca Bowl", "base_unit": "Piece"},
+        format="json",
+    )
+
+    assert response.status_code == 201
+    assert response.json()["stage"] == "FINISHED_GOOD"
 
 
 def test_no_delete_route(organization):

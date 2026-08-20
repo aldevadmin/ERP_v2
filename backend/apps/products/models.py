@@ -40,12 +40,24 @@ class Product(BaseModel):
     general-purpose stock field yet, and not written to by anything else
     (packing, production, procurement). A real Inventory module will
     eventually own this properly.
+
+    `stage` distinguishes a customer-facing finished SKU from an internal
+    semi-finished item that only flows between Processes (e.g. an untrimmed
+    plate before it becomes the finished, sellable plate) — reused instead
+    of a separate WIP master; see `apps.processes.ProcessInputDefinition`.
     """
+
+    class Stage(models.TextChoices):
+        SEMI_FINISHED = "SEMI_FINISHED", "Semi-Finished"
+        FINISHED_GOOD = "FINISHED_GOOD", "Finished Good"
 
     sku_code = models.CharField(max_length=32, unique=True)
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     base_unit = models.CharField(max_length=20)
+    stage = models.CharField(
+        max_length=20, choices=Stage.choices, default=Stage.FINISHED_GOOD, blank=True
+    )
     organization = models.ForeignKey(
         "core.Organization", on_delete=models.PROTECT, related_name="products"
     )
@@ -78,9 +90,7 @@ class CustomerSKUMapping(BaseModel):
     )
     customer_sku_code = models.CharField(max_length=64)
     customer_description = models.CharField(max_length=255, blank=True)
-    product = models.ForeignKey(
-        Product, on_delete=models.PROTECT, related_name="customer_mappings"
-    )
+    product = models.ForeignKey(Product, on_delete=models.PROTECT, related_name="customer_mappings")
 
     class CartonPlyRating(models.TextChoices):
         THREE_PLY = "3_PLY", "3-ply"
@@ -90,14 +100,10 @@ class CustomerSKUMapping(BaseModel):
     # learns them; nothing here should force placeholder values.
     pieces_per_pouch = models.PositiveIntegerField(null=True, blank=True)
     pouches_per_carton = models.PositiveIntegerField(null=True, blank=True)
-    pouch_height_inches = models.DecimalField(
-        max_digits=8, decimal_places=2, null=True, blank=True
-    )
+    pouch_height_inches = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
 
     # Carton configuration
-    carton_ply_rating = models.CharField(
-        max_length=10, choices=CartonPlyRating.choices, blank=True
-    )
+    carton_ply_rating = models.CharField(max_length=10, choices=CartonPlyRating.choices, blank=True)
     carton_length_mm = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
     carton_breadth_mm = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
     carton_height_mm = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)

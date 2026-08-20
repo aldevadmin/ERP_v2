@@ -43,7 +43,15 @@ const productsResponse: ProductListResponse = {
   next: null,
   previous: null,
   results: [
-    { id: 1, sku_code: 'SKU-1', name: 'Areca Plate', description: '', base_unit: 'Piece', is_active: true },
+    {
+      id: 1,
+      sku_code: 'SKU-1',
+      name: 'Areca Plate',
+      description: '',
+      base_unit: 'Piece',
+      stage: 'FINISHED_GOOD',
+      is_active: true,
+    },
   ],
 }
 

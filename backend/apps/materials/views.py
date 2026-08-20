@@ -35,4 +35,8 @@ class MaterialViewSet(
         if is_active is not None:
             queryset = queryset.filter(is_active=is_active.lower() in ("true", "1"))
 
+        category = self.request.query_params.get("category")
+        if category is not None:
+            queryset = queryset.filter(category=category)
+
         return queryset

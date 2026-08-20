@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     "apps.vendors",
     "apps.materials",
     "apps.processes",
+    "apps.work_centres",
     "apps.export_orders",
 ]
 

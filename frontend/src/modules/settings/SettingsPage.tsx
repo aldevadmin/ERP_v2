@@ -1,12 +1,14 @@
 import type { ReactNode } from 'react'
-import { Flex, Tag, Typography } from 'antd'
+import { Flex, Tag, Tooltip, Typography } from 'antd'
 import {
   ApartmentOutlined,
   AppstoreOutlined,
   BranchesOutlined,
   ClusterOutlined,
+  ExportOutlined,
   GoldOutlined,
   IdcardOutlined,
+  InfoCircleOutlined,
   ShopOutlined,
   SwapOutlined,
   TagsOutlined,
@@ -22,6 +24,7 @@ const { Title, Text } = Typography
 interface SettingsLink {
   label: string
   icon: ReactNode
+  description: string
   to?: string
 }
 
@@ -34,28 +37,96 @@ const GROUPS: SettingsGroup[] = [
   {
     title: 'Master Data',
     links: [
-      { label: 'Customers', icon: <TeamOutlined />, to: '/customers' },
-      { label: 'Products', icon: <AppstoreOutlined />, to: '/products' },
-      { label: 'Customer SKU Mappings', icon: <SwapOutlined />, to: '/products/mappings' },
-      { label: 'Vendors', icon: <ShopOutlined />, to: '/vendors' },
-      { label: 'Materials', icon: <GoldOutlined />, to: '/materials' },
+      {
+        label: 'Customers',
+        icon: <TeamOutlined />,
+        to: '/customers',
+        description: 'The companies you sell export orders to, with their contacts and shipping details.',
+      },
+      {
+        label: 'Products',
+        icon: <AppstoreOutlined />,
+        to: '/products',
+        description: 'Your finished SKUs — the items you actually sell to customers.',
+      },
+      {
+        label: 'Customer SKU Mappings',
+        icon: <SwapOutlined />,
+        to: '/products/mappings',
+        description:
+          "Links a customer's own product codes to your internal SKUs, so orders match up correctly.",
+      },
+      {
+        label: 'Vendors',
+        icon: <ShopOutlined />,
+        to: '/vendors',
+        description: 'Suppliers you buy raw materials, packaging, or services from.',
+      },
+      {
+        label: 'Materials',
+        icon: <GoldOutlined />,
+        to: '/materials',
+        description:
+          'Raw materials and consumables used to make your products — e.g. leaves, dye, packaging inputs.',
+      },
     ],
   },
   {
     title: 'Operations',
     links: [
-      { label: 'Processes', icon: <ApartmentOutlined />, to: '/processes' },
-      { label: 'Process Categories', icon: <TagsOutlined />, to: '/process-categories' },
-      { label: 'Product Routes', icon: <BranchesOutlined /> },
-      { label: 'Work Centres', icon: <ClusterOutlined /> },
-      { label: 'Tooling', icon: <ToolOutlined /> },
+      {
+        label: 'Processes',
+        icon: <ApartmentOutlined />,
+        to: '/processes',
+        description:
+          'The steps used to make or move products (e.g. Washing, Pressing, Packing) — reusable across Production, Packing, and Inventory.',
+      },
+      {
+        label: 'Process Categories',
+        icon: <TagsOutlined />,
+        to: '/process-categories',
+        description:
+          'Groups Processes by where they happen (e.g. Production, Packing, Quality) — used to organize and filter them.',
+      },
+      {
+        label: 'Output Classifications',
+        icon: <ExportOutlined />,
+        to: '/output-classifications',
+        description:
+          'Labels for what a Process produces (e.g. Premium, Standard, Reject, Scrap) — used when configuring a Process’s Outputs.',
+      },
+      {
+        label: 'Product Routes',
+        icon: <BranchesOutlined />,
+        description: 'The sequence of Processes a product goes through, from raw material to finished good.',
+      },
+      {
+        label: 'Work Centres',
+        icon: <ClusterOutlined />,
+        to: '/work-centres',
+        description:
+          'The physical machines or stations where Processes actually happen, and which Processes each one can run.',
+      },
+      {
+        label: 'Tooling',
+        icon: <ToolOutlined />,
+        description: 'Equipment or tools used at a Work Centre to carry out a Process.',
+      },
     ],
   },
   {
     title: 'Administration',
     links: [
-      { label: 'Users', icon: <UserOutlined /> },
-      { label: 'Roles', icon: <IdcardOutlined /> },
+      {
+        label: 'Users',
+        icon: <UserOutlined />,
+        description: 'People who have accounts and can log into this system.',
+      },
+      {
+        label: 'Roles',
+        icon: <IdcardOutlined />,
+        description: 'Permission groups that control what each user can see and do.',
+      },
     ],
   },
 ]
@@ -85,11 +156,20 @@ export default function SettingsPage() {
                   >
                     {link.icon}
                     <Text>{link.label}</Text>
+                    <Tooltip title={link.description}>
+                      <InfoCircleOutlined
+                        style={{ color: '#8c8c8c', fontSize: 13 }}
+                        onClick={(e) => e.preventDefault()}
+                      />
+                    </Tooltip>
                   </Link>
                 ) : (
                   <Flex key={link.label} align="center" gap={10} style={{ padding: '8px 4px' }}>
                     <Text type="secondary">{link.icon}</Text>
                     <Text type="secondary">{link.label}</Text>
+                    <Tooltip title={link.description}>
+                      <InfoCircleOutlined style={{ color: '#8c8c8c', fontSize: 13 }} />
+                    </Tooltip>
                     <Tag>Not built yet</Tag>
                   </Flex>
                 ),

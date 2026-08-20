@@ -27,7 +27,14 @@ afterEach(() => {
 
 describe('MaterialFormPage — create', () => {
   it('submits a new material', async () => {
-    const created: Material = { id: 10, code: 'NEW1', name: 'New Material', unit: 'Kg', is_active: true }
+    const created: Material = {
+      id: 10,
+      code: 'NEW1',
+      name: 'New Material',
+      unit: 'Kg',
+      category: 'RAW_MATERIAL',
+      is_active: true,
+    }
     mockedApi.createMaterial.mockResolvedValue(created)
 
     render(
@@ -58,6 +65,7 @@ describe('MaterialFormPage — edit', () => {
       code: 'EXIST',
       name: 'Existing Material',
       unit: 'Kg',
+      category: 'RAW_MATERIAL',
       is_active: true,
     }
     mockedApi.getMaterial.mockResolvedValue(existing)

@@ -5,6 +5,6 @@ from .models import Material
 
 @admin.register(Material)
 class MaterialAdmin(admin.ModelAdmin):
-    list_display = ("code", "name", "unit", "is_active")
-    list_filter = ("is_active",)
+    list_display = ("code", "name", "unit", "category", "is_active")
+    list_filter = ("category", "is_active")
     search_fields = ("code", "name")

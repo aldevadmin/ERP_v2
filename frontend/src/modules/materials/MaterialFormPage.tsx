@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
-import { Alert, Button, Card, Form, Input, Switch, Typography } from 'antd'
+import { Alert, Button, Card, Form, Input, Select, Switch, Typography } from 'antd'
 import { ApiError } from '../../shared/api/http'
 import { createMaterial, getMaterial, updateMaterial } from './api'
+import { MATERIAL_CATEGORY_OPTIONS } from './types'
 import type { MaterialFormValues } from './types'
 
 const { Title } = Typography
@@ -50,7 +51,7 @@ export default function MaterialFormPage() {
         layout="vertical"
         onFinish={handleSubmit}
         disabled={loading || submitting}
-        initialValues={{ is_active: true }}
+        initialValues={{ is_active: true, category: 'RAW_MATERIAL' }}
       >
         <Form.Item
           label="Code"
@@ -72,6 +73,13 @@ export default function MaterialFormPage() {
           rules={[{ required: true, message: 'Enter a unit, e.g. Kg.' }]}
         >
           <Input size="large" style={{ maxWidth: 200 }} />
+        </Form.Item>
+        <Form.Item
+          label="Category"
+          name="category"
+          rules={[{ required: true, message: 'Select a category.' }]}
+        >
+          <Select size="large" style={{ maxWidth: 240 }} options={MATERIAL_CATEGORY_OPTIONS} />
         </Form.Item>
         <Form.Item label="Active" name="is_active" valuePropName="checked">
           <Switch />

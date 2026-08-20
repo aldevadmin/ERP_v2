@@ -43,6 +43,10 @@ class ProductViewSet(
         if is_active is not None:
             queryset = queryset.filter(is_active=is_active.lower() in ("true", "1"))
 
+        stage = self.request.query_params.get("stage")
+        if stage is not None:
+            queryset = queryset.filter(stage=stage)
+
         return queryset
 
 
@@ -94,9 +98,7 @@ class CustomerSKUMappingFileViewSet(
         return [IsInternalStaff()]
 
     def get_customer_sku_mapping(self) -> CustomerSKUMapping:
-        return get_object_or_404(
-            CustomerSKUMapping, pk=self.kwargs["customer_sku_mapping_pk"]
-        )
+        return get_object_or_404(CustomerSKUMapping, pk=self.kwargs["customer_sku_mapping_pk"])
 
     def get_queryset(self) -> QuerySet[CustomerSKUMappingFile]:
         queryset = CustomerSKUMappingFile.objects.filter(

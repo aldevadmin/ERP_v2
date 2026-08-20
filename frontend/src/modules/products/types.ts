@@ -1,9 +1,17 @@
+export type ProductStage = 'SEMI_FINISHED' | 'FINISHED_GOOD'
+
+export const PRODUCT_STAGE_OPTIONS: { value: ProductStage; label: string }[] = [
+  { value: 'SEMI_FINISHED', label: 'Semi-Finished' },
+  { value: 'FINISHED_GOOD', label: 'Finished Good' },
+]
+
 export interface Product {
   id: number
   sku_code: string
   name: string
   description: string
   base_unit: string
+  stage: ProductStage
   is_active: boolean
 }
 
@@ -19,6 +27,7 @@ export interface ProductFormValues {
   name: string
   description: string
   base_unit: string
+  stage: ProductStage
   is_active: boolean
 }
 

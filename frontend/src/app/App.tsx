@@ -14,8 +14,12 @@ import MaterialFormPage from '../modules/materials/MaterialFormPage'
 import MaterialListPage from '../modules/materials/MaterialListPage'
 import ProcessCategoryFormPage from '../modules/processes/ProcessCategoryFormPage'
 import ProcessCategoryListPage from '../modules/processes/ProcessCategoryListPage'
+import OutputClassificationFormPage from '../modules/processes/OutputClassificationFormPage'
+import OutputClassificationListPage from '../modules/processes/OutputClassificationListPage'
 import ProcessFormPage from '../modules/processes/ProcessFormPage'
 import ProcessListPage from '../modules/processes/ProcessListPage'
+import WorkCentreFormPage from '../modules/work-centres/WorkCentreFormPage'
+import WorkCentreListPage from '../modules/work-centres/WorkCentreListPage'
 import SettingsPage from '../modules/settings/SettingsPage'
 import ProductionPage from '../modules/production/ProductionPage'
 import PackingPage from '../modules/packing/PackingPage'
@@ -56,9 +60,18 @@ function AuthenticatedShell() {
               <Route path="/process-categories" element={<ProcessCategoryListPage />} />
               <Route path="/process-categories/new" element={<ProcessCategoryFormPage />} />
               <Route path="/process-categories/:id/edit" element={<ProcessCategoryFormPage />} />
+              <Route path="/output-classifications" element={<OutputClassificationListPage />} />
+              <Route path="/output-classifications/new" element={<OutputClassificationFormPage />} />
+              <Route
+                path="/output-classifications/:id/edit"
+                element={<OutputClassificationFormPage />}
+              />
               <Route path="/processes" element={<ProcessListPage />} />
               <Route path="/processes/new" element={<ProcessFormPage />} />
               <Route path="/processes/:id/edit" element={<ProcessFormPage />} />
+              <Route path="/work-centres" element={<WorkCentreListPage />} />
+              <Route path="/work-centres/new" element={<WorkCentreFormPage />} />
+              <Route path="/work-centres/:id/edit" element={<WorkCentreFormPage />} />
               <Route path="/production" element={<ProductionPage />} />
               <Route path="/packing" element={<PackingPage />} />
               <Route path="/inventory" element={<InventoryPage />} />

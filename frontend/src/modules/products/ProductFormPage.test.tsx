@@ -33,6 +33,7 @@ describe('ProductFormPage — create', () => {
       name: 'New Product',
       description: '',
       base_unit: 'Piece',
+      stage: 'FINISHED_GOOD',
       is_active: true,
     }
     mockedApi.createProduct.mockResolvedValue(created)
@@ -66,6 +67,7 @@ describe('ProductFormPage — edit', () => {
       name: 'Existing Product',
       description: 'A description',
       base_unit: 'Piece',
+      stage: 'FINISHED_GOOD',
       is_active: true,
     }
     mockedApi.getProduct.mockResolvedValue(existing)

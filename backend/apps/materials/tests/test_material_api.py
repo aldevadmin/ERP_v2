@@ -103,6 +103,40 @@ def test_filter_by_is_active(organization):
     assert codes == ["INA"]
 
 
+def test_filter_by_category(organization):
+    Material.objects.create(
+        code="RAW",
+        name="Raw Leaf",
+        unit="Kg",
+        organization=organization,
+        category=Material.Category.RAW_MATERIAL,
+    )
+    Material.objects.create(
+        code="PKG",
+        name="Carton",
+        unit="Piece",
+        organization=organization,
+        category=Material.Category.PACKAGING,
+    )
+    client = _client_as("Export Coordinator", "coord6")
+
+    response = client.get("/api/v1/materials/?category=PACKAGING")
+
+    codes = [m["code"] for m in response.json()["results"]]
+    assert codes == ["PKG"]
+
+
+def test_category_defaults_to_raw_material(organization):
+    client = _client_as("Export Coordinator", "coord7")
+
+    response = client.post(
+        "/api/v1/materials/", {"code": "MAT-6", "name": "Dye", "unit": "Litre"}, format="json"
+    )
+
+    assert response.status_code == 201
+    assert response.json()["category"] == "RAW_MATERIAL"
+
+
 def test_no_delete_route(organization):
     material = Material.objects.create(
         code="MAT-5", name="Raw Leaf", unit="Kg", organization=organization

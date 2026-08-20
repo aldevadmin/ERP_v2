@@ -9,17 +9,20 @@ import type {
   Product,
   ProductFormValues,
   ProductListResponse,
+  ProductStage,
 } from './types'
 
 export interface ListProductsParams {
   search?: string
   isActive?: boolean
+  stage?: ProductStage
 }
 
 export function listProducts(params: ListProductsParams = {}): Promise<ProductListResponse> {
   const query = new URLSearchParams()
   if (params.search) query.set('search', params.search)
   if (params.isActive !== undefined) query.set('is_active', String(params.isActive))
+  if (params.stage) query.set('stage', params.stage)
   const queryString = query.toString()
   return apiFetch<ProductListResponse>(`/products/${queryString ? `?${queryString}` : ''}`)
 }

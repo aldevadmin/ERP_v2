@@ -24,6 +24,7 @@ const response: ProductListResponse = {
       name: 'Areca Plate',
       description: '',
       base_unit: 'Piece',
+      stage: 'FINISHED_GOOD',
       is_active: true,
     },
   ],

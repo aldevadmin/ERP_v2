@@ -14,14 +14,14 @@ import { MoreOutlined } from '@ant-design/icons'
 import { Link, useNavigate } from 'react-router'
 import StatusTag from '../../shared/components/StatusTag'
 import { duplicateProcess, listProcessCategories, listProcesses, updateProcess } from './api'
-import type { Process, ProcessCategory, ResourceType } from './types'
-import { RESOURCE_TYPE_OPTIONS } from './types'
+import type { Process, ProcessCategory, WorkCentreRequirement } from './types'
+import { WORK_CENTRE_REQUIREMENT_OPTIONS } from './types'
 
 const { Title } = Typography
 
-const RESOURCE_TYPE_LABELS: Record<ResourceType, string> = Object.fromEntries(
-  RESOURCE_TYPE_OPTIONS.map((option) => [option.value, option.label]),
-) as Record<ResourceType, string>
+const WORK_CENTRE_REQUIREMENT_LABELS: Record<WorkCentreRequirement, string> = Object.fromEntries(
+  WORK_CENTRE_REQUIREMENT_OPTIONS.map((option) => [option.value, option.label]),
+) as Record<WorkCentreRequirement, string>
 
 export default function ProcessListPage() {
   const navigate = useNavigate()
@@ -135,9 +135,10 @@ export default function ProcessListPage() {
               render: (_, record) => record.outputs.length,
             },
             {
-              title: 'Resource',
-              dataIndex: 'resource_type',
-              render: (value: ResourceType) => RESOURCE_TYPE_LABELS[value],
+              title: 'Work Centre',
+              dataIndex: 'work_centre_requirement',
+              render: (value: WorkCentreRequirement | '') =>
+                value ? WORK_CENTRE_REQUIREMENT_LABELS[value] : '—',
             },
             {
               title: 'Status',

@@ -17,7 +17,7 @@ MAX_FILES_PER_CATEGORY = {
 class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
-        fields = ["id", "sku_code", "name", "description", "base_unit", "is_active"]
+        fields = ["id", "sku_code", "name", "description", "base_unit", "stage", "is_active"]
 
     def create(self, validated_data: dict[str, Any]) -> Product:
         return Product.objects.create(organization=Organization.get_default(), **validated_data)

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
-import { Alert, Button, Card, Form, Input, Switch, Typography } from 'antd'
+import { Alert, Button, Card, Form, Input, Select, Switch, Typography } from 'antd'
 import { createProduct, getProduct, updateProduct } from './api'
+import { PRODUCT_STAGE_OPTIONS } from './types'
 import type { ProductFormValues } from './types'
 
 const { Title } = Typography
@@ -50,7 +51,7 @@ export default function ProductFormPage() {
         layout="vertical"
         onFinish={handleSubmit}
         disabled={loading || submitting}
-        initialValues={{ is_active: true }}
+        initialValues={{ is_active: true, stage: 'FINISHED_GOOD' }}
       >
         <Form.Item
           label="SKU Code"
@@ -75,6 +76,13 @@ export default function ProductFormPage() {
           rules={[{ required: true, message: 'Enter a base unit, e.g. Piece.' }]}
         >
           <Input size="large" style={{ maxWidth: 200 }} />
+        </Form.Item>
+        <Form.Item
+          label="Stage"
+          name="stage"
+          rules={[{ required: true, message: 'Select a stage.' }]}
+        >
+          <Select size="large" style={{ maxWidth: 240 }} options={PRODUCT_STAGE_OPTIONS} />
         </Form.Item>
         <Form.Item label="Active" name="is_active" valuePropName="checked">
           <Switch />

@@ -17,7 +17,9 @@ const response: MaterialListResponse = {
   count: 1,
   next: null,
   previous: null,
-  results: [{ id: 1, code: 'MAT-1', name: 'Raw Leaf', unit: 'Kg', is_active: true }],
+  results: [
+    { id: 1, code: 'MAT-1', name: 'Raw Leaf', unit: 'Kg', category: 'RAW_MATERIAL', is_active: true },
+  ],
 }
 
 describe('MaterialListPage', () => {

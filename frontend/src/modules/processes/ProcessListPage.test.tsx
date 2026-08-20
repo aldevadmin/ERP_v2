@@ -3,7 +3,13 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { MemoryRouter, useNavigate } from 'react-router'
 import ProcessListPage from './ProcessListPage'
 import * as processesApi from './api'
-import type { Process, ProcessCategoryListResponse, ProcessListResponse } from './types'
+import type {
+  Process,
+  ProcessCategoryListResponse,
+  ProcessInput,
+  ProcessListResponse,
+  ProcessOutput,
+} from './types'
 
 vi.mock('react-router', async () => {
   const actual = await vi.importActual<typeof import('react-router')>('react-router')
@@ -23,16 +29,76 @@ afterEach(() => {
   vi.clearAllMocks()
 })
 
+const leafInput: ProcessInput = {
+  id: 10,
+  sequence: 1,
+  input_type: 'MATERIAL',
+  item_id: 100,
+  item_label: 'Raw Leaf (LEAF)',
+  uom: 'Kg',
+  quantity_capture: 'MANUAL',
+  is_required: true,
+}
+
+const plateOutput: ProcessOutput = {
+  id: 20,
+  sequence: 1,
+  item_type: 'PRODUCT',
+  item_id: 200,
+  item_label: 'Untrimmed Plate (UNTRIM-10SQ)',
+  uom: 'Piece',
+  classification: 1,
+  classification_name: 'Good',
+  can_move_forward: true,
+  creates_traceable_output: true,
+  default_storage_destination: '',
+}
+
+const scrapOutput: ProcessOutput = {
+  ...plateOutput,
+  id: 21,
+  sequence: 2,
+  item_type: 'MATERIAL',
+  item_id: 300,
+  item_label: 'Wood Scrap (SCRAP)',
+  classification_name: 'Scrap',
+}
+
 const process1: Process = {
   id: 1,
   name: 'Washing',
+  code: 'WASH',
+  is_active: true,
+  version_id: 10,
+  version_number: 1,
+  version_status: 'DRAFT',
   category: 1,
   category_name: 'Production',
-  resource_type: 'STATION',
-  inputs: [10],
-  outputs: [11, 12, 13],
+  work_centre_requirement: 'STATION',
+  operator_required: true,
+  standard_rate_config_level: 'WORK_CENTRE',
+  capture_mode: '',
+  position_label: '',
+  default_position_count: null,
+  allow_work_centre_override: true,
+  allow_different_sku_per_position: true,
+  allow_manual_standard_rate: true,
+  reserve_machine_derived_rate: true,
+  batch_lot_mode: 'OPTIONAL',
+  transaction_frequency: '',
+  partial_output_forward: true,
+  allow_over_production: false,
+  over_production_tolerance_percent: null,
+  input_consumption_mode: 'MANUAL',
+  completion_mode: 'OPERATOR',
+  qc_requirement: 'NONE',
+  allow_correction_with_audit_trail: true,
+  allow_destructive_delete: false,
+  permit_machine_generated_source: true,
+  inputs: [leafInput],
+  outputs: [plateOutput, scrapOutput],
+  parameters: [],
   description: '',
-  is_active: true,
 }
 
 const categoriesResponse: ProcessCategoryListResponse = {
@@ -65,7 +131,7 @@ describe('ProcessListPage', () => {
     expect(within(row).getByText('Production')).toBeInTheDocument()
     expect(within(row).getByText('Station')).toBeInTheDocument()
     expect(within(row).getByText('1')).toBeInTheDocument()
-    expect(within(row).getByText('3')).toBeInTheDocument()
+    expect(within(row).getByText('2')).toBeInTheDocument()
   })
 
   it('filters by category', async () => {

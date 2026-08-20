@@ -1,0 +1,97 @@
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { MemoryRouter } from 'react-router'
+import WorkCentreListPage from './WorkCentreListPage'
+import * as workCentresApi from './api'
+import type { WorkCentreListResponse } from './types'
+
+vi.mock('./api')
+
+const mockedApi = vi.mocked(workCentresApi)
+
+afterEach(() => {
+  vi.clearAllMocks()
+})
+
+const response: WorkCentreListResponse = {
+  count: 1,
+  next: null,
+  previous: null,
+  results: [
+    {
+      id: 1,
+      code: 'WC-1',
+      name: 'Press 01',
+      type: 'MACHINE',
+      is_active: true,
+      capabilities: [],
+      capabilities_count: 2,
+    },
+  ],
+}
+
+describe('WorkCentreListPage', () => {
+  it('renders work centres from the API', async () => {
+    mockedApi.listWorkCentres.mockResolvedValue(response)
+
+    render(
+      <MemoryRouter>
+        <WorkCentreListPage />
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByText('Press 01')).toBeInTheDocument()
+    expect(screen.getByText('WC-1')).toBeInTheDocument()
+    expect(screen.getByText('Machine')).toBeInTheDocument()
+    expect(screen.getByText('2')).toBeInTheDocument()
+    expect(mockedApi.listWorkCentres).toHaveBeenCalledWith({
+      search: undefined,
+      isActive: true,
+      type: undefined,
+    })
+  })
+
+  it('requests every work centre once "Active only" is turned off', async () => {
+    mockedApi.listWorkCentres.mockResolvedValue(response)
+
+    render(
+      <MemoryRouter>
+        <WorkCentreListPage />
+      </MemoryRouter>,
+    )
+    await screen.findByText('Press 01')
+
+    fireEvent.click(screen.getByRole('switch'))
+
+    await waitFor(() =>
+      expect(mockedApi.listWorkCentres).toHaveBeenLastCalledWith({
+        search: undefined,
+        isActive: undefined,
+        type: undefined,
+      }),
+    )
+  })
+
+  it('filters by type', async () => {
+    mockedApi.listWorkCentres.mockResolvedValue(response)
+
+    render(
+      <MemoryRouter>
+        <WorkCentreListPage />
+      </MemoryRouter>,
+    )
+    await screen.findByText('Press 01')
+
+    fireEvent.mouseDown(screen.getByLabelText('Type'))
+    const options = await screen.findAllByText('Machine')
+    fireEvent.click(options[options.length - 1])
+
+    await waitFor(() =>
+      expect(mockedApi.listWorkCentres).toHaveBeenLastCalledWith({
+        search: undefined,
+        isActive: true,
+        type: 'MACHINE',
+      }),
+    )
+  })
+})
