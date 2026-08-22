@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { InfoCircleOutlined } from '@ant-design/icons'
 import { Form, Modal, Radio, Select, Switch } from 'antd'
 import { listMaterials } from '../materials/api'
 import type { Material } from '../materials/types'
@@ -97,6 +98,7 @@ export default function InputEditorModal({
       confirmLoading={submitting}
       okText={input ? 'Save' : 'Add Input'}
       cancelText="Cancel"
+      mask={{ closable: false }}
       destroyOnHidden
     >
       <Form<ProcessInputFormValues> form={form} layout="vertical" onFinish={handleSubmit}>
@@ -104,6 +106,11 @@ export default function InputEditorModal({
           label="Input Type"
           name="input_type"
           rules={[{ required: true, message: 'Select an input type.' }]}
+          tooltip={{
+            title:
+              'Determines which list this item is picked from. Material/Packaging/Other pull from the Material master. WIP pulls from semi-finished products carried over from an earlier process step.',
+            icon: <InfoCircleOutlined />,
+          }}
         >
           <Select
             options={INPUT_TYPE_OPTIONS}
@@ -132,6 +139,11 @@ export default function InputEditorModal({
           label="Quantity capture"
           name="quantity_capture"
           rules={[{ required: true, message: 'Select a quantity capture mode.' }]}
+          tooltip={{
+            title:
+              'How much of this input gets recorded. Manual: the operator enters it. Formula: calculated automatically from other values. Optional: can be left blank.',
+            icon: <InfoCircleOutlined />,
+          }}
         >
           <Radio.Group options={QUANTITY_CAPTURE_OPTIONS} />
         </Form.Item>
@@ -139,6 +151,10 @@ export default function InputEditorModal({
           label="Is this input mandatory for execution?"
           name="is_required"
           valuePropName="checked"
+          tooltip={{
+            title: 'If off, this input can be skipped without blocking the process from completing.',
+            icon: <InfoCircleOutlined />,
+          }}
         >
           <Switch />
         </Form.Item>

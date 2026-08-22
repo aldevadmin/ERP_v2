@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router'
-import { Alert, Button, Card, Form, Input, Select, Switch, Typography } from 'antd'
+import { Link, useNavigate, useParams } from 'react-router'
+import { Alert, Breadcrumb, Button, Card, Form, Input, Select, Switch, Typography } from 'antd'
 import { createProduct, getProduct, updateProduct } from './api'
 import { PRODUCT_STAGE_OPTIONS } from './types'
 import type { ProductFormValues } from './types'
@@ -42,9 +42,20 @@ export default function ProductFormPage() {
     }
   }
 
+  const pageTitle = isEdit ? 'Edit Product' : 'New Product'
+
   return (
-    <Card style={{ maxWidth: 640, margin: '0 auto' }}>
-      <Title level={4}>{isEdit ? 'Edit Product' : 'New Product'}</Title>
+    <div>
+      <Breadcrumb
+        style={{ marginBottom: 12 }}
+        items={[
+          { title: <Link to="/settings">Settings</Link> },
+          { title: <Link to="/products">Products</Link> },
+          { title: pageTitle },
+        ]}
+      />
+      <Card style={{ maxWidth: 640, margin: '0 auto' }}>
+        <Title level={4}>{pageTitle}</Title>
       {error && <Alert type="error" title={error} showIcon style={{ marginBottom: 16 }} />}
       <Form<ProductFormValues>
         form={form}
@@ -93,6 +104,7 @@ export default function ProductFormPage() {
           </Button>
         </Form.Item>
       </Form>
-    </Card>
+      </Card>
+    </div>
   )
 }

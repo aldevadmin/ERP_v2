@@ -4,7 +4,7 @@ from django.contrib.auth.models import Group
 from rest_framework.test import APIClient
 
 from apps.processes.models import ProcessCategory, ProcessDefinition, ProcessDefinitionVersion
-from apps.work_centres.models import WorkCentre, WorkCentreProcessCapability
+from apps.work_centres.models import WorkCentre, WorkCentreProcessCapability, WorkCentreType
 
 pytestmark = pytest.mark.django_db
 
@@ -20,8 +20,11 @@ def _client_as(role_name: str, username: str) -> APIClient:
 
 
 def _work_centre(organization) -> WorkCentre:
+    work_centre_type, _ = WorkCentreType.objects.get_or_create(
+        name="Machine", defaults={"organization": organization}
+    )
     return WorkCentre.objects.create(
-        code="WC-1", name="Press 01", type=WorkCentre.Type.MACHINE, organization=organization
+        code="WC-1", name="Press 01", type=work_centre_type, organization=organization
     )
 
 

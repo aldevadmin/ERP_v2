@@ -71,6 +71,10 @@ export function updateProcessCategory(
   })
 }
 
+export function deleteProcessCategory(id: number): Promise<void> {
+  return apiFetch<void>(`/process-categories/${id}/`, { method: 'DELETE' })
+}
+
 export interface ListOutputClassificationsParams {
   search?: string
   isActive?: boolean
@@ -109,6 +113,10 @@ export function updateOutputClassification(
     method: 'PATCH',
     body: JSON.stringify(values),
   })
+}
+
+export function deleteOutputClassification(id: number): Promise<void> {
+  return apiFetch<void>(`/output-classifications/${id}/`, { method: 'DELETE' })
 }
 
 // The backend models a process as a ProcessDefinition (stable identity)
@@ -246,6 +254,10 @@ export function duplicateProcess(id: number): Promise<Process> {
   return apiFetch<RawProcessDefinition>(`/process-definitions/${id}/duplicate/`, {
     method: 'POST',
   }).then(flattenProcess)
+}
+
+export function deleteProcess(id: number): Promise<void> {
+  return apiFetch<void>(`/process-definitions/${id}/`, { method: 'DELETE' })
 }
 
 export interface SaveProcessInputsPayload {

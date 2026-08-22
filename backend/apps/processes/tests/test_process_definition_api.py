@@ -190,17 +190,6 @@ def test_search_by_name(organization):
     assert names == ["Washing"]
 
 
-def test_no_delete_route(organization):
-    definition = ProcessDefinition.objects.create(
-        name="Washing", code="WASH", organization=organization
-    )
-    client = _client_as("Manager/Admin", "mgr3")
-
-    response = client.delete(f"/api/v1/process-definitions/{definition.id}/")
-
-    assert response.status_code == 405
-
-
 def test_duplicate_clones_definition_version_and_inputs(organization):
     from apps.materials.models import Material
 
@@ -361,3 +350,62 @@ def test_duplicate_twice_gets_distinct_codes(organization):
 
     assert first.json()["code"] == "PRESS-COPY"
     assert second.json()["code"] == "PRESS-COPY-2"
+
+
+def test_delete_unused_process_succeeds(organization):
+    category = _category(organization)
+    definition = ProcessDefinition.objects.create(
+        name="Pressing", code="PRESS", organization=organization
+    )
+    ProcessDefinitionVersion.objects.create(
+        process_definition=definition,
+        version_number=1,
+        category=category,
+        organization=organization,
+    )
+    client = _client_as("Manager/Admin", "mgr-del1")
+
+    response = client.delete(f"/api/v1/process-definitions/{definition.id}/")
+
+    assert response.status_code == 204
+    assert not ProcessDefinition.objects.filter(id=definition.id).exists()
+
+
+def test_delete_process_used_in_route_is_blocked_with_route_name(organization):
+    from apps.product_routes.models import ProcessRoute, ProcessRouteVersion
+    from apps.products.models import Product
+
+    category = _category(organization)
+    definition = ProcessDefinition.objects.create(
+        name="Pressing", code="PRESS", organization=organization
+    )
+    ProcessDefinitionVersion.objects.create(
+        process_definition=definition,
+        version_number=1,
+        category=category,
+        organization=organization,
+    )
+    product = Product.objects.create(
+        sku_code="SQ10",
+        name="10 Square Plate",
+        base_unit="Piece",
+        organization=organization,
+    )
+    route = ProcessRoute.objects.create(
+        name="Areca Plate — Standard Production", product=product, organization=organization
+    )
+    version = ProcessRouteVersion.objects.create(
+        process_route=route, version_number=1, organization=organization
+    )
+    client = _client_as("Manager/Admin", "mgr-del2")
+    client.patch(
+        f"/api/v1/product-route-versions/{version.id}/nodes/",
+        {"nodes": [{"process_definition": definition.id}]},
+        format="json",
+    )
+
+    response = client.delete(f"/api/v1/process-definitions/{definition.id}/")
+
+    assert response.status_code == 400
+    assert "Areca Plate — Standard Production" in response.json()["detail"]
+    assert ProcessDefinition.objects.filter(id=definition.id).exists()

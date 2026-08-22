@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router'
-import { Alert, Button, Card, Empty, Flex, Form, Input, Radio, Typography } from 'antd'
+import { Link, useNavigate, useParams } from 'react-router'
+import { Alert, Breadcrumb, Button, Card, Empty, Flex, Form, Input, Radio, Typography } from 'antd'
 import { ApiError } from '../../shared/api/http'
 import Step2InputsForm from './Step2InputsForm'
 import Step3OutputsForm from './Step3OutputsForm'
@@ -101,7 +101,16 @@ export default function ProcessFormPage() {
   }
 
   return (
-    <Card style={{ maxWidth: 960, margin: '0 auto' }} styles={{ body: { padding: 0 } }}>
+    <div>
+      <Breadcrumb
+        style={{ marginBottom: 12 }}
+        items={[
+          { title: <Link to="/settings">Settings</Link> },
+          { title: <Link to="/processes">Processes</Link> },
+          { title: isEdit ? 'Edit Process' : 'Create Process' },
+        ]}
+      />
+      <Card style={{ maxWidth: 960, margin: '0 auto' }} styles={{ body: { padding: 0 } }}>
       <Flex
         justify="space-between"
         align="center"
@@ -331,6 +340,7 @@ export default function ProcessFormPage() {
             ))}
         </div>
       </Flex>
-    </Card>
+      </Card>
+    </div>
   )
 }

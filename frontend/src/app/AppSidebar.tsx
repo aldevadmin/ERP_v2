@@ -36,11 +36,15 @@ const NAV_ITEMS: NavItem[] = [
 ]
 
 function selectedKeyFor(pathname: string): string {
+  if (pathname === '/') return '/'
   const match = NAV_ITEMS.filter(
     (item): item is Extract<NavItem, { key: string }> =>
       'key' in item && item.key !== '/' && pathname.startsWith(item.key),
   )
-  return match[0]?.key ?? '/'
+  // Every page that isn't one of the other top-level sections above is
+  // reached by drilling into Settings (master data, operations config) —
+  // highlight Settings rather than falling back to Dashboard.
+  return match[0]?.key ?? '/settings'
 }
 
 function LeafLogo() {

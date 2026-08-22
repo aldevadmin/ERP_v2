@@ -5,6 +5,7 @@ import {
   AppstoreOutlined,
   BranchesOutlined,
   ClusterOutlined,
+  EnvironmentOutlined,
   ExportOutlined,
   GoldOutlined,
   IdcardOutlined,
@@ -98,7 +99,15 @@ const GROUPS: SettingsGroup[] = [
       {
         label: 'Product Routes',
         icon: <BranchesOutlined />,
+        to: '/product-routes',
         description: 'The sequence of Processes a product goes through, from raw material to finished good.',
+      },
+      {
+        label: 'Storage Locations',
+        icon: <EnvironmentOutlined />,
+        to: '/storage-locations',
+        description:
+          'Where a route sends output that isn’t continuing to another process (e.g. a warehouse or reject store).',
       },
       {
         label: 'Work Centres',
@@ -108,9 +117,22 @@ const GROUPS: SettingsGroup[] = [
           'The physical machines or stations where Processes actually happen, and which Processes each one can run.',
       },
       {
+        label: 'Work Centre Types',
+        icon: <ClusterOutlined />,
+        to: '/work-centre-types',
+        description: 'What kind of resource a Work Centre is — e.g. Machine, Station.',
+      },
+      {
         label: 'Tooling',
         icon: <ToolOutlined />,
+        to: '/tooling',
         description: 'Equipment or tools used at a Work Centre to carry out a Process.',
+      },
+      {
+        label: 'Tooling Types',
+        icon: <ToolOutlined />,
+        to: '/tooling-types',
+        description: 'What kind of tool a Tooling record is — e.g. Mould, Die, Jig.',
       },
     ],
   },

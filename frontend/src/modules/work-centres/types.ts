@@ -1,9 +1,24 @@
-export type WorkCentreType = 'MACHINE' | 'STATION'
+import type { WorkCentrePosition } from '../tooling/types'
 
-export const WORK_CENTRE_TYPE_OPTIONS: { value: WorkCentreType; label: string }[] = [
-  { value: 'MACHINE', label: 'Machine' },
-  { value: 'STATION', label: 'Station' },
-]
+/** A configurable lookup for `WorkCentre.type` (e.g. Machine, Station) —
+ * managed from Settings, not a fixed enum. */
+export interface WorkCentreType {
+  id: number
+  name: string
+  is_active: boolean
+}
+
+export interface WorkCentreTypeListResponse {
+  count: number
+  next: string | null
+  previous: string | null
+  results: WorkCentreType[]
+}
+
+export interface WorkCentreTypeFormValues {
+  name: string
+  is_active: boolean
+}
 
 /** One process this work centre is capable of running — the "capability
  * mapping" the Process wizard's Step 4 refers to but never edits directly
@@ -27,10 +42,13 @@ export interface WorkCentre {
   id: number
   name: string
   code: string
-  type: WorkCentreType
+  type: number
+  type_name: string
   is_active: boolean
   capabilities: WorkCentreCapability[]
   capabilities_count: number
+  positions: WorkCentrePosition[]
+  positions_count: number
 }
 
 export interface WorkCentreListResponse {
@@ -43,6 +61,6 @@ export interface WorkCentreListResponse {
 export interface WorkCentreFormValues {
   name: string
   code: string
-  type: WorkCentreType
+  type: number
   is_active: boolean
 }

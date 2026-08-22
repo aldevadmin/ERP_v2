@@ -3,7 +3,14 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from rest_framework.test import APIClient
 
-from apps.processes.models import OutputClassification
+from apps.materials.models import Material
+from apps.processes.models import (
+    OutputClassification,
+    ProcessCategory,
+    ProcessDefinition,
+    ProcessDefinitionVersion,
+    ProcessOutputDefinition,
+)
 
 pytestmark = pytest.mark.django_db
 
@@ -81,10 +88,43 @@ def test_filter_by_is_active(organization):
     assert names == ["Retired"]
 
 
-def test_no_delete_route(organization):
+def test_delete_unused_classification_succeeds(organization):
     classification = OutputClassification.objects.create(name="Grade B", organization=organization)
     client = _client_as("Manager/Admin", "mgr2")
 
     response = client.delete(f"/api/v1/output-classifications/{classification.id}/")
 
-    assert response.status_code == 405
+    assert response.status_code == 204
+    assert not OutputClassification.objects.filter(id=classification.id).exists()
+
+
+def test_delete_classification_used_by_output_is_blocked(organization):
+    classification = OutputClassification.objects.create(name="Grade B", organization=organization)
+    category = ProcessCategory.objects.create(name="Production", organization=organization)
+    definition = ProcessDefinition.objects.create(
+        name="Pressing", code="PRESS", organization=organization
+    )
+    version = ProcessDefinitionVersion.objects.create(
+        process_definition=definition,
+        version_number=1,
+        category=category,
+        organization=organization,
+    )
+    material = Material.objects.create(
+        code="OUT-1", name="Output Material", unit="Kg", organization=organization
+    )
+    ProcessOutputDefinition.objects.create(
+        process_version=version,
+        sequence=1,
+        item_type=ProcessOutputDefinition.ItemType.MATERIAL,
+        material=material,
+        uom="Kg",
+        classification=classification,
+        organization=organization,
+    )
+    client = _client_as("Manager/Admin", "mgr3")
+
+    response = client.delete(f"/api/v1/output-classifications/{classification.id}/")
+
+    assert response.status_code == 400
+    assert OutputClassification.objects.filter(id=classification.id).exists()

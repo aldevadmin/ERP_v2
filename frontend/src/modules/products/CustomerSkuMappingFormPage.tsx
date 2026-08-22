@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router'
+import { Link, useNavigate, useParams } from 'react-router'
 import {
   Alert,
+  Breadcrumb,
   Button,
   Card,
   Divider,
@@ -192,9 +193,20 @@ export default function CustomerSkuMappingFormPage() {
     )
   }
 
+  const pageTitle = mapping ? 'Edit Mapping' : 'New Mapping'
+
   return (
-    <Card style={{ maxWidth: 900, margin: '0 auto' }} loading={loading}>
-      <Title level={4}>{mapping ? 'Edit Mapping' : 'New Mapping'}</Title>
+    <div>
+      <Breadcrumb
+        style={{ marginBottom: 12 }}
+        items={[
+          { title: <Link to="/settings">Settings</Link> },
+          { title: <Link to="/products/mappings">Customer SKU Mappings</Link> },
+          { title: pageTitle },
+        ]}
+      />
+      <Card style={{ maxWidth: 900, margin: '0 auto' }} loading={loading}>
+        <Title level={4}>{pageTitle}</Title>
       {error && <Alert type="error" title={error} showIcon style={{ marginBottom: 16 }} />}
       <Form<CustomerSKUMappingFormValues>
         form={form}
@@ -373,6 +385,7 @@ export default function CustomerSkuMappingFormPage() {
           </Button>
         </Form.Item>
       </Form>
-    </Card>
+      </Card>
+    </div>
   )
 }

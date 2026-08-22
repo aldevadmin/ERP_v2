@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import OutputClassificationListPage from './OutputClassificationListPage'
+import { ApiError } from '../../shared/api/http'
 import * as processesApi from './api'
 import type { OutputClassificationListResponse } from './types'
 
@@ -55,5 +56,41 @@ describe('OutputClassificationListPage', () => {
         isActive: undefined,
       }),
     )
+  })
+
+  it('deletes a classification after confirmation', async () => {
+    mockedApi.listOutputClassifications.mockResolvedValue(response)
+    mockedApi.deleteOutputClassification.mockResolvedValue(undefined)
+
+    render(
+      <MemoryRouter>
+        <OutputClassificationListPage />
+      </MemoryRouter>,
+    )
+    await screen.findByText('Premium')
+
+    fireEvent.click(screen.getByLabelText('Delete Premium'))
+    fireEvent.click(await screen.findByRole('button', { name: 'Delete' }))
+
+    await waitFor(() => expect(mockedApi.deleteOutputClassification).toHaveBeenCalledWith(1))
+  })
+
+  it('shows the backend error when a classification is still in use', async () => {
+    mockedApi.listOutputClassifications.mockResolvedValue(response)
+    mockedApi.deleteOutputClassification.mockRejectedValue(
+      new ApiError('Cannot delete — used by 1 output(s).', 400),
+    )
+
+    render(
+      <MemoryRouter>
+        <OutputClassificationListPage />
+      </MemoryRouter>,
+    )
+    await screen.findByText('Premium')
+
+    fireEvent.click(screen.getByLabelText('Delete Premium'))
+    fireEvent.click(await screen.findByRole('button', { name: 'Delete' }))
+
+    expect(await screen.findByText('Cannot delete — used by 1 output(s).')).toBeInTheDocument()
   })
 })

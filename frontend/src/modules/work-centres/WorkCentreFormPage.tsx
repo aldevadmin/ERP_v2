@@ -1,17 +1,40 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router'
-import { Alert, Button, Card, Flex, Form, Input, Select, Switch, Typography } from 'antd'
-import { DeleteOutlined, EditOutlined } from '@ant-design/icons'
+import { Link, useParams } from 'react-router'
+import {
+  Alert,
+  Breadcrumb,
+  Button,
+  Card,
+  Flex,
+  Form,
+  Input,
+  Select,
+  Switch,
+  Table,
+  Typography,
+} from 'antd'
+import { DeleteOutlined, EditOutlined, SwapOutlined } from '@ant-design/icons'
 import { ApiError } from '../../shared/api/http'
+import AssignmentHistoryModal from '../tooling/AssignmentHistoryModal'
+import ChangeToolingModal from '../tooling/ChangeToolingModal'
+import { createToolingAssignment } from '../tooling/api'
+import type { ToolingAssignmentFormValues, WorkCentrePosition } from '../tooling/types'
 import CapabilityEditorModal from './CapabilityEditorModal'
 import {
   createWorkCentre,
   getWorkCentre,
+  listWorkCentreTypes,
   saveWorkCentreCapabilities,
+  saveWorkCentrePositions,
   updateWorkCentre,
 } from './api'
-import { WORK_CENTRE_TYPE_OPTIONS } from './types'
-import type { WorkCentre, WorkCentreCapability, WorkCentreCapabilityFormValues, WorkCentreFormValues } from './types'
+import type {
+  WorkCentre,
+  WorkCentreCapability,
+  WorkCentreCapabilityFormValues,
+  WorkCentreFormValues,
+  WorkCentreType,
+} from './types'
 
 const { Title, Text } = Typography
 
@@ -35,6 +58,14 @@ export default function WorkCentreFormPage() {
     null,
   )
   const [savingCapabilities, setSavingCapabilities] = useState(false)
+  const [savingPositions, setSavingPositions] = useState(false)
+  const [changingToolingFor, setChangingToolingFor] = useState<WorkCentrePosition | null>(null)
+  const [historyFor, setHistoryFor] = useState<WorkCentrePosition | null>(null)
+  const [types, setTypes] = useState<WorkCentreType[]>([])
+
+  useEffect(() => {
+    listWorkCentreTypes({ isActive: true }).then((response) => setTypes(response.results))
+  }, [])
 
   useEffect(() => {
     if (!id) return
@@ -100,16 +131,63 @@ export default function WorkCentreFormPage() {
     void persistCapabilities(nextValues)
   }
 
+  const handleAddPosition = async () => {
+    if (!workCentre) return
+    setSavingPositions(true)
+    setError(null)
+    try {
+      const nextPositions = [
+        ...workCentre.positions.map((p) => ({
+          id: p.id,
+          display_label: p.display_label,
+          is_active: p.is_active,
+        })),
+        { display_label: '', is_active: true },
+      ]
+      const saved = await saveWorkCentrePositions(workCentre.id, { positions: nextPositions })
+      setWorkCentre(saved)
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Could not add a position.')
+    } finally {
+      setSavingPositions(false)
+    }
+  }
+
+  const handleChangeTooling = async (values: ToolingAssignmentFormValues) => {
+    if (!changingToolingFor || !workCentre) return
+    setError(null)
+    try {
+      await createToolingAssignment(changingToolingFor.id, values)
+      const refreshed = await getWorkCentre(workCentre.id)
+      setWorkCentre(refreshed)
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Could not change tooling.')
+    } finally {
+      setChangingToolingFor(null)
+    }
+  }
+
+  const pageTitle = isEdit ? 'Edit Work Centre' : 'New Work Centre'
+
   return (
-    <Card style={{ maxWidth: 720, margin: '0 auto' }}>
-      <Title level={4}>{isEdit ? 'Edit Work Centre' : 'New Work Centre'}</Title>
+    <div>
+      <Breadcrumb
+        style={{ marginBottom: 12 }}
+        items={[
+          { title: <Link to="/settings">Settings</Link> },
+          { title: <Link to="/work-centres">Work Centres</Link> },
+          { title: pageTitle },
+        ]}
+      />
+      <Card style={{ maxWidth: 720, margin: '0 auto' }}>
+        <Title level={4}>{pageTitle}</Title>
       {error && <Alert type="error" title={error} showIcon style={{ marginBottom: 16 }} />}
       <Form<WorkCentreFormValues>
         form={form}
         layout="vertical"
         onFinish={handleSubmit}
         disabled={loading || submitting}
-        initialValues={{ is_active: true, type: 'MACHINE' }}
+        initialValues={{ is_active: true }}
       >
         <Form.Item
           label="Code"
@@ -130,7 +208,11 @@ export default function WorkCentreFormPage() {
           name="type"
           rules={[{ required: true, message: 'Select a type.' }]}
         >
-          <Select size="large" style={{ maxWidth: 240 }} options={WORK_CENTRE_TYPE_OPTIONS} />
+          <Select
+            size="large"
+            style={{ maxWidth: 240 }}
+            options={types.map((t) => ({ value: t.id, label: t.name }))}
+          />
         </Form.Item>
         <Form.Item label="Active" name="is_active" valuePropName="checked">
           <Switch />
@@ -198,12 +280,87 @@ export default function WorkCentreFormPage() {
         </div>
       )}
 
+      {workCentre && (
+        <div style={{ marginTop: 8, paddingTop: 24, borderTop: '1px solid #f0f0f0' }}>
+          <Text strong style={{ display: 'block', marginBottom: 4 }}>
+            Positions
+          </Text>
+          <Text type="secondary" style={{ display: 'block', marginBottom: 16, fontSize: 13 }}>
+            Physical positions on this work centre (e.g. mould positions on a press) — independent
+            of any specific process.
+          </Text>
+          <Table<WorkCentrePosition>
+            rowKey="id"
+            size="small"
+            pagination={false}
+            dataSource={workCentre.positions}
+            locale={{ emptyText: 'No positions added yet.' }}
+            style={{ marginBottom: 16 }}
+            columns={[
+              { title: 'Pos', dataIndex: 'position_index', width: 60 },
+              {
+                title: 'Installed Tooling',
+                key: 'tooling',
+                render: (_, row) =>
+                  row.installed_tooling_code
+                    ? `${row.installed_tooling_code} — ${row.installed_tooling}`
+                    : '—',
+              },
+              { title: 'Default SKU', dataIndex: 'default_sku', render: (v: string) => v || '—' },
+              {
+                title: 'Std Output/hr',
+                dataIndex: 'standard_rate',
+                render: (v: string) => v || '—',
+              },
+              {
+                title: 'Status',
+                dataIndex: 'is_active',
+                render: (active: boolean) => (active ? 'Active' : 'Inactive'),
+              },
+              {
+                title: '',
+                key: 'actions',
+                render: (_, row) => (
+                  <Flex gap={8}>
+                    <Button
+                      size="small"
+                      icon={<SwapOutlined />}
+                      onClick={() => setChangingToolingFor(row)}
+                    >
+                      Change Tooling
+                    </Button>
+                    <Button size="small" onClick={() => setHistoryFor(row)}>
+                      History
+                    </Button>
+                  </Flex>
+                ),
+              },
+            ]}
+          />
+          <Button loading={savingPositions} onClick={() => void handleAddPosition()}>
+            + Add Position
+          </Button>
+        </div>
+      )}
+
       <CapabilityEditorModal
         open={editingCapability !== null}
         capability={editingCapability === 'new' ? null : editingCapability}
         onClose={() => setEditingCapability(null)}
         onSave={handleSaveCapability}
       />
-    </Card>
+      <ChangeToolingModal
+        open={changingToolingFor !== null}
+        position={changingToolingFor}
+        onClose={() => setChangingToolingFor(null)}
+        onSave={handleChangeTooling}
+      />
+      <AssignmentHistoryModal
+        open={historyFor !== null}
+        position={historyFor}
+        onClose={() => setHistoryFor(null)}
+      />
+      </Card>
+    </div>
   )
 }

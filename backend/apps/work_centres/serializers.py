@@ -4,8 +4,20 @@ from rest_framework import serializers
 
 from apps.core.models import Organization
 from apps.processes.models import ProcessDefinition
+from apps.tooling.serializers import WorkCentrePositionSerializer
 
-from .models import WorkCentre, WorkCentreProcessCapability
+from .models import WorkCentre, WorkCentreProcessCapability, WorkCentreType
+
+
+class WorkCentreTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WorkCentreType
+        fields = ["id", "name", "is_active"]
+
+    def create(self, validated_data: dict[str, Any]) -> WorkCentreType:
+        return WorkCentreType.objects.create(
+            organization=Organization.get_default(), **validated_data
+        )
 
 
 class WorkCentreCapabilitySerializer(serializers.ModelSerializer):
@@ -37,13 +49,30 @@ class WorkCentreCapabilityWriteSerializer(serializers.Serializer):
 class WorkCentreSerializer(serializers.ModelSerializer):
     capabilities = WorkCentreCapabilitySerializer(many=True, read_only=True)
     capabilities_count = serializers.SerializerMethodField()
+    positions = WorkCentrePositionSerializer(many=True, read_only=True)
+    positions_count = serializers.SerializerMethodField()
+    type_name = serializers.CharField(source="type.name", read_only=True)
 
     class Meta:
         model = WorkCentre
-        fields = ["id", "name", "code", "type", "is_active", "capabilities", "capabilities_count"]
+        fields = [
+            "id",
+            "name",
+            "code",
+            "type",
+            "type_name",
+            "is_active",
+            "capabilities",
+            "capabilities_count",
+            "positions",
+            "positions_count",
+        ]
 
     def get_capabilities_count(self, obj: WorkCentre) -> int:
         return obj.capabilities.count()
+
+    def get_positions_count(self, obj: WorkCentre) -> int:
+        return obj.positions.count()
 
     def create(self, validated_data: dict[str, Any]) -> WorkCentre:
         return WorkCentre.objects.create(organization=Organization.get_default(), **validated_data)

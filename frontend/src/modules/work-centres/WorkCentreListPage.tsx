@@ -1,24 +1,39 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Breadcrumb, Button, Card, Flex, Input, Select, Space, Switch, Table, Typography } from 'antd'
+import {
+  Breadcrumb,
+  Button,
+  Card,
+  Flex,
+  Input,
+  Popconfirm,
+  Select,
+  Space,
+  Switch,
+  Table,
+  Typography,
+  message,
+} from 'antd'
+import { DeleteOutlined } from '@ant-design/icons'
 import { Link, useNavigate } from 'react-router'
+import { ApiError } from '../../shared/api/http'
 import StatusTag from '../../shared/components/StatusTag'
-import { listWorkCentres } from './api'
-import { WORK_CENTRE_TYPE_OPTIONS } from './types'
+import { deleteWorkCentre, listWorkCentres, listWorkCentreTypes } from './api'
 import type { WorkCentre, WorkCentreType } from './types'
 
 const { Title } = Typography
 
-const TYPE_LABELS: Record<WorkCentreType, string> = Object.fromEntries(
-  WORK_CENTRE_TYPE_OPTIONS.map((option) => [option.value, option.label]),
-) as Record<WorkCentreType, string>
-
 export default function WorkCentreListPage() {
   const navigate = useNavigate()
   const [workCentres, setWorkCentres] = useState<WorkCentre[]>([])
+  const [types, setTypes] = useState<WorkCentreType[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const [typeFilter, setTypeFilter] = useState<WorkCentreType | undefined>(undefined)
+  const [typeFilter, setTypeFilter] = useState<number | undefined>(undefined)
   const [activeOnly, setActiveOnly] = useState(true)
+
+  useEffect(() => {
+    listWorkCentreTypes({ isActive: true }).then((response) => setTypes(response.results))
+  }, [])
 
   const load = useCallback(() => {
     setLoading(true)
@@ -34,6 +49,16 @@ export default function WorkCentreListPage() {
   useEffect(() => {
     load()
   }, [load])
+
+  const handleDelete = async (workCentre: WorkCentre) => {
+    try {
+      await deleteWorkCentre(workCentre.id)
+      message.success('Work centre deleted.')
+      load()
+    } catch (err) {
+      message.error(err instanceof ApiError ? err.message : 'Could not delete this work centre.')
+    }
+  }
 
   return (
     <div>
@@ -72,7 +97,7 @@ export default function WorkCentreListPage() {
               style={{ width: 160 }}
               value={typeFilter}
               onChange={setTypeFilter}
-              options={WORK_CENTRE_TYPE_OPTIONS}
+              options={types.map((t) => ({ value: t.id, label: t.name }))}
             />
             <Space>
               <span>Active only</span>
@@ -91,16 +116,38 @@ export default function WorkCentreListPage() {
           columns={[
             { title: 'Code', dataIndex: 'code' },
             { title: 'Name', dataIndex: 'name' },
-            {
-              title: 'Type',
-              dataIndex: 'type',
-              render: (value: WorkCentreType) => TYPE_LABELS[value],
-            },
+            { title: 'Type', dataIndex: 'type_name' },
             { title: 'Capable Processes', dataIndex: 'capabilities_count' },
             {
               title: 'Status',
               dataIndex: 'is_active',
               render: (isActive: boolean) => <StatusTag active={isActive} />,
+            },
+            {
+              title: '',
+              key: 'actions',
+              width: 48,
+              render: (_, record) => (
+                <Popconfirm
+                  title="Delete this work centre?"
+                  description="This can't be undone."
+                  okText="Delete"
+                  okButtonProps={{ danger: true }}
+                  onConfirm={(e) => {
+                    e?.stopPropagation()
+                    void handleDelete(record)
+                  }}
+                  onCancel={(e) => e?.stopPropagation()}
+                >
+                  <Button
+                    size="small"
+                    danger
+                    icon={<DeleteOutlined />}
+                    aria-label={`Delete ${record.name}`}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </Popconfirm>
+              ),
             },
           ]}
         />

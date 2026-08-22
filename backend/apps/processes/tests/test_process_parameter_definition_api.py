@@ -70,6 +70,35 @@ def test_add_a_number_parameter(organization):
     assert row.sequence == 1
 
 
+def test_add_a_parameter_response_reflects_the_new_row(organization):
+    # Regression test — see the matching test in
+    # test_process_input_definition_api.py: the response used to be built
+    # from a prefetch cache taken before this action's writes, so a freshly
+    # added row was saved but silently missing from the PATCH response.
+    version = _version(organization)
+    client = _client_as("Export Coordinator", "coord1b")
+
+    response = client.patch(
+        f"/api/v1/process-definition-versions/{version.id}/parameters/",
+        {
+            "parameters": [
+                {
+                    "label": "Temperature",
+                    "code": "TEMPERATURE",
+                    "data_type": "NUMBER",
+                    "capture_at": "START",
+                }
+            ]
+        },
+        format="json",
+    )
+
+    assert response.status_code == 200
+    body_parameters = response.json()["parameters"]
+    assert len(body_parameters) == 1
+    assert body_parameters[0]["label"] == "Temperature"
+
+
 def test_add_parameters_of_every_data_type(organization):
     version = _version(organization)
     client = _client_as("Export Coordinator", "coord2")

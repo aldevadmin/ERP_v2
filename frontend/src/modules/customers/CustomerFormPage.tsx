@@ -1,6 +1,18 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router'
-import { Alert, Button, Card, Divider, Form, Input, Select, Space, Switch, Typography } from 'antd'
+import { Link, useNavigate, useParams } from 'react-router'
+import {
+  Alert,
+  Breadcrumb,
+  Button,
+  Card,
+  Divider,
+  Form,
+  Input,
+  Select,
+  Space,
+  Switch,
+  Typography,
+} from 'antd'
 import { listEmployees } from '../accounts/api'
 import type { Employee } from '../accounts/types'
 import { createCustomer, getCustomer, updateCustomer } from './api'
@@ -61,9 +73,20 @@ export default function CustomerFormPage() {
     }
   }
 
+  const pageTitle = isEdit ? 'Edit Customer' : 'New Customer'
+
   return (
-    <Card style={{ maxWidth: 720, margin: '0 auto' }}>
-      <Title level={4}>{isEdit ? 'Edit Customer' : 'New Customer'}</Title>
+    <div>
+      <Breadcrumb
+        style={{ marginBottom: 12 }}
+        items={[
+          { title: <Link to="/settings">Settings</Link> },
+          { title: <Link to="/customers">Customers</Link> },
+          { title: pageTitle },
+        ]}
+      />
+      <Card style={{ maxWidth: 720, margin: '0 auto' }}>
+        <Title level={4}>{pageTitle}</Title>
       {error && <Alert type="error" title={error} showIcon style={{ marginBottom: 16 }} />}
       <Form<CustomerFormValues>
         form={form}
@@ -178,6 +201,7 @@ export default function CustomerFormPage() {
           </Button>
         </Form.Item>
       </Form>
-    </Card>
+      </Card>
+    </div>
   )
 }

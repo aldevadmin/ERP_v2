@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from rest_framework.test import APIClient
 
-from apps.work_centres.models import WorkCentre
+from apps.work_centres.models import WorkCentre, WorkCentreType
 
 pytestmark = pytest.mark.django_db
 
@@ -27,6 +27,13 @@ def _client_as(role_name: str, username: str) -> APIClient:
     user.groups.add(Group.objects.get(name=role_name))
     client.force_authenticate(user=user)
     return client
+
+
+def _work_centre_type(organization, name: str = "Machine") -> WorkCentreType:
+    work_centre_type, _ = WorkCentreType.objects.get_or_create(
+        name=name, defaults={"organization": organization}
+    )
+    return work_centre_type
 
 
 @pytest.mark.parametrize("role", INTERNAL_ROLES)
@@ -55,12 +62,12 @@ def test_anonymous_cannot_list():
 
 
 @pytest.mark.parametrize("role", CAN_MANAGE_ROLES)
-def test_can_manage_roles_can_create(role):
+def test_can_manage_roles_can_create(role, organization):
     client = _client_as(role, f"create-{role}")
 
     response = client.post(
         "/api/v1/work-centres/",
-        {"code": f"NEW-{role}", "name": "Press 01", "type": "MACHINE"},
+        {"code": f"NEW-{role}", "name": "Press 01", "type": _work_centre_type(organization).id},
         format="json",
     )
 
@@ -68,12 +75,12 @@ def test_can_manage_roles_can_create(role):
 
 
 @pytest.mark.parametrize("role", CANNOT_MANAGE_ROLES)
-def test_other_internal_roles_cannot_create(role):
+def test_other_internal_roles_cannot_create(role, organization):
     client = _client_as(role, f"nocreate-{role}")
 
     response = client.post(
         "/api/v1/work-centres/",
-        {"code": f"NC-{role}", "name": "Press 01", "type": "MACHINE"},
+        {"code": f"NC-{role}", "name": "Press 01", "type": _work_centre_type(organization).id},
         format="json",
     )
 
@@ -83,7 +90,10 @@ def test_other_internal_roles_cannot_create(role):
 @pytest.mark.parametrize("role", CANNOT_MANAGE_ROLES)
 def test_other_internal_roles_cannot_update(role, organization):
     work_centre = WorkCentre.objects.create(
-        code=f"UPD-{role}", name="Press 01", type=WorkCentre.Type.MACHINE, organization=organization
+        code=f"UPD-{role}",
+        name="Press 01",
+        type=_work_centre_type(organization),
+        organization=organization,
     )
     client = _client_as(role, f"noupdate-{role}")
 
@@ -97,7 +107,10 @@ def test_other_internal_roles_cannot_update(role, organization):
 @pytest.mark.parametrize("role", CANNOT_MANAGE_ROLES)
 def test_other_internal_roles_cannot_edit_capabilities(role, organization):
     work_centre = WorkCentre.objects.create(
-        code=f"CAP-{role}", name="Press 01", type=WorkCentre.Type.MACHINE, organization=organization
+        code=f"CAP-{role}",
+        name="Press 01",
+        type=_work_centre_type(organization),
+        organization=organization,
     )
     client = _client_as(role, f"nocap-{role}")
 

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { InfoCircleOutlined } from '@ant-design/icons'
 import { Form, Input, Modal, Radio, Select } from 'antd'
 import { listMaterials } from '../materials/api'
 import type { Material } from '../materials/types'
@@ -110,6 +111,7 @@ export default function OutputEditorModal({
       confirmLoading={submitting}
       okText={output ? 'Save' : 'Save'}
       cancelText="Cancel"
+      mask={{ closable: false }}
       destroyOnHidden
     >
       <Form<ProcessOutputFormValues> form={form} layout="vertical" onFinish={handleSubmit}>
@@ -142,6 +144,11 @@ export default function OutputEditorModal({
           label="Classification"
           name="classification"
           rules={[{ required: true, message: 'Select a classification.' }]}
+          tooltip={{
+            title:
+              'Groups this output by grade or type, e.g. Premium / Standard / Reject. Used later in Product Routes to send each grade down a different path — e.g. Premium to Packing, Reject to Storage.',
+            icon: <InfoCircleOutlined />,
+          }}
         >
           <Select
             options={classifications.map((c) => ({ value: c.id, label: c.name }))}
@@ -152,6 +159,11 @@ export default function OutputEditorModal({
         <Form.Item
           label="Can this output move to another process / location?"
           name="can_move_forward"
+          tooltip={{
+            title:
+              'Yes: this output can be routed onward, either to another process or into storage. No: it is a final output that stays here, e.g. scrap or waste.',
+            icon: <InfoCircleOutlined />,
+          }}
         >
           <Radio.Group
             options={[
@@ -160,7 +172,15 @@ export default function OutputEditorModal({
             ]}
           />
         </Form.Item>
-        <Form.Item label="Create traceable output record?" name="creates_traceable_output">
+        <Form.Item
+          label="Create traceable output record?"
+          name="creates_traceable_output"
+          tooltip={{
+            title:
+              'Yes: this output is tracked as its own record (e.g. a batch/lot you can trace later). Turn off for by-products that don’t need individual tracking.',
+            icon: <InfoCircleOutlined />,
+          }}
+        >
           <Radio.Group
             options={[
               { value: true, label: 'Yes' },
@@ -171,6 +191,11 @@ export default function OutputEditorModal({
         <Form.Item
           label="Default storage destination (optional)"
           name="default_storage_destination"
+          tooltip={{
+            title:
+              'A suggested location shown as a hint only. The actual destination for this output is configured per product in Product Routes’ Output Routing step.',
+            icon: <InfoCircleOutlined />,
+          }}
         >
           <Input />
         </Form.Item>

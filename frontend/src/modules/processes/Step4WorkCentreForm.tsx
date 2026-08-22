@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Alert, Button, Flex, Radio, Typography } from 'antd'
+import LabelWithHint from '../../shared/components/LabelWithHint'
 import { ApiError } from '../../shared/api/http'
 import { saveProcessWorkCentre } from './api'
 import {
@@ -85,9 +86,10 @@ export default function Step4WorkCentreForm({
       </div>
 
       <div style={{ marginBottom: 24 }}>
-        <Text strong style={{ display: 'block', marginBottom: 8 }}>
-          Where should Standard Output / Hour be configured?
-        </Text>
+        <LabelWithHint
+          text="Where should Standard Output / Hour be configured?"
+          hint="Decides where the expected output rate for this process is set — at the Process level (one rate for everyone), the Work Centre level (per machine/station), or the Tooling / Position level (per mould or tool)."
+        />
         <Radio.Group
           value={standardRateConfigLevel || undefined}
           onChange={(e) =>

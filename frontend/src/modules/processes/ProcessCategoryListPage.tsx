@@ -1,8 +1,22 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Breadcrumb, Button, Card, Flex, Input, Space, Switch, Table, Typography } from 'antd'
+import {
+  Breadcrumb,
+  Button,
+  Card,
+  Flex,
+  Input,
+  Popconfirm,
+  Space,
+  Switch,
+  Table,
+  Typography,
+  message,
+} from 'antd'
+import { DeleteOutlined } from '@ant-design/icons'
 import { Link, useNavigate } from 'react-router'
+import { ApiError } from '../../shared/api/http'
 import StatusTag from '../../shared/components/StatusTag'
-import { listProcessCategories } from './api'
+import { deleteProcessCategory, listProcessCategories } from './api'
 import type { ProcessCategory } from './types'
 
 const { Title } = Typography
@@ -24,6 +38,16 @@ export default function ProcessCategoryListPage() {
   useEffect(() => {
     load()
   }, [load])
+
+  const handleDelete = async (category: ProcessCategory) => {
+    try {
+      await deleteProcessCategory(category.id)
+      message.success('Category deleted.')
+      load()
+    } catch (err) {
+      message.error(err instanceof ApiError ? err.message : 'Could not delete this category.')
+    }
+  }
 
   return (
     <div>
@@ -69,6 +93,32 @@ export default function ProcessCategoryListPage() {
               title: 'Status',
               dataIndex: 'is_active',
               render: (isActive: boolean) => <StatusTag active={isActive} />,
+            },
+            {
+              title: '',
+              key: 'actions',
+              width: 48,
+              render: (_, record) => (
+                <Popconfirm
+                  title="Delete this category?"
+                  description="This can't be undone."
+                  okText="Delete"
+                  okButtonProps={{ danger: true }}
+                  onConfirm={(e) => {
+                    e?.stopPropagation()
+                    void handleDelete(record)
+                  }}
+                  onCancel={(e) => e?.stopPropagation()}
+                >
+                  <Button
+                    size="small"
+                    danger
+                    icon={<DeleteOutlined />}
+                    aria-label={`Delete ${record.name}`}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </Popconfirm>
+              ),
             },
           ]}
         />

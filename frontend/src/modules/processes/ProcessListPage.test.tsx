@@ -194,4 +194,22 @@ describe('ProcessListPage', () => {
       expect(mockedApi.updateProcess).toHaveBeenCalledWith(1, { is_active: false }),
     )
   })
+
+  it('deletes a process after confirmation', async () => {
+    setupMocks()
+    mockedApi.deleteProcess.mockResolvedValue(undefined)
+
+    render(
+      <MemoryRouter>
+        <ProcessListPage />
+      </MemoryRouter>,
+    )
+    await screen.findByText('Washing')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Actions — Washing' }))
+    fireEvent.click(await screen.findByText('Delete'))
+    fireEvent.click(await screen.findByRole('button', { name: 'Delete' }))
+
+    await waitFor(() => expect(mockedApi.deleteProcess).toHaveBeenCalledWith(1))
+  })
 })

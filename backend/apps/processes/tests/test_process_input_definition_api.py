@@ -89,6 +89,38 @@ def test_add_a_material_input(organization):
     assert row.sequence == 1
 
 
+def test_add_a_material_input_response_reflects_the_new_row(organization):
+    # Regression test: `get_object()` prefetches `inputs` before this
+    # action's writes, and the response used to be built from that same
+    # stale cache — the row was saved correctly but never showed up in the
+    # PATCH response, so the UI list appeared to silently drop it until a
+    # reload. Assert on the response body itself, not just the DB.
+    version = _version(organization)
+    leaf = _leaf(organization)
+    client = _client_as("Export Coordinator", "coord1b")
+
+    response = client.patch(
+        f"/api/v1/process-definition-versions/{version.id}/inputs/",
+        {
+            "inputs": [
+                {
+                    "input_type": "MATERIAL",
+                    "item": leaf.id,
+                    "uom": "Kg",
+                    "quantity_capture": "MANUAL",
+                    "is_required": True,
+                }
+            ]
+        },
+        format="json",
+    )
+
+    assert response.status_code == 200
+    body_inputs = response.json()["inputs"]
+    assert len(body_inputs) == 1
+    assert body_inputs[0]["item_label"] == "Raw Leaf (LEAF)"
+
+
 def test_add_a_wip_input_resolves_to_semi_finished_product(organization):
     version = _version(organization)
     plate = _untrimmed_plate(organization)

@@ -20,6 +20,16 @@ import ProcessFormPage from '../modules/processes/ProcessFormPage'
 import ProcessListPage from '../modules/processes/ProcessListPage'
 import WorkCentreFormPage from '../modules/work-centres/WorkCentreFormPage'
 import WorkCentreListPage from '../modules/work-centres/WorkCentreListPage'
+import WorkCentreTypeFormPage from '../modules/work-centres/WorkCentreTypeFormPage'
+import WorkCentreTypeListPage from '../modules/work-centres/WorkCentreTypeListPage'
+import ProductRouteFormPage from '../modules/product-routes/ProductRouteFormPage'
+import ProductRouteListPage from '../modules/product-routes/ProductRouteListPage'
+import StorageLocationFormPage from '../modules/product-routes/StorageLocationFormPage'
+import StorageLocationListPage from '../modules/product-routes/StorageLocationListPage'
+import ToolingFormPage from '../modules/tooling/ToolingFormPage'
+import ToolingListPage from '../modules/tooling/ToolingListPage'
+import ToolingTypeFormPage from '../modules/tooling/ToolingTypeFormPage'
+import ToolingTypeListPage from '../modules/tooling/ToolingTypeListPage'
 import SettingsPage from '../modules/settings/SettingsPage'
 import ProductionPage from '../modules/production/ProductionPage'
 import PackingPage from '../modules/packing/PackingPage'
@@ -72,6 +82,21 @@ function AuthenticatedShell() {
               <Route path="/work-centres" element={<WorkCentreListPage />} />
               <Route path="/work-centres/new" element={<WorkCentreFormPage />} />
               <Route path="/work-centres/:id/edit" element={<WorkCentreFormPage />} />
+              <Route path="/work-centre-types" element={<WorkCentreTypeListPage />} />
+              <Route path="/work-centre-types/new" element={<WorkCentreTypeFormPage />} />
+              <Route path="/work-centre-types/:id/edit" element={<WorkCentreTypeFormPage />} />
+              <Route path="/product-routes" element={<ProductRouteListPage />} />
+              <Route path="/product-routes/new" element={<ProductRouteFormPage />} />
+              <Route path="/product-routes/:id/edit" element={<ProductRouteFormPage />} />
+              <Route path="/storage-locations" element={<StorageLocationListPage />} />
+              <Route path="/storage-locations/new" element={<StorageLocationFormPage />} />
+              <Route path="/storage-locations/:id/edit" element={<StorageLocationFormPage />} />
+              <Route path="/tooling" element={<ToolingListPage />} />
+              <Route path="/tooling/new" element={<ToolingFormPage />} />
+              <Route path="/tooling/:id/edit" element={<ToolingFormPage />} />
+              <Route path="/tooling-types" element={<ToolingTypeListPage />} />
+              <Route path="/tooling-types/new" element={<ToolingTypeFormPage />} />
+              <Route path="/tooling-types/:id/edit" element={<ToolingTypeFormPage />} />
               <Route path="/production" element={<ProductionPage />} />
               <Route path="/packing" element={<PackingPage />} />
               <Route path="/inventory" element={<InventoryPage />} />

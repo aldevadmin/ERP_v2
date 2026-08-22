@@ -94,6 +94,37 @@ def test_add_a_product_output(organization):
     assert row.sequence == 1
 
 
+def test_add_a_product_output_response_reflects_the_new_row(organization):
+    # Regression test — see the matching test in
+    # test_process_input_definition_api.py: the response used to be built
+    # from a prefetch cache taken before this action's writes, so a freshly
+    # added row was saved but silently missing from the PATCH response.
+    version = _version(organization)
+    plate = _untrimmed_plate(organization)
+    classification = _classification(organization)
+    client = _client_as("Export Coordinator", "coord1b")
+
+    response = client.patch(
+        f"/api/v1/process-definition-versions/{version.id}/outputs/",
+        {
+            "outputs": [
+                {
+                    "item_type": "PRODUCT",
+                    "item": plate.id,
+                    "uom": "Piece",
+                    "classification": classification.id,
+                }
+            ]
+        },
+        format="json",
+    )
+
+    assert response.status_code == 200
+    body_outputs = response.json()["outputs"]
+    assert len(body_outputs) == 1
+    assert body_outputs[0]["item_label"] == "Untrimmed Plate (UNTRIM-10SQ)"
+
+
 def test_add_a_material_output(organization):
     version = _version(organization)
     scrap = _scrap(organization)

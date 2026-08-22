@@ -4,8 +4,11 @@ import { MemoryRouter, useParams } from 'react-router'
 import WorkCentreFormPage from './WorkCentreFormPage'
 import * as workCentresApi from './api'
 import * as processesApi from '../processes/api'
-import type { WorkCentre } from './types'
+import * as toolingApi from '../tooling/api'
+import * as productsApi from '../products/api'
+import type { WorkCentre, WorkCentreTypeListResponse } from './types'
 import type { Process, ProcessListResponse } from '../processes/types'
+import type { WorkCentrePosition } from '../tooling/types'
 
 vi.mock('react-router', async () => {
   const actual = await vi.importActual<typeof import('react-router')>('react-router')
@@ -13,9 +16,13 @@ vi.mock('react-router', async () => {
 })
 vi.mock('./api')
 vi.mock('../processes/api')
+vi.mock('../tooling/api')
+vi.mock('../products/api')
 
 const mockedApi = vi.mocked(workCentresApi)
 const mockedProcessesApi = vi.mocked(processesApi)
+const mockedToolingApi = vi.mocked(toolingApi)
+const mockedProductsApi = vi.mocked(productsApi)
 const mockedUseParams = vi.mocked(useParams)
 
 const pressing: Process = {
@@ -55,6 +62,13 @@ const pressing: Process = {
   parameters: [],
 }
 
+const workCentreTypes: WorkCentreTypeListResponse = {
+  count: 1,
+  next: null,
+  previous: null,
+  results: [{ id: 1, name: 'Machine', is_active: true }],
+}
+
 beforeEach(() => {
   mockedUseParams.mockReturnValue({})
   const processResponse: ProcessListResponse = {
@@ -64,6 +78,13 @@ beforeEach(() => {
     results: [pressing],
   }
   mockedProcessesApi.listProcesses.mockResolvedValue(processResponse)
+  mockedProductsApi.listProducts.mockResolvedValue({
+    count: 0,
+    next: null,
+    previous: null,
+    results: [],
+  })
+  mockedApi.listWorkCentreTypes.mockResolvedValue(workCentreTypes)
 })
 
 afterEach(() => {
@@ -76,10 +97,13 @@ describe('WorkCentreFormPage — create', () => {
       id: 10,
       code: 'WC-NEW',
       name: 'Press 01',
-      type: 'MACHINE',
+      type: 1,
+      type_name: 'Machine',
       is_active: true,
       capabilities: [],
       capabilities_count: 0,
+      positions: [],
+      positions_count: 0,
     }
     mockedApi.createWorkCentre.mockResolvedValue(created)
 
@@ -91,11 +115,14 @@ describe('WorkCentreFormPage — create', () => {
 
     fireEvent.change(screen.getByLabelText('Code'), { target: { value: 'WC-NEW' } })
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Press 01' } })
+    fireEvent.mouseDown(screen.getByLabelText('Type'))
+    const typeOptions = await screen.findAllByText('Machine')
+    fireEvent.click(typeOptions[typeOptions.length - 1])
     fireEvent.click(screen.getByRole('button', { name: 'Save' }))
 
     await waitFor(() =>
       expect(mockedApi.createWorkCentre).toHaveBeenCalledWith(
-        expect.objectContaining({ code: 'WC-NEW', name: 'Press 01', type: 'MACHINE' }),
+        expect.objectContaining({ code: 'WC-NEW', name: 'Press 01', type: 1 }),
       ),
     )
     expect(await screen.findByText('Capable Processes')).toBeInTheDocument()
@@ -108,7 +135,8 @@ describe('WorkCentreFormPage — edit', () => {
     id: 7,
     code: 'WC-7',
     name: 'Press 02',
-    type: 'MACHINE',
+    type: 1,
+    type_name: 'Machine',
     is_active: true,
     capabilities: [
       {
@@ -120,6 +148,8 @@ describe('WorkCentreFormPage — edit', () => {
       },
     ],
     capabilities_count: 1,
+    positions: [],
+    positions_count: 0,
   }
 
   beforeEach(() => {
@@ -196,6 +226,130 @@ describe('WorkCentreFormPage — edit', () => {
 
     await waitFor(() =>
       expect(mockedApi.saveWorkCentreCapabilities).toHaveBeenCalledWith(7, { capabilities: [] }),
+    )
+  })
+
+  it('shows configured positions and adds a new one', async () => {
+    const position: WorkCentrePosition = {
+      id: 1,
+      position_index: 1,
+      display_label: '',
+      is_active: true,
+      installed_tooling: '10" Round Mould',
+      installed_tooling_code: 'MLD-101',
+      default_sku: '10" Round Plate (PLATE-10)',
+      standard_rate: '60',
+    }
+    const withPosition = { ...existing, positions: [position], positions_count: 1 }
+    mockedApi.getWorkCentre.mockResolvedValue(withPosition)
+    mockedApi.saveWorkCentrePositions.mockResolvedValue({
+      ...withPosition,
+      positions: [
+        position,
+        {
+          ...position,
+          id: 2,
+          position_index: 2,
+          installed_tooling: '',
+          installed_tooling_code: '',
+          default_sku: '',
+          standard_rate: '',
+        },
+      ],
+      positions_count: 2,
+    })
+
+    render(
+      <MemoryRouter>
+        <WorkCentreFormPage />
+      </MemoryRouter>,
+    )
+    await screen.findByDisplayValue('Press 02')
+
+    expect(screen.getByText('MLD-101 — 10" Round Mould')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: '+ Add Position' }))
+
+    await waitFor(() =>
+      expect(mockedApi.saveWorkCentrePositions).toHaveBeenCalledWith(7, {
+        positions: [
+          { id: 1, display_label: '', is_active: true },
+          { display_label: '', is_active: true },
+        ],
+      }),
+    )
+  })
+
+  it('opens Change Tooling and confirms a changeover', async () => {
+    const position: WorkCentrePosition = {
+      id: 1,
+      position_index: 1,
+      display_label: '',
+      is_active: true,
+      installed_tooling: '',
+      installed_tooling_code: '',
+      default_sku: '',
+      standard_rate: '',
+    }
+    const withPosition = { ...existing, positions: [position], positions_count: 1 }
+    mockedApi.getWorkCentre.mockResolvedValue(withPosition)
+    mockedToolingApi.listTooling.mockResolvedValue({
+      count: 1,
+      next: null,
+      previous: null,
+      results: [
+        {
+          id: 9,
+          code: 'MLD-101',
+          name: '10" Round Mould',
+          tooling_type: 1,
+          tooling_type_name: 'Mould',
+          cavity_count: 1,
+          default_standard_rate: 60,
+          is_active: true,
+          notes: '',
+          compatibilities: [],
+          compatibilities_count: 0,
+        },
+      ],
+    })
+    mockedToolingApi.createToolingAssignment.mockResolvedValue({
+      id: 1,
+      tooling: 9,
+      tooling_name: '10" Round Mould',
+      tooling_code: 'MLD-101',
+      work_centre_position: 1,
+      work_centre_name: 'Press 02',
+      position_index: 1,
+      default_item: null,
+      default_item_label: '',
+      standard_rate_override: 60,
+      effective_from: '2026-08-20T14:00:00Z',
+      effective_to: null,
+      notes: '',
+    })
+
+    render(
+      <MemoryRouter>
+        <WorkCentreFormPage />
+      </MemoryRouter>,
+    )
+    await screen.findByDisplayValue('Press 02')
+
+    fireEvent.click(screen.getByRole('button', { name: /Change Tooling/ }))
+    const dialog = await screen.findByRole('dialog')
+
+    fireEvent.mouseDown(within(dialog).getByLabelText('New Tooling'))
+    const options = await screen.findAllByText('10" Round Mould (MLD-101)')
+    fireEvent.click(options[options.length - 1])
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Confirm Changeover' }))
+
+    await waitFor(() =>
+      expect(mockedToolingApi.createToolingAssignment).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({ tooling: 9 }),
+      ),
     )
   })
 })

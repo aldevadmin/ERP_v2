@@ -6,14 +6,23 @@ import {
   Dropdown,
   Flex,
   Input,
+  Modal,
   Select,
   Table,
   Typography,
+  message,
 } from 'antd'
 import { MoreOutlined } from '@ant-design/icons'
 import { Link, useNavigate } from 'react-router'
+import { ApiError } from '../../shared/api/http'
 import StatusTag from '../../shared/components/StatusTag'
-import { duplicateProcess, listProcessCategories, listProcesses, updateProcess } from './api'
+import {
+  deleteProcess,
+  duplicateProcess,
+  listProcessCategories,
+  listProcesses,
+  updateProcess,
+} from './api'
 import type { Process, ProcessCategory, WorkCentreRequirement } from './types'
 import { WORK_CENTRE_REQUIREMENT_OPTIONS } from './types'
 
@@ -59,6 +68,24 @@ export default function ProcessListPage() {
   const handleDuplicate = async (process: Process) => {
     const copy = await duplicateProcess(process.id)
     navigate(`/processes/${copy.id}/edit`)
+  }
+
+  const handleDelete = (process: Process) => {
+    Modal.confirm({
+      title: 'Delete this process?',
+      content: "This can't be undone.",
+      okText: 'Delete',
+      okButtonProps: { danger: true },
+      onOk: async () => {
+        try {
+          await deleteProcess(process.id)
+          message.success('Process deleted.')
+          load()
+        } catch (err) {
+          message.error(err instanceof ApiError ? err.message : 'Could not delete this process.')
+        }
+      },
+    })
   }
 
   return (
@@ -158,12 +185,14 @@ export default function ProcessListPage() {
                       ...(record.is_active
                         ? [{ key: 'deactivate', label: 'Deactivate', danger: true }]
                         : []),
+                      { key: 'delete', label: 'Delete', danger: true },
                     ],
                     onClick: ({ key, domEvent }) => {
                       domEvent.stopPropagation()
                       if (key === 'edit') navigate(`/processes/${record.id}/edit`)
                       if (key === 'duplicate') void handleDuplicate(record)
                       if (key === 'deactivate') void handleDeactivate(record)
+                      if (key === 'delete') handleDelete(record)
                     },
                   }}
                 >

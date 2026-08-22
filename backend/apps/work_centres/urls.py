@@ -1,10 +1,11 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
-from .views import WorkCentreViewSet
+from .views import WorkCentreTypeViewSet, WorkCentreViewSet
 
 router = DefaultRouter()
 router.register("work-centres", WorkCentreViewSet, basename="work-centre")
+router.register("work-centre-types", WorkCentreTypeViewSet, basename="work-centre-type")
 
 urlpatterns = [
     path("", include(router.urls)),

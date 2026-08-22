@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Alert, Button, Checkbox, Flex, Table, Typography } from 'antd'
-import { DeleteOutlined, EditOutlined } from '@ant-design/icons'
+import { Alert, Button, Checkbox, Flex, Table, Tooltip, Typography } from 'antd'
+import { DeleteOutlined, EditOutlined, InfoCircleOutlined } from '@ant-design/icons'
 import { ApiError } from '../../shared/api/http'
 import ParameterEditorModal from './ParameterEditorModal'
 import { saveProcessParameters, saveProcessPerformance } from './api'
@@ -177,7 +177,10 @@ export default function Step6ParametersForm({
               void handlePerformanceChange('reserve_machine_derived_rate', e.target.checked)
             }
           >
-            Reserve machine-derived rate for future integration
+            Reserve machine-derived rate for future integration{' '}
+            <Tooltip title="Keeps this process ready to receive its output rate automatically from a connected machine later, instead of only manual or configured rates.">
+              <InfoCircleOutlined style={{ color: '#8c8c8c', fontSize: 13 }} />
+            </Tooltip>
           </Checkbox>
         </Flex>
       </div>

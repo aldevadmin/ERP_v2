@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router'
-import { Alert, Button, Card, Form, Input, Select, Switch, Typography } from 'antd'
+import { Link, useNavigate, useParams } from 'react-router'
+import { Alert, Breadcrumb, Button, Card, Form, Input, Select, Switch, Typography } from 'antd'
 import { ApiError } from '../../shared/api/http'
 import { createMaterial, getMaterial, updateMaterial } from './api'
 import { MATERIAL_CATEGORY_OPTIONS } from './types'
@@ -42,9 +42,20 @@ export default function MaterialFormPage() {
     }
   }
 
+  const pageTitle = isEdit ? 'Edit Material' : 'New Material'
+
   return (
-    <Card style={{ maxWidth: 640, margin: '0 auto' }}>
-      <Title level={4}>{isEdit ? 'Edit Material' : 'New Material'}</Title>
+    <div>
+      <Breadcrumb
+        style={{ marginBottom: 12 }}
+        items={[
+          { title: <Link to="/settings">Settings</Link> },
+          { title: <Link to="/materials">Materials</Link> },
+          { title: pageTitle },
+        ]}
+      />
+      <Card style={{ maxWidth: 640, margin: '0 auto' }}>
+        <Title level={4}>{pageTitle}</Title>
       {error && <Alert type="error" title={error} showIcon style={{ marginBottom: 16 }} />}
       <Form<MaterialFormValues>
         form={form}
@@ -90,6 +101,7 @@ export default function MaterialFormPage() {
           </Button>
         </Form.Item>
       </Form>
-    </Card>
+      </Card>
+    </div>
   )
 }

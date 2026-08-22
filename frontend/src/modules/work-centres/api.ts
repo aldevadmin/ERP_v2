@@ -1,16 +1,61 @@
 import { apiFetch } from '../../shared/api/http'
+import type { WorkCentrePositionFormValues } from '../tooling/types'
 import type {
   WorkCentre,
   WorkCentreCapabilityFormValues,
   WorkCentreFormValues,
   WorkCentreListResponse,
   WorkCentreType,
+  WorkCentreTypeFormValues,
+  WorkCentreTypeListResponse,
 } from './types'
 
 export interface ListWorkCentresParams {
   search?: string
   isActive?: boolean
-  type?: WorkCentreType
+  type?: number
+}
+
+export interface ListWorkCentreTypesParams {
+  search?: string
+  isActive?: boolean
+}
+
+export function listWorkCentreTypes(
+  params: ListWorkCentreTypesParams = {},
+): Promise<WorkCentreTypeListResponse> {
+  const query = new URLSearchParams()
+  if (params.search) query.set('search', params.search)
+  if (params.isActive !== undefined) query.set('is_active', String(params.isActive))
+  const queryString = query.toString()
+  return apiFetch<WorkCentreTypeListResponse>(
+    `/work-centre-types/${queryString ? `?${queryString}` : ''}`,
+  )
+}
+
+export function getWorkCentreType(id: number): Promise<WorkCentreType> {
+  return apiFetch<WorkCentreType>(`/work-centre-types/${id}/`)
+}
+
+export function createWorkCentreType(values: WorkCentreTypeFormValues): Promise<WorkCentreType> {
+  return apiFetch<WorkCentreType>('/work-centre-types/', {
+    method: 'POST',
+    body: JSON.stringify(values),
+  })
+}
+
+export function updateWorkCentreType(
+  id: number,
+  values: WorkCentreTypeFormValues,
+): Promise<WorkCentreType> {
+  return apiFetch<WorkCentreType>(`/work-centre-types/${id}/`, {
+    method: 'PATCH',
+    body: JSON.stringify(values),
+  })
+}
+
+export function deleteWorkCentreType(id: number): Promise<void> {
+  return apiFetch<void>(`/work-centre-types/${id}/`, { method: 'DELETE' })
 }
 
 export function listWorkCentres(
@@ -19,7 +64,7 @@ export function listWorkCentres(
   const query = new URLSearchParams()
   if (params.search) query.set('search', params.search)
   if (params.isActive !== undefined) query.set('is_active', String(params.isActive))
-  if (params.type) query.set('type', params.type)
+  if (params.type !== undefined) query.set('type', String(params.type))
   const queryString = query.toString()
   return apiFetch<WorkCentreListResponse>(`/work-centres/${queryString ? `?${queryString}` : ''}`)
 }
@@ -42,6 +87,10 @@ export function updateWorkCentre(
   })
 }
 
+export function deleteWorkCentre(id: number): Promise<void> {
+  return apiFetch<void>(`/work-centres/${id}/`, { method: 'DELETE' })
+}
+
 export interface SaveWorkCentreCapabilitiesPayload {
   capabilities: WorkCentreCapabilityFormValues[]
 }
@@ -52,6 +101,20 @@ export function saveWorkCentreCapabilities(
 ): Promise<WorkCentre> {
   return apiFetch<WorkCentre>(`/work-centres/${workCentreId}/capabilities/`, {
     method: 'PATCH',
+    body: JSON.stringify(payload),
+  })
+}
+
+export interface SaveWorkCentrePositionsPayload {
+  positions: WorkCentrePositionFormValues[]
+}
+
+export function saveWorkCentrePositions(
+  workCentreId: number,
+  payload: SaveWorkCentrePositionsPayload,
+): Promise<WorkCentre> {
+  return apiFetch<WorkCentre>(`/work-centres/${workCentreId}/positions/`, {
+    method: 'PUT',
     body: JSON.stringify(payload),
   })
 }

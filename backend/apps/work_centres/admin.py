@@ -1,12 +1,19 @@
 from django.contrib import admin
 
-from .models import WorkCentre, WorkCentreProcessCapability
+from .models import WorkCentre, WorkCentreProcessCapability, WorkCentreType
 
 
 class WorkCentreProcessCapabilityInline(admin.TabularInline):
     model = WorkCentreProcessCapability
     extra = 0
     autocomplete_fields = ("process_definition",)
+
+
+@admin.register(WorkCentreType)
+class WorkCentreTypeAdmin(admin.ModelAdmin):
+    list_display = ("name", "is_active")
+    list_filter = ("is_active",)
+    search_fields = ("name",)
 
 
 @admin.register(WorkCentre)

@@ -8,6 +8,7 @@ from rest_framework.permissions import BasePermission
 from rest_framework.request import Request
 from rest_framework.response import Response
 
+from apps.core.mixins import ProtectedDestroyMixin
 from apps.materials.models import Material
 from apps.products.models import Product
 
@@ -33,14 +34,17 @@ from .serializers import (
 
 
 class ProcessCategoryViewSet(
+    ProtectedDestroyMixin,
     mixins.ListModelMixin,
     mixins.CreateModelMixin,
     mixins.RetrieveModelMixin,
     mixins.UpdateModelMixin,
+    mixins.DestroyModelMixin,
     viewsets.GenericViewSet,
 ):
-    """No delete route on purpose — `is_active` is the deactivation
-    mechanism, same as `apps.materials.views.MaterialViewSet`.
+    """`is_active` is the usual deactivation mechanism; `destroy` is also
+    available for outright removal, blocked with a friendly error (via
+    `ProtectedDestroyMixin`) if any Process still uses this category.
     """
 
     queryset = ProcessCategory.objects.all()
@@ -49,7 +53,7 @@ class ProcessCategoryViewSet(
     search_fields = ["name"]
 
     def get_permissions(self) -> list[BasePermission]:
-        if self.action in ("create", "update", "partial_update"):
+        if self.action in ("create", "update", "partial_update", "destroy"):
             return [CanManageProcesses()]
         return [IsInternalStaff()]
 
@@ -64,14 +68,17 @@ class ProcessCategoryViewSet(
 
 
 class OutputClassificationViewSet(
+    ProtectedDestroyMixin,
     mixins.ListModelMixin,
     mixins.CreateModelMixin,
     mixins.RetrieveModelMixin,
     mixins.UpdateModelMixin,
+    mixins.DestroyModelMixin,
     viewsets.GenericViewSet,
 ):
-    """No delete route on purpose — `is_active` is the deactivation
-    mechanism, same as `ProcessCategoryViewSet`.
+    """`is_active` is the usual deactivation mechanism; `destroy` is also
+    available, blocked with a friendly error if any Process output still
+    uses this classification.
     """
 
     queryset = OutputClassification.objects.all()
@@ -80,7 +87,7 @@ class OutputClassificationViewSet(
     search_fields = ["name"]
 
     def get_permissions(self) -> list[BasePermission]:
-        if self.action in ("create", "update", "partial_update"):
+        if self.action in ("create", "update", "partial_update", "destroy"):
             return [CanManageProcesses()]
         return [IsInternalStaff()]
 
@@ -95,14 +102,18 @@ class OutputClassificationViewSet(
 
 
 class ProcessDefinitionViewSet(
+    ProtectedDestroyMixin,
     mixins.ListModelMixin,
     mixins.CreateModelMixin,
     mixins.RetrieveModelMixin,
     mixins.UpdateModelMixin,
+    mixins.DestroyModelMixin,
     viewsets.GenericViewSet,
 ):
-    """No delete route on purpose — `is_active` is the deactivation
-    mechanism, same as `apps.materials.views.MaterialViewSet`. Creating a
+    """`is_active` is the usual deactivation mechanism; `destroy` is also
+    available for outright removal — blocked with a friendly error (naming
+    the Product Route(s) involved) if this process is still used in a
+    route, a work centre capability, or a tooling compatibility. Creating a
     definition also creates its version 1 (`DRAFT`) transactionally — see
     `ProcessDefinitionSerializer.create`.
     """
@@ -121,7 +132,7 @@ class ProcessDefinitionViewSet(
     search_fields = ["name", "code"]
 
     def get_permissions(self) -> list[BasePermission]:
-        if self.action in ("create", "update", "partial_update", "duplicate"):
+        if self.action in ("create", "update", "partial_update", "duplicate", "destroy"):
             return [CanManageProcesses()]
         return [IsInternalStaff()]
 
@@ -327,6 +338,11 @@ class ProcessDefinitionVersionViewSet(
                 else:
                     ProcessInputDefinition.objects.create(process_version=version, **defaults)
 
+        # `get_object()` prefetched `inputs` before the writes above, and
+        # Django doesn't auto-invalidate that cache — without this, the
+        # response would still show the pre-write row set even though the
+        # DB was updated correctly.
+        version.refresh_from_db()
         return Response(self.get_serializer(version).data)
 
     @action(detail=True, methods=["patch"])
@@ -375,6 +391,9 @@ class ProcessDefinitionVersionViewSet(
                 else:
                     ProcessOutputDefinition.objects.create(process_version=version, **defaults)
 
+        # See the matching comment in `inputs` above — same stale prefetch
+        # cache issue.
+        version.refresh_from_db()
         return Response(self.get_serializer(version).data)
 
     @action(detail=True, methods=["patch"])
@@ -421,6 +440,9 @@ class ProcessDefinitionVersionViewSet(
                 else:
                     ProcessParameterDefinition.objects.create(process_version=version, **defaults)
 
+        # See the matching comment in `inputs` above — same stale prefetch
+        # cache issue.
+        version.refresh_from_db()
         return Response(self.get_serializer(version).data)
 
     @action(detail=True, methods=["post"])

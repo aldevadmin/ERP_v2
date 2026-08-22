@@ -11,7 +11,7 @@ from apps.processes.models import (
     ProcessDefinitionVersion,
     ProcessOutputDefinition,
 )
-from apps.work_centres.models import WorkCentre, WorkCentreProcessCapability
+from apps.work_centres.models import WorkCentre, WorkCentreProcessCapability, WorkCentreType
 
 pytestmark = pytest.mark.django_db
 
@@ -187,8 +187,11 @@ def test_activate_warns_when_no_work_centre_capability_mapped(organization):
 def test_activate_has_no_warning_when_work_centre_capability_mapped(organization):
     version = _version(organization)
     _add_output(version)
+    work_centre_type, _ = WorkCentreType.objects.get_or_create(
+        name="Machine", defaults={"organization": organization}
+    )
     work_centre = WorkCentre.objects.create(
-        code="WC-1", name="Press 01", type=WorkCentre.Type.MACHINE, organization=organization
+        code="WC-1", name="Press 01", type=work_centre_type, organization=organization
     )
     WorkCentreProcessCapability.objects.create(
         work_centre=work_centre,

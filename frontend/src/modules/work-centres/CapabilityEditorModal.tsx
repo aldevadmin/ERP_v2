@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { InfoCircleOutlined } from '@ant-design/icons'
 import { Form, InputNumber, Modal, Select } from 'antd'
 import { listProcesses } from '../processes/api'
 import type { Process } from '../processes/types'
@@ -54,6 +55,7 @@ export default function CapabilityEditorModal({
       confirmLoading={submitting}
       okText={capability ? 'Save' : 'Add'}
       cancelText="Cancel"
+      mask={{ closable: false }}
       destroyOnHidden
     >
       <Form<WorkCentreCapabilityFormValues> form={form} layout="vertical" onFinish={handleSubmit}>
@@ -69,7 +71,15 @@ export default function CapabilityEditorModal({
             placeholder="Search and select process"
           />
         </Form.Item>
-        <Form.Item label="Standard Rate (units / hour, optional)" name="standard_rate">
+        <Form.Item
+          label="Standard Rate (units / hour, optional)"
+          name="standard_rate"
+          tooltip={{
+            title:
+              'Expected output per hour when this work centre runs this process. Used for planning when no tooling-specific rate is set for the position.',
+            icon: <InfoCircleOutlined />,
+          }}
+        >
           <InputNumber style={{ width: '100%' }} min={0} />
         </Form.Item>
       </Form>

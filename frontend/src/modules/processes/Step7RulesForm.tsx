@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Alert, Button, Checkbox, Collapse, Flex, InputNumber, Radio, Typography } from 'antd'
+import { Alert, Button, Checkbox, Collapse, Flex, InputNumber, Radio, Tooltip, Typography } from 'antd'
+import { InfoCircleOutlined } from '@ant-design/icons'
+import LabelWithHint from '../../shared/components/LabelWithHint'
 import { ApiError } from '../../shared/api/http'
 import { saveProcessRules } from './api'
 import {
@@ -101,8 +103,11 @@ export default function Step7RulesForm({
       {error && <Alert type="error" title={error} showIcon style={{ marginBottom: 16 }} />}
 
       <div style={{ marginBottom: 24 }}>
-        <Text type="secondary" style={{ display: 'block', marginBottom: 8, fontSize: 12 }}>
+        <Text type="secondary" style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, fontSize: 12 }}>
           TRANSACTION FREQUENCY
+          <Tooltip title="How often a production record gets created for this process — e.g. once per shift, once per batch, or driven by manual entries.">
+            <InfoCircleOutlined style={{ color: '#8c8c8c', fontSize: 13 }} />
+          </Tooltip>
         </Text>
         <Radio.Group
           value={transactionFrequency || undefined}
@@ -195,9 +200,10 @@ export default function Step7RulesForm({
             children: (
               <>
                 <div style={{ marginBottom: 24 }}>
-                  <Text strong style={{ display: 'block', marginBottom: 8 }}>
-                    Input Consumption
-                  </Text>
+                  <LabelWithHint
+                    text="Input Consumption"
+                    hint="How raw material and input quantities get recorded when this process runs — entered manually, calculated by formula, or reserved from a future inventory integration."
+                  />
                   <Radio.Group
                     value={inputConsumptionMode}
                     onChange={(e) =>
@@ -263,7 +269,10 @@ export default function Step7RulesForm({
                       void persist({ allow_correction_with_audit_trail: e.target.checked })
                     }
                   >
-                    Allow correction with audit trail
+                    Allow correction with audit trail{' '}
+                    <Tooltip title="Lets a recorded transaction for this process be corrected after the fact, keeping a record of what changed and who changed it.">
+                      <InfoCircleOutlined style={{ color: '#8c8c8c', fontSize: 13 }} />
+                    </Tooltip>
                   </Checkbox>
                   <Checkbox
                     checked={allowDestructiveDelete}
@@ -271,7 +280,10 @@ export default function Step7RulesForm({
                       void persist({ allow_destructive_delete: e.target.checked })
                     }
                   >
-                    Allow destructive delete
+                    Allow destructive delete{' '}
+                    <Tooltip title="Lets a recorded transaction for this process be permanently deleted rather than only corrected. Leave off to preserve full history.">
+                      <InfoCircleOutlined style={{ color: '#8c8c8c', fontSize: 13 }} />
+                    </Tooltip>
                   </Checkbox>
                   <Checkbox
                     checked={permitMachineGeneratedSource}
@@ -279,7 +291,10 @@ export default function Step7RulesForm({
                       void persist({ permit_machine_generated_source: e.target.checked })
                     }
                   >
-                    Permit machine-generated execution / output source
+                    Permit machine-generated execution / output source{' '}
+                    <Tooltip title="Allows this process's records to be created automatically by a connected machine, not only entered by an operator.">
+                      <InfoCircleOutlined style={{ color: '#8c8c8c', fontSize: 13 }} />
+                    </Tooltip>
                   </Checkbox>
                 </Flex>
               </>

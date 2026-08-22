@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from rest_framework.test import APIClient
 
-from apps.processes.models import ProcessCategory
+from apps.processes.models import ProcessCategory, ProcessDefinition, ProcessDefinitionVersion
 
 pytestmark = pytest.mark.django_db
 
@@ -79,10 +79,30 @@ def test_filter_by_is_active(organization):
     assert names == ["Inactive Cat"]
 
 
-def test_no_delete_route(organization):
+def test_delete_unused_category_succeeds(organization):
     category = ProcessCategory.objects.create(name="Movement", organization=organization)
     client = _client_as("Manager/Admin", "mgr2")
 
     response = client.delete(f"/api/v1/process-categories/{category.id}/")
 
-    assert response.status_code == 405
+    assert response.status_code == 204
+    assert not ProcessCategory.objects.filter(id=category.id).exists()
+
+
+def test_delete_category_used_by_process_is_blocked(organization):
+    category = ProcessCategory.objects.create(name="Movement", organization=organization)
+    definition = ProcessDefinition.objects.create(
+        name="Washing", code="WASH", organization=organization
+    )
+    ProcessDefinitionVersion.objects.create(
+        process_definition=definition,
+        version_number=1,
+        category=category,
+        organization=organization,
+    )
+    client = _client_as("Manager/Admin", "mgr3")
+
+    response = client.delete(f"/api/v1/process-categories/{category.id}/")
+
+    assert response.status_code == 400
+    assert ProcessCategory.objects.filter(id=category.id).exists()

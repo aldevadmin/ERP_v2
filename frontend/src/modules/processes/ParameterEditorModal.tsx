@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { InfoCircleOutlined } from '@ant-design/icons'
 import { Form, Input, Modal, Select, Switch } from 'antd'
 import { PARAMETER_CAPTURE_AT_OPTIONS, PARAMETER_DATA_TYPE_OPTIONS } from './types'
 import type { ProcessParameter, ProcessParameterFormValues } from './types'
@@ -70,6 +71,7 @@ export default function ParameterEditorModal({
       confirmLoading={submitting}
       okText={parameter ? 'Save' : 'Add'}
       cancelText="Cancel"
+      mask={{ closable: false }}
       destroyOnHidden
     >
       <Form<ProcessParameterFormValues> form={form} layout="vertical" onFinish={handleSubmit}>
@@ -92,6 +94,10 @@ export default function ParameterEditorModal({
           label="Data Type"
           name="data_type"
           rules={[{ required: true, message: 'Select a data type.' }]}
+          tooltip={{
+            title: 'The kind of value this parameter captures — determines how it is entered and validated.',
+            icon: <InfoCircleOutlined />,
+          }}
         >
           <Select options={PARAMETER_DATA_TYPE_OPTIONS} />
         </Form.Item>
@@ -102,13 +108,25 @@ export default function ParameterEditorModal({
           label="Capture At"
           name="capture_at"
           rules={[{ required: true, message: 'Select when this is captured.' }]}
+          tooltip={{
+            title: 'When during the process step this value gets recorded — at Setup, Start, During, or Completion.',
+            icon: <InfoCircleOutlined />,
+          }}
         >
           <Select options={PARAMETER_CAPTURE_AT_OPTIONS} />
         </Form.Item>
         <Form.Item label="Required" name="is_required" valuePropName="checked">
           <Switch />
         </Form.Item>
-        <Form.Item label="Default Value / Allowed Options" name="default_value">
+        <Form.Item
+          label="Default Value / Allowed Options"
+          name="default_value"
+          tooltip={{
+            title:
+              'For most types, a default value pre-filled when this parameter is captured. For Select, list the allowed choices separated by commas.',
+            icon: <InfoCircleOutlined />,
+          }}
+        >
           <Input.TextArea rows={2} placeholder="e.g. a default, or comma-separated options" />
         </Form.Item>
       </Form>

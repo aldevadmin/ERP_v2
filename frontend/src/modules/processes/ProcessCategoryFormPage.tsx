@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router'
-import { Alert, Button, Card, Form, Input, Switch, Typography } from 'antd'
+import { Link, useNavigate, useParams } from 'react-router'
+import { Alert, Breadcrumb, Button, Card, Form, Input, Switch, Typography } from 'antd'
 import { ApiError } from '../../shared/api/http'
 import { createProcessCategory, getProcessCategory, updateProcessCategory } from './api'
 import type { ProcessCategoryFormValues } from './types'
@@ -41,9 +41,20 @@ export default function ProcessCategoryFormPage() {
     }
   }
 
+  const pageTitle = isEdit ? 'Edit Process Category' : 'New Process Category'
+
   return (
-    <Card style={{ maxWidth: 640, margin: '0 auto' }}>
-      <Title level={4}>{isEdit ? 'Edit Process Category' : 'New Process Category'}</Title>
+    <div>
+      <Breadcrumb
+        style={{ marginBottom: 12 }}
+        items={[
+          { title: <Link to="/settings">Settings</Link> },
+          { title: <Link to="/process-categories">Process Categories</Link> },
+          { title: pageTitle },
+        ]}
+      />
+      <Card style={{ maxWidth: 640, margin: '0 auto' }}>
+        <Title level={4}>{pageTitle}</Title>
       {error && <Alert type="error" title={error} showIcon style={{ marginBottom: 16 }} />}
       <Form<ProcessCategoryFormValues>
         form={form}
@@ -68,6 +79,7 @@ export default function ProcessCategoryFormPage() {
           </Button>
         </Form.Item>
       </Form>
-    </Card>
+      </Card>
+    </div>
   )
 }
