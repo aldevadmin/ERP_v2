@@ -16,8 +16,8 @@ import {
 } from 'antd'
 import dayjs from 'dayjs'
 import { ApiError } from '../../shared/api/http'
-import { listProducts } from '../products/api'
-import type { Product } from '../products/types'
+import { listItems } from '../items/api'
+import type { Item } from '../items/types'
 import RouteOutputRoutingForm from './RouteOutputRoutingForm'
 import RouteReview from './RouteReview'
 import RouteStepsForm from './RouteStepsForm'
@@ -29,7 +29,7 @@ const { Title, Text } = Typography
 
 interface BasicsFormValues {
   name: string
-  product: number
+  item: number
   is_default: boolean
   effective_from: dayjs.Dayjs | null
 }
@@ -44,10 +44,12 @@ export default function ProductRouteFormPage() {
   const [loading, setLoading] = useState(Boolean(id))
   const [submitting, setSubmitting] = useState<'draft' | 'continue' | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [products, setProducts] = useState<Product[]>([])
+  const [items, setItems] = useState<Item[]>([])
 
   useEffect(() => {
-    listProducts({ isActive: true }).then((response) => setProducts(response.results))
+    listItems({ isActive: true }).then((response) =>
+      setItems(response.results.filter((i) => i.item_class === 'WIP' || i.item_class === 'FINISHED_GOOD')),
+    )
   }, [])
 
   useEffect(() => {
@@ -57,7 +59,7 @@ export default function ProductRouteFormPage() {
         setRoute(loaded)
         form.setFieldsValue({
           name: loaded.name,
-          product: loaded.product,
+          item: loaded.item,
           is_default: loaded.is_default,
           effective_from: loaded.effective_from ? dayjs(loaded.effective_from) : null,
         })
@@ -87,7 +89,7 @@ export default function ProductRouteFormPage() {
       } else {
         const payload: RouteBasicsValues = {
           name: values.name,
-          product: values.product,
+          item: values.item,
           is_default: values.is_default,
           effective_from: values.effective_from ? values.effective_from.format('YYYY-MM-DD') : null,
         }
@@ -193,15 +195,15 @@ export default function ProductRouteFormPage() {
                   <Input size="large" placeholder="e.g. Standard Plate Production" />
                 </Form.Item>
                 <Form.Item
-                  label="Which product / SKU does this route apply to?"
-                  name="product"
-                  rules={[{ required: true, message: 'Select a product.' }]}
+                  label="Which item / SKU does this route apply to?"
+                  name="item"
+                  rules={[{ required: true, message: 'Select an item.' }]}
                 >
                   <Radio.Group disabled={isEdit}>
                     <Flex vertical gap={8}>
-                      {products.map((product) => (
-                        <Radio key={product.id} value={product.id}>
-                          {product.name} ({product.sku_code})
+                      {items.map((item) => (
+                        <Radio key={item.id} value={item.id}>
+                          {item.name} ({item.code})
                         </Radio>
                       ))}
                     </Flex>
@@ -240,7 +242,7 @@ export default function ProductRouteFormPage() {
           {currentStep === 'steps' &&
             (route ? (
               <RouteStepsForm
-                productName={route.product_name}
+                productName={route.item_name}
                 versionId={route.version_id}
                 nodes={route.nodes}
                 onSaved={(version) =>

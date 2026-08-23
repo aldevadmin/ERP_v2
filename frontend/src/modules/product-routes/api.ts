@@ -69,8 +69,8 @@ interface RawProcessRouteVersion {
   is_default: boolean
   effective_from: string | null
   effective_to: string | null
-  product: number
-  product_name: string
+  item: number
+  item_name: string
   route_name: string
   nodes: RouteNode[]
   edges: RouteEdge[]
@@ -102,8 +102,8 @@ function flattenRoute(raw: RawProcessRoute): ProcessRoute {
     is_default: version?.is_default ?? false,
     effective_from: version?.effective_from ?? null,
     effective_to: version?.effective_to ?? null,
-    product: version?.product ?? 0,
-    product_name: version?.product_name ?? '',
+    item: version?.item ?? 0,
+    item_name: version?.item_name ?? '',
     nodes: version?.nodes ?? [],
     edges: version?.edges ?? [],
   }
@@ -111,7 +111,7 @@ function flattenRoute(raw: RawProcessRoute): ProcessRoute {
 
 export interface ListProcessRoutesParams {
   search?: string
-  product?: number
+  item?: number
   isActive?: boolean
 }
 
@@ -120,7 +120,7 @@ export function listProcessRoutes(
 ): Promise<ProcessRouteListResponse> {
   const query = new URLSearchParams()
   if (params.search) query.set('search', params.search)
-  if (params.product !== undefined) query.set('product', String(params.product))
+  if (params.item !== undefined) query.set('item', String(params.item))
   if (params.isActive !== undefined) query.set('is_active', String(params.isActive))
   const queryString = query.toString()
   return apiFetch<RawProcessRouteListResponse>(

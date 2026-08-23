@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from rest_framework.test import APIClient
 
-from apps.materials.models import Material
+from apps.items.models import Item
 from apps.processes.models import (
     OutputClassification,
     ProcessCategory,
@@ -44,9 +44,12 @@ def _version(organization, **overrides) -> ProcessDefinitionVersion:
     )
 
 
-def _scrap(organization) -> Material:
-    return Material.objects.create(
-        code="SCRAP", name="Wood Scrap", unit="Kg", organization=organization
+def _scrap(organization) -> Item:
+    return Item.objects.create(
+        code="SCRAP",
+        name="Wood Scrap",
+        item_class=Item.ItemClass.SCRAP_BY_PRODUCT,
+        organization=organization,
     )
 
 
@@ -58,7 +61,7 @@ def _add_output(version: ProcessDefinitionVersion) -> None:
         process_version=version,
         sequence=1,
         item_type=ProcessOutputDefinition.ItemType.MATERIAL,
-        material=_scrap(version.organization),
+        item=_scrap(version.organization),
         uom="Kg",
         classification=classification,
         organization=version.organization,

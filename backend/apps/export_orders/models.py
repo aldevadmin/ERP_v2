@@ -5,7 +5,7 @@ from django.db import models
 from django.db.models import F, Max, Sum
 
 from apps.core.models import BaseModel
-from apps.products.models import Product
+from apps.items.models import Item
 
 
 class ExportOrder(BaseModel):
@@ -178,14 +178,13 @@ class ExportOrderLine(BaseModel):
     """One SKU line of a customer's PO, as captured against an ExportOrder.
 
     `pieces_per_pouch`/`pouches_per_carton`/`has_retail_sticker` are a
-    snapshot copied from `products.CustomerSKUMapping` at the moment
-    `product` is (re-)set — a live FK would let a later master-data edit
-    silently rewrite an already-captured line (see CustomerSKUMapping's own
-    docstring and docs/modules/export-orders/business-rules.md §2).
-    Everything derived from these values (pieces per carton, required
+    snapshot resolved from `customer_mappings.CustomerProductMapping`'s
+    published version at the moment `item` is (re-)set — a live FK would
+    let a later master-data edit silently rewrite an already-captured line
+    (see docs/modules/export-orders/business-rules.md §2). Everything
+    derived from these values (pieces per carton, required
     pieces/pouches/cartons/stickers) is a plain Python property, never
-    stored, so it can't drift out of sync with its inputs — same pattern as
-    `products.CustomerSKUMapping.pieces_per_carton`.
+    stored, so it can't drift out of sync with its inputs.
     """
 
     class Unit(models.TextChoices):
@@ -198,8 +197,8 @@ class ExportOrderLine(BaseModel):
 
     customer_sku_code = models.CharField(max_length=64)
     customer_description = models.CharField(max_length=255, blank=True)
-    product = models.ForeignKey(
-        "products.Product",
+    item = models.ForeignKey(
+        "items.Item",
         null=True,
         blank=True,
         on_delete=models.PROTECT,
@@ -213,6 +212,19 @@ class ExportOrderLine(BaseModel):
     pieces_per_pouch = models.PositiveIntegerField(null=True, blank=True, editable=False)
     pouches_per_carton = models.PositiveIntegerField(null=True, blank=True, editable=False)
     has_retail_sticker = models.BooleanField(null=True, blank=True, editable=False)
+    # Which published mapping version the snapshot above was resolved from
+    # — an audit trail, not a live reference: this line's own snapshot
+    # fields (not this FK) are what packing math and weight calculations
+    # read. PROTECT so a mapping version referenced by historical order
+    # lines can never be deleted out from under them.
+    source_mapping_version = models.ForeignKey(
+        "customer_mappings.CustomerProductMappingVersion",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        editable=False,
+        related_name="export_order_lines",
+    )
 
     # Internal bookkeeping for the Loading workflow's stock-return
     # reconciliation only — never exposed via the API. See
@@ -353,7 +365,7 @@ class ExportOrderLine(BaseModel):
         return max(required - self.total_actual_loaded_cartons, 0)
 
     def sync_stock_return(self) -> None:
-        """Packed-but-not-loaded cartons return to `Product.available_qty`
+        """Packed-but-not-loaded cartons return to `Item.available_qty`
         (business-rules.md §7). Applied as a delta against
         `stock_returned_cartons` (this line's own prior contribution), not
         a wholesale re-add, so it stays correct no matter how many times a
@@ -361,14 +373,12 @@ class ExportOrderLine(BaseModel):
         split across — each recomputation only ever nudges `available_qty`
         by what actually changed.
         """
-        if self.product_id is None:
+        if self.item_id is None:
             return
         new_surplus = max(self.packed_cartons - self.total_actual_loaded_cartons, 0)
         delta = new_surplus - self.stock_returned_cartons
         if delta != 0:
-            Product.objects.filter(pk=self.product_id).update(
-                available_qty=F("available_qty") + delta
-            )
+            Item.objects.filter(pk=self.item_id).update(available_qty=F("available_qty") + delta)
         self.stock_returned_cartons = new_surplus
         self.save(update_fields=["stock_returned_cartons"])
 
@@ -710,9 +720,9 @@ class PackingMaterialRequirement(BaseModel):
     behind any of them (same reasoning as `SKUSupplyPlan.quantity_from_stock`).
 
     `required_qty` is a computed property for every material type except
-    `BOX_LABEL`, which has no formula anywhere in `products.CustomerSKUMapping`
-    — that's the one deliberate exception to "derived, not stored," backed
-    by `manual_required_qty`.
+    `BOX_LABEL`, which has no formula anywhere in the Customer Product
+    Mapping data — that's the one deliberate exception to "derived, not
+    stored," backed by `manual_required_qty`.
     """
 
     class MaterialType(models.TextChoices):
@@ -959,8 +969,7 @@ class ShipmentLine(BaseModel):
         pieces_per_carton = line.pieces_per_carton or 0
         pieces_per_pouch = line.pieces_per_pouch or 0
         return (
-            self.actual_loaded_cartons * pieces_per_carton
-            + self.loaded_pouches * pieces_per_pouch
+            self.actual_loaded_cartons * pieces_per_carton + self.loaded_pouches * pieces_per_pouch
         )
 
     @property

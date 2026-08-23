@@ -1,17 +1,22 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { MemoryRouter } from 'react-router'
 import { ApiError } from '../../shared/api/http'
 import ExportOrderLinesTab from './ExportOrderLinesTab'
 import * as exportOrdersApi from './api'
-import * as productsApi from '../products/api'
-import type { CustomerSKUMappingListResponse, ProductListResponse } from '../products/types'
+import * as customerMappingsApi from '../customer-mappings/api'
+import * as itemsApi from '../items/api'
+import type { CustomerProductMappingListResponse } from '../customer-mappings/types'
+import type { ItemListResponse } from '../items/types'
 import type { ExportOrderLine, PackingMaterialRequirementSummary } from './types'
 
 vi.mock('./api')
-vi.mock('../products/api')
+vi.mock('../customer-mappings/api')
+vi.mock('../items/api')
 
 const mockedApi = vi.mocked(exportOrdersApi)
-const mockedProductsApi = vi.mocked(productsApi)
+const mockedCustomerMappingsApi = vi.mocked(customerMappingsApi)
+const mockedItemsApi = vi.mocked(itemsApi)
 
 afterEach(() => {
   vi.clearAllMocks()
@@ -22,15 +27,16 @@ const existingLine: ExportOrderLine = {
   line_number: 1,
   customer_sku_code: 'CUST-SKU-1',
   customer_description: '10 Inch Plate',
-  product: 1,
-  product_sku_code: 'SKU-1',
-  product_name: 'Areca Plate',
+  item: 1,
+  item_code: 'SKU-1',
+  item_name: 'Areca Plate',
   original_customer_quantity: 100,
   original_customer_unit: 'PIECE',
   pieces_per_pouch: 10,
   pouches_per_carton: 5,
   pieces_per_carton: 50,
   has_retail_sticker: null,
+  source_mapping_version: null,
   required_pieces: 100,
   required_pouches: 10,
   required_cartons: 2,
@@ -39,7 +45,7 @@ const existingLine: ExportOrderLine = {
   updated_at: '2026-01-15T00:00:00Z',
 }
 
-const skuMappingsResponse: CustomerSKUMappingListResponse = {
+const skuMappingsResponse: CustomerProductMappingListResponse = {
   count: 1,
   next: null,
   previous: null,
@@ -48,55 +54,72 @@ const skuMappingsResponse: CustomerSKUMappingListResponse = {
       id: 1,
       customer: 1,
       customer_name: 'Acme Exports',
-      customer_sku_code: 'CUST-SKU-1',
-      customer_description: '10 Inch Plate',
-      product: 1,
-      product_sku_code: 'SKU-1',
-      product_name: 'Areca Plate',
-      pieces_per_pouch: 10,
-      pouches_per_carton: 5,
-      pieces_per_carton: 50,
-      pouch_height_inches: null,
-      carton_ply_rating: '',
-      carton_length_mm: null,
-      carton_breadth_mm: null,
-      carton_height_mm: null,
-      carton_net_weight_kg: null,
-      carton_gross_weight_kg: null,
-      pouch_thickness_microns: null,
-      pouch_length_mm: null,
-      pouch_breadth_mm: null,
-      pouch_height_mm: null,
-      has_retail_sticker: null,
-      retail_sticker_comments: '',
-      has_silica_gel: null,
-      other_packing_requirements: '',
-      files: [],
+      item: 1,
+      item_code: 'SKU-1',
+      item_name: 'Areca Plate',
+      customer_sku: 'CUST-SKU-1',
+      mapping_code: 'CPM-1',
+      is_active: true,
+      current_version: {
+        id: 1,
+        mapping: 1,
+        mapping_code: 'CPM-1',
+        customer_name: 'Acme Exports',
+        item_name: 'Areca Plate',
+        item_code: 'SKU-1',
+        version_number: 1,
+        status: 'PUBLISHED',
+        effective_from: null,
+        effective_to: null,
+        customer_sku: 'CUST-SKU-1',
+        customer_description: '10 Inch Plate',
+        packaging_profile_version: null,
+        packaging_profile_name: '',
+        packaging_profile_version_number: null,
+        selling_uom: null,
+        selling_uom_code: '',
+        unit_price: null,
+        currency: '',
+        barcode: '',
+        requirements: [],
+        files: [],
+      },
     },
   ],
 }
 
-const productsResponse: ProductListResponse = {
+const itemsResponse: ItemListResponse = {
   count: 1,
   next: null,
   previous: null,
   results: [
     {
       id: 1,
-      sku_code: 'SKU-1',
+      code: 'SKU-1',
       name: 'Areca Plate',
       description: '',
-      base_unit: 'Piece',
-      stage: 'FINISHED_GOOD',
+      item_class: 'FINISHED_GOOD',
+      product_type: null,
+      product_type_name: '',
+      material_type: null,
+      material_type_name: '',
+      inventory_uom: null,
+      inventory_uom_code: '',
+      purchasable: false,
+      manufacturable: true,
+      stockable: true,
+      sellable: true,
+      lot_tracking: 'NONE',
       is_active: true,
+      available_qty: 0,
     },
   ],
 }
 
 function setupMocks(lines: ExportOrderLine[] = []) {
   mockedApi.listExportOrderLines.mockResolvedValue(lines)
-  mockedProductsApi.listCustomerSkuMappings.mockResolvedValue(skuMappingsResponse)
-  mockedProductsApi.listProducts.mockResolvedValue(productsResponse)
+  mockedCustomerMappingsApi.listCustomerProductMappings.mockResolvedValue(skuMappingsResponse)
+  mockedItemsApi.listItems.mockResolvedValue(itemsResponse)
   mockedApi.listPackingMaterialRequirements.mockResolvedValue([])
 }
 
@@ -140,8 +163,8 @@ describe('ExportOrderLinesTab', () => {
       export_order_line: 1,
       line_number: 1,
       customer_sku_code: 'CUST-SKU-1',
-      product_sku_code: 'SKU-1',
-      product_name: 'Areca Plate',
+      item_code: 'SKU-1',
+      item_name: 'Areca Plate',
     }
     mockedApi.listPackingMaterialRequirements.mockImplementation((_id, materialType) =>
       Promise.resolve(materialType === 'CARTON' ? [cartonRequirement] : []),
@@ -165,7 +188,7 @@ describe('ExportOrderLinesTab', () => {
     mockedApi.createExportOrderLine.mockResolvedValue(created)
 
     render(<ExportOrderLinesTab exportOrderId={1} customerId={1} />)
-    await waitFor(() => expect(mockedProductsApi.listCustomerSkuMappings).toHaveBeenCalled())
+    await waitFor(() => expect(mockedCustomerMappingsApi.listCustomerProductMappings).toHaveBeenCalled())
 
     fireEvent.change(screen.getByRole('combobox', { name: 'Customer SKU' }), {
       target: { value: 'CUST-SKU-1' },
@@ -182,7 +205,7 @@ describe('ExportOrderLinesTab', () => {
       expect(mockedApi.createExportOrderLine).toHaveBeenCalledWith(1, {
         customer_sku_code: 'CUST-SKU-1',
         customer_description: '10 Inch Plate',
-        product: 1,
+        item: 1,
         original_customer_quantity: 100,
         original_customer_unit: 'PIECE',
       }),
@@ -196,9 +219,9 @@ describe('ExportOrderLinesTab', () => {
       ...existingLine,
       id: 3,
       customer_sku_code: 'NEW-SKU',
-      product: null,
-      product_sku_code: null,
-      product_name: null,
+      item: null,
+      item_code: null,
+      item_name: null,
       pieces_per_pouch: null,
       pouches_per_carton: null,
       pieces_per_carton: null,
@@ -208,7 +231,7 @@ describe('ExportOrderLinesTab', () => {
     mockedApi.createExportOrderLine.mockResolvedValue(created)
 
     render(<ExportOrderLinesTab exportOrderId={1} customerId={1} />)
-    await waitFor(() => expect(mockedProductsApi.listCustomerSkuMappings).toHaveBeenCalled())
+    await waitFor(() => expect(mockedCustomerMappingsApi.listCustomerProductMappings).toHaveBeenCalled())
 
     fireEvent.change(screen.getByRole('combobox', { name: 'Customer SKU' }), {
       target: { value: 'NEW-SKU' },
@@ -221,7 +244,7 @@ describe('ExportOrderLinesTab', () => {
       expect(mockedApi.createExportOrderLine).toHaveBeenCalledWith(1, {
         customer_sku_code: 'NEW-SKU',
         customer_description: '',
-        product: null,
+        item: null,
         original_customer_quantity: 50,
         original_customer_unit: 'PIECE',
       }),
@@ -235,7 +258,7 @@ describe('ExportOrderLinesTab', () => {
     )
 
     render(<ExportOrderLinesTab exportOrderId={1} customerId={1} />)
-    await waitFor(() => expect(mockedProductsApi.listCustomerSkuMappings).toHaveBeenCalled())
+    await waitFor(() => expect(mockedCustomerMappingsApi.listCustomerProductMappings).toHaveBeenCalled())
 
     fireEvent.change(screen.getByRole('combobox', { name: 'Customer SKU' }), {
       target: { value: 'CUST-SKU-2' },
@@ -247,6 +270,32 @@ describe('ExportOrderLinesTab', () => {
       await screen.findByText('No packing configuration found for this customer/SKU.'),
     ).toBeInTheDocument()
     expect(screen.getByRole('combobox', { name: 'Customer SKU' })).toHaveValue('CUST-SKU-2')
+  })
+
+  it('offers a link to create a mapping when none exists for this customer/item', async () => {
+    setupMocks([])
+    mockedApi.createExportOrderLine.mockRejectedValue(
+      new ApiError(
+        'No published Customer Product Mapping is effective for this customer, item, and order date.',
+        400,
+      ),
+    )
+
+    render(
+      <MemoryRouter>
+        <ExportOrderLinesTab exportOrderId={1} customerId={1} />
+      </MemoryRouter>,
+    )
+    await waitFor(() => expect(mockedCustomerMappingsApi.listCustomerProductMappings).toHaveBeenCalled())
+
+    fireEvent.change(screen.getByRole('combobox', { name: 'Customer SKU' }), {
+      target: { value: 'CUST-SKU-2' },
+    })
+    fireEvent.change(screen.getByPlaceholderText('Quantity'), { target: { value: '10' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Add Line' }))
+
+    const link = await screen.findByRole('link', { name: 'Create one' })
+    expect(link).toHaveAttribute('href', '/customer-product-mappings/new')
   })
 
   it('edits an existing line inline', async () => {

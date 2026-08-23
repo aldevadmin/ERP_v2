@@ -32,9 +32,7 @@ def _client_as(role_name: str, username: str) -> APIClient:
 
 @pytest.fixture
 def customer(organization):
-    return Customer.objects.create(
-        code="CUST-1", name="Acme Exports", organization=organization
-    )
+    return Customer.objects.create(code="CUST-1", name="Acme Exports", organization=organization)
 
 
 @pytest.fixture
@@ -120,9 +118,7 @@ def test_anonymous_cannot_list_summary(order, line):
 def test_can_manage_roles_can_patch(role, order, line):
     client = _client_as(role, f"patch-{role}")
 
-    response = client.patch(
-        _plan_url(order, line), {"quantity_from_stock": 50_000}, format="json"
-    )
+    response = client.patch(_plan_url(order, line), {"quantity_from_stock": 50_000}, format="json")
 
     assert response.status_code == 200
 
@@ -131,9 +127,7 @@ def test_can_manage_roles_can_patch(role, order, line):
 def test_other_internal_roles_cannot_patch(role, order, line):
     client = _client_as(role, f"nopatch-{role}")
 
-    response = client.patch(
-        _plan_url(order, line), {"quantity_from_stock": 50_000}, format="json"
-    )
+    response = client.patch(_plan_url(order, line), {"quantity_from_stock": 50_000}, format="json")
 
     assert response.status_code == 403
 
@@ -141,9 +135,7 @@ def test_other_internal_roles_cannot_patch(role, order, line):
 def test_customer_role_cannot_patch(order, line):
     client = _client_as("Customer", "patch-customer-role")
 
-    response = client.patch(
-        _plan_url(order, line), {"quantity_from_stock": 50_000}, format="json"
-    )
+    response = client.patch(_plan_url(order, line), {"quantity_from_stock": 50_000}, format="json")
 
     assert response.status_code == 403
 
@@ -151,8 +143,6 @@ def test_customer_role_cannot_patch(order, line):
 def test_anonymous_cannot_patch(order, line):
     client = APIClient()
 
-    response = client.patch(
-        _plan_url(order, line), {"quantity_from_stock": 50_000}, format="json"
-    )
+    response = client.patch(_plan_url(order, line), {"quantity_from_stock": 50_000}, format="json")
 
     assert response.status_code == 403

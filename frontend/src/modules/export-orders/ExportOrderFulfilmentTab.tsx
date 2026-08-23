@@ -27,7 +27,7 @@ interface ReadinessRow {
   export_order_line: number
   line_number: number
   customer_sku_code: string
-  product_name: string | null
+  item_name: string | null
   plannedSource: string
   planned_qty: number
   cumulative_accepted: number
@@ -80,7 +80,7 @@ function combineReadinessRows(
         export_order_line: lineId,
         line_number: base.line_number,
         customer_sku_code: base.customer_sku_code,
-        product_name: base.product_name,
+        item_name: base.item_name,
         plannedSource,
         planned_qty: plannedQty,
         cumulative_accepted: accepted,
@@ -143,7 +143,7 @@ export default function ExportOrderFulfilmentTab({ exportOrderId }: { exportOrde
 
   const skuOptions = readinessRows.map((row) => ({
     value: row.export_order_line,
-    label: `${row.customer_sku_code}${row.product_name ? ` — ${row.product_name}` : ''}`,
+    label: `${row.customer_sku_code}${row.item_name ? ` — ${row.item_name}` : ''}`,
   }))
 
   const visibleReadinessRows =
@@ -214,7 +214,7 @@ export default function ExportOrderFulfilmentTab({ exportOrderId }: { exportOrde
                 <div>
                   <div>{record.customer_sku_code}</div>
                   <Text type="secondary" style={{ fontSize: 12 }}>
-                    {record.product_name || '—'}
+                    {record.item_name || '—'}
                   </Text>
                 </div>
               ),
@@ -344,7 +344,7 @@ export default function ExportOrderFulfilmentTab({ exportOrderId }: { exportOrde
                 <div>
                   <div>{record.customer_sku_code}</div>
                   <Text type="secondary" style={{ fontSize: 12 }}>
-                    {record.product_name || '—'}
+                    {record.item_name || '—'}
                   </Text>
                 </div>
               ),

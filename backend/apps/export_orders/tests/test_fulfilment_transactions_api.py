@@ -22,9 +22,7 @@ def _client_as(role_name: str, username: str) -> APIClient:
 
 @pytest.fixture
 def customer(organization):
-    return Customer.objects.create(
-        code="CUST-1", name="Acme Exports", organization=organization
-    )
+    return Customer.objects.create(code="CUST-1", name="Acme Exports", organization=organization)
 
 
 @pytest.fixture
@@ -83,14 +81,25 @@ def test_merges_production_and_procurement_across_every_sku(order, line_a, line_
 
     client.post(
         _production_transactions_url(order, line_a),
-        {"date": "2026-01-05", "quantity_produced": 1_000, "quantity_accepted": 900,
-         "quantity_rejected": 100, "party_team": "Production Team A"},
+        {
+            "date": "2026-01-05",
+            "quantity_produced": 1_000,
+            "quantity_accepted": 900,
+            "quantity_rejected": 100,
+            "party_team": "Production Team A",
+        },
         format="json",
     )
     client.post(
         _procurement_transactions_url(order, line_b),
-        {"date": "2026-01-06", "quantity_received": 500, "quantity_accepted": 450,
-         "quantity_rejected": 50, "vendor": vendor.id, "party_team": "Acme Supplies"},
+        {
+            "date": "2026-01-06",
+            "quantity_received": 500,
+            "quantity_accepted": 450,
+            "quantity_rejected": 50,
+            "vendor": vendor.id,
+            "party_team": "Acme Supplies",
+        },
         format="json",
     )
 
@@ -109,14 +118,26 @@ def test_sorted_newest_first(order, line_a):
 
     client.post(
         _production_transactions_url(order, line_a),
-        {"date": "2026-01-05", "quantity_produced": 100, "quantity_accepted": 100,
-         "quantity_rejected": 0, "party_team": "Team A", "remarks": "first"},
+        {
+            "date": "2026-01-05",
+            "quantity_produced": 100,
+            "quantity_accepted": 100,
+            "quantity_rejected": 0,
+            "party_team": "Team A",
+            "remarks": "first",
+        },
         format="json",
     )
     client.post(
         _production_transactions_url(order, line_a),
-        {"date": "2026-01-06", "quantity_produced": 200, "quantity_accepted": 200,
-         "quantity_rejected": 0, "party_team": "Team A", "remarks": "second"},
+        {
+            "date": "2026-01-06",
+            "quantity_produced": 200,
+            "quantity_accepted": 200,
+            "quantity_rejected": 0,
+            "party_team": "Team A",
+            "remarks": "second",
+        },
         format="json",
     )
 
@@ -133,14 +154,24 @@ def test_filters_by_line(order, line_a, line_b):
 
     client.post(
         _production_transactions_url(order, line_a),
-        {"date": "2026-01-05", "quantity_produced": 100, "quantity_accepted": 100,
-         "quantity_rejected": 0, "party_team": "Team A"},
+        {
+            "date": "2026-01-05",
+            "quantity_produced": 100,
+            "quantity_accepted": 100,
+            "quantity_rejected": 0,
+            "party_team": "Team A",
+        },
         format="json",
     )
     client.post(
         _production_transactions_url(order, line_b),
-        {"date": "2026-01-05", "quantity_produced": 200, "quantity_accepted": 200,
-         "quantity_rejected": 0, "party_team": "Team B"},
+        {
+            "date": "2026-01-05",
+            "quantity_produced": 200,
+            "quantity_accepted": 200,
+            "quantity_rejected": 0,
+            "party_team": "Team B",
+        },
         format="json",
     )
 
@@ -158,8 +189,13 @@ def test_paginated(order, line_a):
     for _i in range(25):
         client.post(
             _production_transactions_url(order, line_a),
-            {"date": "2026-01-05", "quantity_produced": 10, "quantity_accepted": 10,
-             "quantity_rejected": 0, "party_team": "Team A"},
+            {
+                "date": "2026-01-05",
+                "quantity_produced": 10,
+                "quantity_accepted": 10,
+                "quantity_rejected": 0,
+                "party_team": "Team A",
+            },
             format="json",
         )
 

@@ -2,42 +2,60 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import Step2InputsForm from './Step2InputsForm'
 import * as processesApi from './api'
-import * as materialsApi from '../materials/api'
-import * as productsApi from '../products/api'
+import * as itemsApi from '../items/api'
 import type { ProcessInput } from './types'
-import type { MaterialListResponse } from '../materials/types'
-import type { ProductListResponse } from '../products/types'
+import type { Item, ItemListResponse } from '../items/types'
 
 vi.mock('./api')
-vi.mock('../materials/api')
-vi.mock('../products/api')
+vi.mock('../items/api')
 
 const mockedApi = vi.mocked(processesApi)
-const mockedMaterialsApi = vi.mocked(materialsApi)
-const mockedProductsApi = vi.mocked(productsApi)
+const mockedItemsApi = vi.mocked(itemsApi)
 
-const materialsResponse: MaterialListResponse = {
-  count: 1,
-  next: null,
-  previous: null,
-  results: [{ id: 100, code: 'LEAF', name: 'Raw Leaf', unit: 'Kg', category: 'RAW_MATERIAL', is_active: true }],
+function itemsResponse(items: Item[]): ItemListResponse {
+  return { count: items.length, next: null, previous: null, results: items }
 }
 
-const semiFinishedResponse: ProductListResponse = {
-  count: 1,
-  next: null,
-  previous: null,
-  results: [
-    {
-      id: 200,
-      sku_code: 'UNTRIM-10SQ',
-      name: 'Untrimmed Plate',
-      description: '',
-      base_unit: 'Piece',
-      stage: 'SEMI_FINISHED',
-      is_active: true,
-    },
-  ],
+const leafItem: Item = {
+  id: 100,
+  code: 'LEAF',
+  name: 'Raw Leaf',
+  description: '',
+  item_class: 'RAW_MATERIAL',
+  product_type: null,
+  product_type_name: '',
+  material_type: null,
+  material_type_name: '',
+  inventory_uom: 1,
+  inventory_uom_code: 'Kg',
+  purchasable: true,
+  manufacturable: false,
+  stockable: true,
+  sellable: false,
+  lot_tracking: 'NONE',
+  is_active: true,
+  available_qty: 0,
+}
+
+const untrimmedPlateItem: Item = {
+  id: 200,
+  code: 'UNTRIM-10SQ',
+  name: 'Untrimmed Plate',
+  description: '',
+  item_class: 'WIP',
+  product_type: null,
+  product_type_name: '',
+  material_type: null,
+  material_type_name: '',
+  inventory_uom: 2,
+  inventory_uom_code: 'Piece',
+  purchasable: false,
+  manufacturable: true,
+  stockable: true,
+  sellable: false,
+  lot_tracking: 'NONE',
+  is_active: true,
+  available_qty: 0,
 }
 
 const leafInput: ProcessInput = {
@@ -52,8 +70,11 @@ const leafInput: ProcessInput = {
 }
 
 function setupMocks() {
-  mockedMaterialsApi.listMaterials.mockResolvedValue(materialsResponse)
-  mockedProductsApi.listProducts.mockResolvedValue(semiFinishedResponse)
+  mockedItemsApi.listItems.mockImplementation((params = {}) =>
+    Promise.resolve(
+      params.itemClass === 'WIP' ? itemsResponse([untrimmedPlateItem]) : itemsResponse([leafItem]),
+    ),
+  )
 }
 
 afterEach(() => {

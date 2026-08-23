@@ -17,8 +17,8 @@ import { MoreOutlined } from '@ant-design/icons'
 import { Link, useNavigate } from 'react-router'
 import { ApiError } from '../../shared/api/http'
 import StatusTag from '../../shared/components/StatusTag'
-import { listProducts } from '../products/api'
-import type { Product } from '../products/types'
+import { listItems } from '../items/api'
+import type { Item } from '../items/types'
 import {
   deleteProcessRoute,
   duplicateProcessRoute,
@@ -33,29 +33,31 @@ const { Title } = Typography
 export default function ProductRouteListPage() {
   const navigate = useNavigate()
   const [routes, setRoutes] = useState<ProcessRoute[]>([])
-  const [products, setProducts] = useState<Product[]>([])
+  const [items, setItems] = useState<Item[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const [productFilter, setProductFilter] = useState<number | undefined>(undefined)
+  const [itemFilter, setItemFilter] = useState<number | undefined>(undefined)
   const [statusFilter, setStatusFilter] = useState<'true' | 'false' | undefined>('true')
 
   const load = useCallback(() => {
     setLoading(true)
     listProcessRoutes({
       search: search || undefined,
-      product: productFilter,
+      item: itemFilter,
       isActive: statusFilter === undefined ? undefined : statusFilter === 'true',
     })
       .then((response) => setRoutes(response.results))
       .finally(() => setLoading(false))
-  }, [search, productFilter, statusFilter])
+  }, [search, itemFilter, statusFilter])
 
   useEffect(() => {
     load()
   }, [load])
 
   useEffect(() => {
-    listProducts({ isActive: true }).then((response) => setProducts(response.results))
+    listItems({ isActive: true }).then((response) =>
+      setItems(response.results.filter((i) => i.item_class === 'WIP' || i.item_class === 'FINISHED_GOOD')),
+    )
   }, [])
 
   const handleDeactivate = async (route: ProcessRoute) => {
@@ -121,13 +123,13 @@ export default function ProductRouteListPage() {
           />
           <Flex gap={12} wrap="wrap">
             <Select
-              aria-label="Product"
-              placeholder="Product"
+              aria-label="Item"
+              placeholder="Item"
               allowClear
               style={{ width: 200 }}
-              value={productFilter}
-              onChange={setProductFilter}
-              options={products.map((p) => ({ value: p.id, label: p.name }))}
+              value={itemFilter}
+              onChange={setItemFilter}
+              options={items.map((i) => ({ value: i.id, label: i.name }))}
             />
             <Select
               aria-label="Status"
@@ -153,7 +155,7 @@ export default function ProductRouteListPage() {
           })}
           columns={[
             { title: 'Route Name', dataIndex: 'name' },
-            { title: 'Product / SKU', dataIndex: 'product_name' },
+            { title: 'Item / SKU', dataIndex: 'item_name' },
             {
               title: 'Steps',
               key: 'steps',

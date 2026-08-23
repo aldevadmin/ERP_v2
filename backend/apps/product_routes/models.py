@@ -35,7 +35,7 @@ class ProcessRoute(BaseModel):
     """
 
     name = models.CharField(max_length=255)
-    product = models.ForeignKey("products.Product", on_delete=models.PROTECT, related_name="routes")
+    item = models.ForeignKey("items.Item", on_delete=models.PROTECT, related_name="routes")
     organization = models.ForeignKey(
         "core.Organization", on_delete=models.PROTECT, related_name="process_routes"
     )
@@ -45,7 +45,7 @@ class ProcessRoute(BaseModel):
         ordering = ["name"]
 
     def __str__(self) -> str:
-        return f"{self.name} ({self.product})"
+        return f"{self.name} ({self.item})"
 
     def current_version(self) -> "ProcessRouteVersion | None":
         """The version the UI/API should read and write — the `ACTIVE` one

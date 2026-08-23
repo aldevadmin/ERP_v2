@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from rest_framework.test import APIClient
 
-from apps.materials.models import Material
+from apps.items.models import Item
 from apps.processes.models import (
     OutputClassification,
     ProcessCategory,
@@ -110,14 +110,17 @@ def test_delete_classification_used_by_output_is_blocked(organization):
         category=category,
         organization=organization,
     )
-    material = Material.objects.create(
-        code="OUT-1", name="Output Material", unit="Kg", organization=organization
+    material = Item.objects.create(
+        code="OUT-1",
+        name="Output Material",
+        item_class=Item.ItemClass.RAW_MATERIAL,
+        organization=organization,
     )
     ProcessOutputDefinition.objects.create(
         process_version=version,
         sequence=1,
         item_type=ProcessOutputDefinition.ItemType.MATERIAL,
-        material=material,
+        item=material,
         uom="Kg",
         classification=classification,
         organization=organization,

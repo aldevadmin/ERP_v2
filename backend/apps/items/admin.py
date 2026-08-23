@@ -1,0 +1,32 @@
+from django.contrib import admin
+
+from .models import UOM, Item, MaterialType, ProductType
+
+
+@admin.register(UOM)
+class UOMAdmin(admin.ModelAdmin):
+    list_display = ("code", "name", "decimal_scale", "is_active")
+    list_filter = ("is_active",)
+    search_fields = ("code", "name")
+
+
+@admin.register(ProductType)
+class ProductTypeAdmin(admin.ModelAdmin):
+    list_display = ("name", "is_active")
+    list_filter = ("is_active",)
+    search_fields = ("name",)
+
+
+@admin.register(MaterialType)
+class MaterialTypeAdmin(admin.ModelAdmin):
+    list_display = ("name", "is_active")
+    list_filter = ("is_active",)
+    search_fields = ("name",)
+
+
+@admin.register(Item)
+class ItemAdmin(admin.ModelAdmin):
+    list_display = ("code", "name", "item_class", "is_active")
+    list_filter = ("item_class", "is_active")
+    search_fields = ("code", "name")
+    autocomplete_fields = ("product_type", "material_type", "inventory_uom")

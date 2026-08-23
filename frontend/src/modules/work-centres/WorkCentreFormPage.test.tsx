@@ -5,7 +5,7 @@ import WorkCentreFormPage from './WorkCentreFormPage'
 import * as workCentresApi from './api'
 import * as processesApi from '../processes/api'
 import * as toolingApi from '../tooling/api'
-import * as productsApi from '../products/api'
+import * as itemsApi from '../items/api'
 import type { WorkCentre, WorkCentreTypeListResponse } from './types'
 import type { Process, ProcessListResponse } from '../processes/types'
 import type { WorkCentrePosition } from '../tooling/types'
@@ -17,12 +17,12 @@ vi.mock('react-router', async () => {
 vi.mock('./api')
 vi.mock('../processes/api')
 vi.mock('../tooling/api')
-vi.mock('../products/api')
+vi.mock('../items/api')
 
 const mockedApi = vi.mocked(workCentresApi)
 const mockedProcessesApi = vi.mocked(processesApi)
 const mockedToolingApi = vi.mocked(toolingApi)
-const mockedProductsApi = vi.mocked(productsApi)
+const mockedItemsApi = vi.mocked(itemsApi)
 const mockedUseParams = vi.mocked(useParams)
 
 const pressing: Process = {
@@ -78,13 +78,8 @@ beforeEach(() => {
     results: [pressing],
   }
   mockedProcessesApi.listProcesses.mockResolvedValue(processResponse)
-  mockedProductsApi.listProducts.mockResolvedValue({
-    count: 0,
-    next: null,
-    previous: null,
-    results: [],
-  })
   mockedApi.listWorkCentreTypes.mockResolvedValue(workCentreTypes)
+  mockedItemsApi.listItems.mockResolvedValue({ count: 0, next: null, previous: null, results: [] })
 })
 
 afterEach(() => {

@@ -22,9 +22,7 @@ def _client_as(role_name: str, username: str) -> APIClient:
 
 @pytest.fixture
 def customer(organization):
-    return Customer.objects.create(
-        code="CUST-1", name="Acme Exports", organization=organization
-    )
+    return Customer.objects.create(code="CUST-1", name="Acme Exports", organization=organization)
 
 
 @pytest.fixture
@@ -78,8 +76,7 @@ def _transactions_url(order: ExportOrder, line: ExportOrderLine) -> str:
 
 def _transaction_detail_url(order: ExportOrder, line: ExportOrderLine, transaction_id: int) -> str:
     return (
-        f"/api/v1/export-orders/{order.id}/lines/{line.id}/"
-        f"packing-transactions/{transaction_id}/"
+        f"/api/v1/export-orders/{order.id}/lines/{line.id}/packing-transactions/{transaction_id}/"
     )
 
 

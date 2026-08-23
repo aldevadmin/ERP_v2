@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react'
 import { InfoCircleOutlined } from '@ant-design/icons'
 import { DatePicker, Form, Input, InputNumber, Modal, Select } from 'antd'
 import dayjs from 'dayjs'
-import { listProducts } from '../products/api'
-import type { Product } from '../products/types'
+import { listItems } from '../items/api'
+import type { Item } from '../items/types'
 import { listTooling } from './api'
 import type { Tooling, ToolingAssignmentFormValues, WorkCentrePosition } from './types'
 
@@ -28,14 +28,16 @@ export default function ChangeToolingModal({
 }) {
   const [form] = Form.useForm<FormShape>()
   const [toolingOptions, setToolingOptions] = useState<Tooling[]>([])
-  const [products, setProducts] = useState<Product[]>([])
+  const [items, setItems] = useState<Item[]>([])
   const [selectedTooling, setSelectedTooling] = useState<Tooling | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     if (!open) return
     listTooling({ isActive: true }).then((response) => setToolingOptions(response.results))
-    listProducts({ isActive: true }).then((response) => setProducts(response.results))
+    listItems({ isActive: true }).then((response) =>
+      setItems(response.results.filter((i) => i.item_class === 'WIP' || i.item_class === 'FINISHED_GOOD')),
+    )
   }, [open])
 
   useEffect(() => {
@@ -45,13 +47,9 @@ export default function ChangeToolingModal({
     form.setFieldsValue({ effective_from: dayjs() })
   }, [open, position, form])
 
-  const compatibleProductIds = new Set(
-    (selectedTooling?.compatibilities ?? []).map((c) => c.product),
-  )
+  const compatibleItemIds = new Set((selectedTooling?.compatibilities ?? []).map((c) => c.item))
   const itemOptions =
-    compatibleProductIds.size > 0
-      ? products.filter((p) => compatibleProductIds.has(p.id))
-      : products
+    compatibleItemIds.size > 0 ? items.filter((i) => compatibleItemIds.has(i.id)) : items
 
   const handleToolingChange = (toolingId: number) => {
     const tooling = toolingOptions.find((t) => t.id === toolingId) ?? null
@@ -113,7 +111,7 @@ export default function ChangeToolingModal({
         </Form.Item>
         <Form.Item label="Default SKU for this assignment (optional)" name="default_item">
           <Select
-            options={itemOptions.map((p) => ({ value: p.id, label: `${p.name} (${p.sku_code})` }))}
+            options={itemOptions.map((i) => ({ value: i.id, label: `${i.name} (${i.code})` }))}
             showSearch
             optionFilterProp="label"
             allowClear

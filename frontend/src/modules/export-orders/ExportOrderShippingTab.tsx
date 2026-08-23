@@ -243,7 +243,7 @@ export default function ExportOrderShippingTab({ exportOrderId }: { exportOrderI
 
   const lineOptions = orderLines.map((line) => ({
     value: line.id,
-    label: `${line.customer_sku_code}${line.product_name ? ` — ${line.product_name}` : ''}`,
+    label: `${line.customer_sku_code}${line.item_name ? ` — ${line.item_name}` : ''}`,
   }))
 
   return (
@@ -385,7 +385,7 @@ export default function ExportOrderShippingTab({ exportOrderId }: { exportOrderI
                     <div>
                       <div>{record.customer_sku_code}</div>
                       <Text type="secondary" style={{ fontSize: 12 }}>
-                        {record.product_name || record.product_sku_code || '—'}
+                        {record.item_name || record.item_code || '—'}
                       </Text>
                     </div>
                   ),

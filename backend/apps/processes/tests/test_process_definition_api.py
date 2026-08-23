@@ -191,11 +191,14 @@ def test_search_by_name(organization):
 
 
 def test_duplicate_clones_definition_version_and_inputs(organization):
-    from apps.materials.models import Material
+    from apps.items.models import Item
 
     category = _category(organization)
-    leaf = Material.objects.create(
-        code="LEAF", name="Raw Leaf", unit="Kg", organization=organization
+    leaf = Item.objects.create(
+        code="LEAF",
+        name="Raw Leaf",
+        item_class=Item.ItemClass.RAW_MATERIAL,
+        organization=organization,
     )
     definition = ProcessDefinition.objects.create(
         name="Pressing", code="PRESS", organization=organization
@@ -213,7 +216,7 @@ def test_duplicate_clones_definition_version_and_inputs(organization):
         process_version=version,
         sequence=1,
         input_type=ProcessInputDefinition.InputType.MATERIAL,
-        material=leaf,
+        item=leaf,
         uom="Kg",
         organization=organization,
     )
@@ -231,7 +234,7 @@ def test_duplicate_clones_definition_version_and_inputs(organization):
     assert copy_version.category_id == category.id
     assert copy_version.description == "Presses leaf."
     assert copy_version.inputs.count() == 1
-    assert copy_version.inputs.first().material_id == leaf.id
+    assert copy_version.inputs.first().item_id == leaf.id
 
 
 def test_duplicate_clones_work_centre_fields(organization):
@@ -372,8 +375,8 @@ def test_delete_unused_process_succeeds(organization):
 
 
 def test_delete_process_used_in_route_is_blocked_with_route_name(organization):
+    from apps.items.models import Item
     from apps.product_routes.models import ProcessRoute, ProcessRouteVersion
-    from apps.products.models import Product
 
     category = _category(organization)
     definition = ProcessDefinition.objects.create(
@@ -385,14 +388,14 @@ def test_delete_process_used_in_route_is_blocked_with_route_name(organization):
         category=category,
         organization=organization,
     )
-    product = Product.objects.create(
-        sku_code="SQ10",
+    product = Item.objects.create(
+        code="SQ10",
         name="10 Square Plate",
-        base_unit="Piece",
+        item_class=Item.ItemClass.FINISHED_GOOD,
         organization=organization,
     )
     route = ProcessRoute.objects.create(
-        name="Areca Plate — Standard Production", product=product, organization=organization
+        name="Areca Plate — Standard Production", item=product, organization=organization
     )
     version = ProcessRouteVersion.objects.create(
         process_route=route, version_number=1, organization=organization

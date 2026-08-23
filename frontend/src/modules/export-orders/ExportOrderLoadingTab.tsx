@@ -46,8 +46,8 @@ interface ReadinessRow {
   key: string
   exportOrderLineId: number
   customer_sku_code: string
-  product_name: string | null
-  product_sku_code: string | null
+  item_name: string | null
+  item_code: string | null
   required_cartons: number | null
   shipmentLine: ShipmentLine | null
 }
@@ -142,8 +142,8 @@ export default function ExportOrderLoadingTab({ exportOrderId }: { exportOrderId
       key: `planned-${l.id}`,
       exportOrderLineId: l.export_order_line,
       customer_sku_code: l.customer_sku_code,
-      product_name: l.product_name,
-      product_sku_code: l.product_sku_code,
+      item_name: l.item_name,
+      item_code: l.item_code,
       required_cartons: l.required_cartons,
       shipmentLine: l,
     })),
@@ -153,8 +153,8 @@ export default function ExportOrderLoadingTab({ exportOrderId }: { exportOrderId
         key: `unplanned-${ol.id}`,
         exportOrderLineId: ol.id,
         customer_sku_code: ol.customer_sku_code,
-        product_name: ol.product_name,
-        product_sku_code: ol.product_sku_code,
+        item_name: ol.item_name,
+        item_code: ol.item_code,
         required_cartons: ol.required_cartons,
         shipmentLine: null,
       })),
@@ -162,7 +162,7 @@ export default function ExportOrderLoadingTab({ exportOrderId }: { exportOrderId
 
   const skuOptions = lines.map((line) => ({
     value: line.export_order_line,
-    label: `${line.customer_sku_code}${line.product_name ? ` — ${line.product_name}` : ''}`,
+    label: `${line.customer_sku_code}${line.item_name ? ` — ${line.item_name}` : ''}`,
   }))
 
   const closeModal = () => setEditingLine(null)
@@ -238,7 +238,7 @@ export default function ExportOrderLoadingTab({ exportOrderId }: { exportOrderId
                 <div>
                   <div>{record.customer_sku_code}</div>
                   <Text type="secondary" style={{ fontSize: 12 }}>
-                    {record.product_name || record.product_sku_code || '—'}
+                    {record.item_name || record.item_code || '—'}
                   </Text>
                 </div>
               ),
@@ -388,7 +388,7 @@ export default function ExportOrderLoadingTab({ exportOrderId }: { exportOrderId
                         <div>
                           <div>{record.customer_sku_code}</div>
                           <Text type="secondary" style={{ fontSize: 12 }}>
-                            {record.product_name || '—'}
+                            {record.item_name || '—'}
                           </Text>
                         </div>
                       ),

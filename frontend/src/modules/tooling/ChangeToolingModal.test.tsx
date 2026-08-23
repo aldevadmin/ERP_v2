@@ -2,15 +2,15 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import ChangeToolingModal from './ChangeToolingModal'
 import * as api from './api'
-import * as productsApi from '../products/api'
+import * as itemsApi from '../items/api'
 import type { Tooling, ToolingListResponse, WorkCentrePosition } from './types'
-import type { ProductListResponse } from '../products/types'
+import type { ItemListResponse } from '../items/types'
 
 vi.mock('./api')
-vi.mock('../products/api')
+vi.mock('../items/api')
 
 const mockedApi = vi.mocked(api)
-const mockedProductsApi = vi.mocked(productsApi)
+const mockedItemsApi = vi.mocked(itemsApi)
 
 afterEach(() => {
   vi.clearAllMocks()
@@ -27,7 +27,7 @@ const mould: Tooling = {
   is_active: true,
   notes: '',
   compatibilities: [
-    { id: 1, product: 1, product_name: '6" Bowl', product_sku_code: 'BOWL-6', process_definition: null, process_definition_name: '' },
+    { id: 1, item: 1, item_name: '6" Bowl', item_code: 'BOWL-6', process_definition: null, process_definition_name: '' },
   ],
   compatibilities_count: 1,
 }
@@ -39,19 +39,30 @@ const toolingResponse: ToolingListResponse = {
   results: [mould],
 }
 
-const productsResponse: ProductListResponse = {
+const itemsResponse: ItemListResponse = {
   count: 1,
   next: null,
   previous: null,
   results: [
     {
       id: 1,
-      sku_code: 'BOWL-6',
+      code: 'BOWL-6',
       name: '6" Bowl',
       description: '',
-      base_unit: 'Piece',
-      stage: 'FINISHED_GOOD',
+      item_class: 'FINISHED_GOOD',
+      product_type: null,
+      product_type_name: '',
+      material_type: null,
+      material_type_name: '',
+      inventory_uom: null,
+      inventory_uom_code: '',
+      purchasable: false,
+      manufacturable: true,
+      stockable: true,
+      sellable: true,
+      lot_tracking: 'NONE',
       is_active: true,
+      available_qty: 0,
     },
   ],
 }
@@ -70,7 +81,7 @@ const position: WorkCentrePosition = {
 describe('ChangeToolingModal', () => {
   it('shows current tooling and lets the user select new tooling', async () => {
     mockedApi.listTooling.mockResolvedValue(toolingResponse)
-    mockedProductsApi.listProducts.mockResolvedValue(productsResponse)
+    mockedItemsApi.listItems.mockResolvedValue(itemsResponse)
 
     render(
       <ChangeToolingModal open position={position} onClose={vi.fn()} onSave={vi.fn()} />,
@@ -82,7 +93,7 @@ describe('ChangeToolingModal', () => {
 
   it('confirms a changeover with the selected tooling', async () => {
     mockedApi.listTooling.mockResolvedValue(toolingResponse)
-    mockedProductsApi.listProducts.mockResolvedValue(productsResponse)
+    mockedItemsApi.listItems.mockResolvedValue(itemsResponse)
     const onSave = vi.fn().mockResolvedValue(undefined)
 
     render(<ChangeToolingModal open position={position} onClose={vi.fn()} onSave={onSave} />)

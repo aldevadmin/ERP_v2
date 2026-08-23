@@ -22,8 +22,8 @@ const draftRoute: ProcessRoute = {
   is_default: true,
   effective_from: null,
   effective_to: null,
-  product: 1,
-  product_name: '10" Round Areca Plate',
+  item: 1,
+  item_name: '10" Round Areca Plate',
   nodes: [
     {
       id: 1,
@@ -67,7 +67,7 @@ describe('RouteReview', () => {
       screen.getByText('Review "Standard Plate Production" before activating'),
     ).toBeInTheDocument()
     expect(screen.getByText('Washing → Pressing')).toBeInTheDocument()
-    expect(screen.getByText('Product: 10" Round Areca Plate')).toBeInTheDocument()
+    expect(screen.getByText('Item: 10" Round Areca Plate')).toBeInTheDocument()
   })
 
   it('activates the route and reports the new status', async () => {

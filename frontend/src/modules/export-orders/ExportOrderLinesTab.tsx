@@ -15,9 +15,12 @@ import {
 } from 'antd'
 import type { FormInstance } from 'antd'
 import { DeleteOutlined, EditOutlined, InfoCircleOutlined } from '@ant-design/icons'
+import { Link } from 'react-router'
 import { ApiError } from '../../shared/api/http'
-import { listCustomerSkuMappings, listProducts } from '../products/api'
-import type { CustomerSKUMapping, Product } from '../products/types'
+import { listCustomerProductMappings } from '../customer-mappings/api'
+import type { CustomerProductMapping } from '../customer-mappings/types'
+import { listItems } from '../items/api'
+import type { Item } from '../items/types'
 import {
   createExportOrderLine,
   deleteExportOrderLine,
@@ -81,8 +84,8 @@ export default function ExportOrderLinesTab({
 }) {
   const [lines, setLines] = useState<ExportOrderLine[]>([])
   const [loading, setLoading] = useState(true)
-  const [skuOptions, setSkuOptions] = useState<CustomerSKUMapping[]>([])
-  const [products, setProducts] = useState<Product[]>([])
+  const [skuOptions, setSkuOptions] = useState<CustomerProductMapping[]>([])
+  const [items, setItems] = useState<Item[]>([])
   const [packingByMaterial, setPackingByMaterial] = useState<
     Record<PackingMaterialType, Map<number, PackingMaterialRequirementSummary>>
   >({ CARTON: new Map(), POUCH: new Map(), RETAIL_STICKER: new Map(), BOX_LABEL: new Map() })
@@ -104,10 +107,12 @@ export default function ExportOrderLinesTab({
   }, [exportOrderId])
 
   useEffect(() => {
-    listCustomerSkuMappings({ customer: customerId }).then((response) =>
-      setSkuOptions(response.results),
+    listCustomerProductMappings({ customer: customerId }).then((response) =>
+      setSkuOptions(response.results.filter((m) => m.current_version?.status === 'PUBLISHED')),
     )
-    listProducts({ isActive: true }).then((response) => setProducts(response.results))
+    listItems({ isActive: true }).then((response) =>
+      setItems(response.results.filter((i) => i.item_class === 'WIP' || i.item_class === 'FINISHED_GOOD')),
+    )
   }, [customerId])
 
   useEffect(() => {
@@ -130,17 +135,18 @@ export default function ExportOrderLinesTab({
   }, [exportOrderId])
 
   const skuAutocompleteOptions = skuOptions.map((mapping) => ({
-    value: mapping.customer_sku_code,
-    label: `${mapping.customer_sku_code} — ${mapping.customer_description || mapping.product_name}`,
+    value: mapping.customer_sku,
+    label: `${mapping.customer_sku} — ${mapping.current_version!.customer_description || mapping.item_name}`,
   }))
-  const productOptions = products.map((p) => ({ value: p.id, label: `${p.name} (${p.sku_code})` }))
+  const itemOptions = items.map((i) => ({ value: i.id, label: `${i.name} (${i.code})` }))
 
   const applySkuMatch = (value: string, form: FormInstance<ExportOrderLineFormValues>) => {
-    const match = skuOptions.find(
-      (mapping) => mapping.customer_sku_code.toLowerCase() === value.toLowerCase(),
-    )
+    const match = skuOptions.find((mapping) => mapping.customer_sku.toLowerCase() === value.toLowerCase())
     if (match) {
-      form.setFieldsValue({ customer_description: match.customer_description, product: match.product })
+      form.setFieldsValue({
+        customer_description: match.current_version!.customer_description,
+        item: match.item,
+      })
     }
   }
 
@@ -151,7 +157,7 @@ export default function ExportOrderLinesTab({
       const created = await createExportOrderLine(exportOrderId, {
         ...values,
         customer_description: values.customer_description || '',
-        product: values.product ?? null,
+        item: values.item ?? null,
       })
       setLines((prev) => [...prev, created])
       entryForm.resetFields()
@@ -169,7 +175,7 @@ export default function ExportOrderLinesTab({
     editForm.setFieldsValue({
       customer_sku_code: line.customer_sku_code,
       customer_description: line.customer_description,
-      product: line.product,
+      item: line.item,
       original_customer_quantity: line.original_customer_quantity,
       original_customer_unit: line.original_customer_unit,
     })
@@ -229,13 +235,13 @@ export default function ExportOrderLinesTab({
     },
     {
       title: 'Internal SKU',
-      dataIndex: 'product_sku_code',
+      dataIndex: 'item_code',
       render: (value: string | null, record: ExportOrderLine) =>
         editingId === record.id ? (
-          <Form.Item name="product" style={{ margin: 0 }}>
+          <Form.Item name="item" style={{ margin: 0 }}>
             <Select
               allowClear
-              options={productOptions}
+              options={itemOptions}
               showSearch
               optionFilterProp="label"
               style={{ minWidth: 160 }}
@@ -245,7 +251,7 @@ export default function ExportOrderLinesTab({
           value || '—'
         ),
     },
-    { title: 'Internal Description', dataIndex: 'product_name', render: (v: string | null) => v || '—' },
+    { title: 'Internal Description', dataIndex: 'item_name', render: (v: string | null) => v || '—' },
     {
       title: 'Qty',
       dataIndex: 'original_customer_quantity',
@@ -376,12 +382,12 @@ export default function ExportOrderLinesTab({
         <Form.Item name="customer_description">
           <Input placeholder="Customer Description" style={{ width: 180 }} />
         </Form.Item>
-        <Form.Item name="product">
+        <Form.Item name="item">
           <Select
             allowClear
             placeholder="Internal SKU"
             aria-label="Internal SKU"
-            options={productOptions}
+            options={itemOptions}
             showSearch
             optionFilterProp="label"
             style={{ width: 160 }}
@@ -399,7 +405,17 @@ export default function ExportOrderLinesTab({
           </Button>
         </Form.Item>
       </Form>
-      {entryError && <div style={{ color: '#ff4d4f', marginTop: 8 }}>{entryError}</div>}
+      {entryError && (
+        <div style={{ color: '#ff4d4f', marginTop: 8 }}>
+          {entryError}
+          {entryError.includes('No published Customer Product Mapping') && (
+            <>
+              {' '}
+              <Link to="/customer-product-mappings/new">Create one</Link>
+            </>
+          )}
+        </div>
+      )}
     </Card>
   )
 }

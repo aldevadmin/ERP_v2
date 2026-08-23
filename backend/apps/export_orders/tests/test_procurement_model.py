@@ -15,9 +15,7 @@ pytestmark = pytest.mark.django_db
 
 @pytest.fixture
 def customer(organization):
-    return Customer.objects.create(
-        code="CUST-1", name="Acme Exports", organization=organization
-    )
+    return Customer.objects.create(code="CUST-1", name="Acme Exports", organization=organization)
 
 
 @pytest.fixture
@@ -84,7 +82,10 @@ def test_worked_example_regression(line, vendor):
     SKUSupplyPlan.objects.create(export_order_line=line, quantity_to_procure=15_000)
     requirement = ProcurementRequirement.objects.create(export_order_line=line)
     _add_transaction(
-        requirement, vendor, quantity_received=15_000, quantity_accepted=14_200,
+        requirement,
+        vendor,
+        quantity_received=15_000,
+        quantity_accepted=14_200,
         quantity_rejected=800,
     )
 
@@ -99,12 +100,20 @@ def test_multiple_transactions_sum_correctly(line, vendor):
     SKUSupplyPlan.objects.create(export_order_line=line, quantity_to_procure=10_000)
     requirement = ProcurementRequirement.objects.create(export_order_line=line)
     _add_transaction(
-        requirement, vendor, date="2026-01-05", quantity_received=4_000,
-        quantity_accepted=3_500, quantity_rejected=500,
+        requirement,
+        vendor,
+        date="2026-01-05",
+        quantity_received=4_000,
+        quantity_accepted=3_500,
+        quantity_rejected=500,
     )
     _add_transaction(
-        requirement, vendor, date="2026-01-06", quantity_received=4_000,
-        quantity_accepted=3_800, quantity_rejected=200,
+        requirement,
+        vendor,
+        date="2026-01-06",
+        quantity_received=4_000,
+        quantity_accepted=3_800,
+        quantity_rejected=200,
     )
 
     assert requirement.cumulative_received == 8_000

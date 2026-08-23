@@ -3,16 +3,14 @@ from django.db import IntegrityError, transaction
 
 from apps.customers.models import Customer
 from apps.export_orders.models import ExportOrder, ExportOrderLine, PackingTransaction
-from apps.products.models import Product
+from apps.items.models import Item
 
 pytestmark = pytest.mark.django_db
 
 
 @pytest.fixture
 def customer(organization):
-    return Customer.objects.create(
-        code="CUST-1", name="Acme Exports", organization=organization
-    )
+    return Customer.objects.create(code="CUST-1", name="Acme Exports", organization=organization)
 
 
 @pytest.fixture
@@ -242,19 +240,22 @@ def test_required_stickers_matches_required_pouches_when_flag_true(order):
 
 
 def test_internal_sku_optional(organization, order):
-    product = Product.objects.create(
-        sku_code="SKU-1", name="Areca Plate", base_unit="Piece", organization=organization
+    product = Item.objects.create(
+        code="SKU-1",
+        name="Areca Plate",
+        item_class=Item.ItemClass.FINISHED_GOOD,
+        organization=organization,
     )
     line = ExportOrderLine.objects.create(
         export_order=order,
         line_number=1,
         customer_sku_code="SKU-A",
-        product=product,
+        item=product,
         original_customer_quantity=10,
         original_customer_unit=ExportOrderLine.Unit.PIECE,
     )
 
-    assert line.product == product
+    assert line.item == product
 
 
 def test_packing_properties_zero_with_no_transactions(order):

@@ -9,16 +9,14 @@ from apps.export_orders.models import (
     Shipment,
     ShipmentLine,
 )
-from apps.products.models import Product
+from apps.items.models import Item
 
 pytestmark = pytest.mark.django_db
 
 
 @pytest.fixture
 def customer(organization):
-    return Customer.objects.create(
-        code="CUST-1", name="Acme Exports", organization=organization
-    )
+    return Customer.objects.create(code="CUST-1", name="Acme Exports", organization=organization)
 
 
 @pytest.fixture
@@ -33,8 +31,11 @@ def order(customer):
 
 @pytest.fixture
 def product(organization):
-    return Product.objects.create(
-        sku_code="SKU-1", name="Areca Plate", base_unit="Piece", organization=organization
+    return Item.objects.create(
+        code="SKU-1",
+        name="Areca Plate",
+        item_class=Item.ItemClass.FINISHED_GOOD,
+        organization=organization,
     )
 
 
@@ -45,7 +46,7 @@ def cartonized_line(order, product):
         export_order=order,
         line_number=1,
         customer_sku_code="SKU-A",
-        product=product,
+        item=product,
         original_customer_quantity=1_000,
         original_customer_unit=ExportOrderLine.Unit.PIECE,
         pieces_per_pouch=10,

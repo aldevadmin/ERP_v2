@@ -4,8 +4,8 @@ from typing import Any
 from rest_framework import serializers
 
 from apps.core.models import Organization
+from apps.items.models import Item
 from apps.processes.models import ProcessDefinition, ProcessOutputDefinition
-from apps.products.models import Product
 
 from .models import (
     ProcessRoute,
@@ -47,12 +47,10 @@ class ProcessRouteNodeOutputSerializer(serializers.ModelSerializer):
     classification_name = serializers.CharField(source="classification.name", read_only=True)
 
     def get_item_label(self, obj: ProcessOutputDefinition) -> str:
-        is_product = obj.item_type == ProcessOutputDefinition.ItemType.PRODUCT
-        item = obj.product if is_product else obj.material
+        item = obj.item
         if item is None:
             return ""
-        code = getattr(item, "sku_code", None) or getattr(item, "code", "")
-        return f"{item.name} ({code})"
+        return f"{item.name} ({item.code})"
 
 
 class ProcessRouteNodeSerializer(serializers.ModelSerializer):
@@ -167,8 +165,8 @@ class ProcessRouteEdgeWriteSerializer(serializers.Serializer):
 class ProcessRouteVersionSerializer(serializers.ModelSerializer):
     nodes = ProcessRouteNodeSerializer(many=True, read_only=True)
     edges = ProcessRouteEdgeSerializer(many=True, read_only=True)
-    product = serializers.IntegerField(source="process_route.product_id", read_only=True)
-    product_name = serializers.CharField(source="process_route.product.name", read_only=True)
+    item = serializers.IntegerField(source="process_route.item_id", read_only=True)
+    item_name = serializers.CharField(source="process_route.item.name", read_only=True)
     route_name = serializers.CharField(source="process_route.name", read_only=True)
 
     class Meta:
@@ -180,8 +178,8 @@ class ProcessRouteVersionSerializer(serializers.ModelSerializer):
             "is_default",
             "effective_from",
             "effective_to",
-            "product",
-            "product_name",
+            "item",
+            "item_name",
             "route_name",
             "nodes",
             "edges",
@@ -190,13 +188,13 @@ class ProcessRouteVersionSerializer(serializers.ModelSerializer):
 
 class ProcessRouteSerializer(serializers.ModelSerializer):
     """Basics-shaped read/write on top of `ProcessRoute` + its current
-    version. `product`/`is_default`/`effective_from` are write-only here —
+    version. `item`/`is_default`/`effective_from` are write-only here —
     they route through to the current version (see `create`/`update`);
     reading them back happens via the nested `current_version`.
     """
 
-    product = serializers.PrimaryKeyRelatedField(
-        queryset=Product.objects.all(), write_only=True, required=True
+    item = serializers.PrimaryKeyRelatedField(
+        queryset=Item.objects.all(), write_only=True, required=True
     )
     is_default = serializers.BooleanField(write_only=True, required=False, default=False)
     effective_from = serializers.DateField(write_only=True, required=False, allow_null=True)
@@ -208,7 +206,7 @@ class ProcessRouteSerializer(serializers.ModelSerializer):
             "id",
             "name",
             "is_active",
-            "product",
+            "item",
             "is_default",
             "effective_from",
             "current_version",
@@ -235,7 +233,7 @@ class ProcessRouteSerializer(serializers.ModelSerializer):
         return route
 
     def update(self, instance: ProcessRoute, validated_data: dict[str, Any]) -> ProcessRoute:
-        validated_data.pop("product", None)
+        validated_data.pop("item", None)
         validated_data.pop("is_default", None)
         validated_data.pop("effective_from", None)
         return super().update(instance, validated_data)

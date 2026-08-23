@@ -42,7 +42,7 @@ export default function RouteReview({
       {error && <Alert type="error" title={error} showIcon style={{ marginBottom: 16 }} />}
 
       <Flex gap={12} style={{ marginBottom: 20 }}>
-        <Text type="secondary">Product: {route.product_name}</Text>
+        <Text type="secondary">Item: {route.item_name}</Text>
         <Text type="secondary">Version: v{route.version_number}</Text>
         <Text type="secondary">Default: {route.is_default ? 'Yes' : 'No'}</Text>
       </Flex>

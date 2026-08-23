@@ -22,16 +22,16 @@ export interface ToolingTypeFormValues {
  * process. Advisory for frontend filtering; the backend validates it too. */
 export interface ToolingCompatibility {
   id: number
-  product: number
-  product_name: string
-  product_sku_code: string
+  item: number
+  item_name: string
+  item_code: string
   process_definition: number | null
   process_definition_name: string
 }
 
 export interface ToolingCompatibilityFormValues {
   id?: number
-  product: number
+  item: number
   process_definition: number | null
 }
 

@@ -3,8 +3,8 @@ from typing import Any
 from rest_framework import serializers
 
 from apps.core.models import Organization
+from apps.items.models import Item
 from apps.processes.models import ProcessDefinition
-from apps.products.models import Product
 
 from .models import (
     Tooling,
@@ -30,8 +30,8 @@ class ToolingCompatibilitySerializer(serializers.ModelSerializer):
     `ToolingViewSet.compatibilities` (a whole-list-replace action).
     """
 
-    product_name = serializers.CharField(source="product.name", read_only=True)
-    product_sku_code = serializers.CharField(source="product.sku_code", read_only=True)
+    item_name = serializers.CharField(source="item.name", read_only=True)
+    item_code = serializers.CharField(source="item.code", read_only=True)
     process_definition_name = serializers.CharField(
         source="process_definition.name", read_only=True, default=""
     )
@@ -40,9 +40,9 @@ class ToolingCompatibilitySerializer(serializers.ModelSerializer):
         model = ToolingCompatibility
         fields = [
             "id",
-            "product",
-            "product_name",
-            "product_sku_code",
+            "item",
+            "item_name",
+            "item_code",
             "process_definition",
             "process_definition_name",
         ]
@@ -50,7 +50,7 @@ class ToolingCompatibilitySerializer(serializers.ModelSerializer):
 
 class ToolingCompatibilityWriteSerializer(serializers.Serializer):
     id = serializers.IntegerField(required=False, allow_null=True)
-    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all())
+    item = serializers.PrimaryKeyRelatedField(queryset=Item.objects.all())
     process_definition = serializers.PrimaryKeyRelatedField(
         queryset=ProcessDefinition.objects.all(), required=False, allow_null=True, default=None
     )
@@ -123,7 +123,7 @@ class WorkCentrePositionSerializer(serializers.ModelSerializer):
     def get_default_sku(self, obj: WorkCentrePosition) -> str:
         assignment = self._current_assignment(obj)
         if assignment and assignment.default_item:
-            return f"{assignment.default_item.name} ({assignment.default_item.sku_code})"
+            return f"{assignment.default_item.name} ({assignment.default_item.code})"
         return ""
 
     def get_standard_rate(self, obj: WorkCentrePosition) -> str:
@@ -178,7 +178,7 @@ class ToolingAssignmentSerializer(serializers.ModelSerializer):
     def get_default_item_label(self, obj: ToolingAssignment) -> str:
         if not obj.default_item:
             return ""
-        return f"{obj.default_item.name} ({obj.default_item.sku_code})"
+        return f"{obj.default_item.name} ({obj.default_item.code})"
 
 
 class ToolingAssignmentWriteSerializer(serializers.Serializer):
@@ -189,7 +189,7 @@ class ToolingAssignmentWriteSerializer(serializers.Serializer):
 
     tooling = serializers.PrimaryKeyRelatedField(queryset=Tooling.objects.all())
     default_item = serializers.PrimaryKeyRelatedField(
-        queryset=Product.objects.all(), required=False, allow_null=True, default=None
+        queryset=Item.objects.all(), required=False, allow_null=True, default=None
     )
     standard_rate_override = serializers.DecimalField(
         max_digits=10, decimal_places=2, required=False, allow_null=True, default=None

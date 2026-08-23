@@ -5,13 +5,19 @@ import RequireAuth from '../shared/auth/RequireAuth'
 import CustomerDetailPage from '../modules/customers/CustomerDetailPage'
 import CustomerFormPage from '../modules/customers/CustomerFormPage'
 import CustomerListPage from '../modules/customers/CustomerListPage'
-import CustomerSkuMappingFormPage from '../modules/products/CustomerSkuMappingFormPage'
-import CustomerSkuMappingsPage from '../modules/products/CustomerSkuMappingsPage'
-import ProductFormPage from '../modules/products/ProductFormPage'
-import ProductListPage from '../modules/products/ProductListPage'
+import CustomerProductMappingFormPage from '../modules/customer-mappings/CustomerProductMappingFormPage'
+import CustomerProductMappingListPage from '../modules/customer-mappings/CustomerProductMappingListPage'
+import PackagingProfileFormPage from '../modules/packaging/PackagingProfileFormPage'
+import PackagingProfileListPage from '../modules/packaging/PackagingProfileListPage'
 import VendorListPage from '../modules/vendors/VendorListPage'
-import MaterialFormPage from '../modules/materials/MaterialFormPage'
-import MaterialListPage from '../modules/materials/MaterialListPage'
+import ItemFormPage from '../modules/items/ItemFormPage'
+import ItemListPage from '../modules/items/ItemListPage'
+import ProductTypeFormPage from '../modules/items/ProductTypeFormPage'
+import ProductTypeListPage from '../modules/items/ProductTypeListPage'
+import MaterialTypeFormPage from '../modules/items/MaterialTypeFormPage'
+import MaterialTypeListPage from '../modules/items/MaterialTypeListPage'
+import UOMFormPage from '../modules/items/UOMFormPage'
+import UOMListPage from '../modules/items/UOMListPage'
 import ProcessCategoryFormPage from '../modules/processes/ProcessCategoryFormPage'
 import ProcessCategoryListPage from '../modules/processes/ProcessCategoryListPage'
 import OutputClassificationFormPage from '../modules/processes/OutputClassificationFormPage'
@@ -57,16 +63,28 @@ function AuthenticatedShell() {
               <Route path="/customers/new" element={<CustomerFormPage />} />
               <Route path="/customers/:id" element={<CustomerDetailPage />} />
               <Route path="/customers/:id/edit" element={<CustomerFormPage />} />
-              <Route path="/products" element={<ProductListPage />} />
-              <Route path="/products/mappings" element={<CustomerSkuMappingsPage />} />
-              <Route path="/products/mappings/new" element={<CustomerSkuMappingFormPage />} />
-              <Route path="/products/mappings/:id/edit" element={<CustomerSkuMappingFormPage />} />
-              <Route path="/products/new" element={<ProductFormPage />} />
-              <Route path="/products/:id/edit" element={<ProductFormPage />} />
+              <Route path="/customer-product-mappings" element={<CustomerProductMappingListPage />} />
+              <Route path="/customer-product-mappings/new" element={<CustomerProductMappingFormPage />} />
+              <Route
+                path="/customer-product-mappings/:id/edit"
+                element={<CustomerProductMappingFormPage />}
+              />
+              <Route path="/packaging-profiles" element={<PackagingProfileListPage />} />
+              <Route path="/packaging-profiles/new" element={<PackagingProfileFormPage />} />
+              <Route path="/packaging-profiles/:id/edit" element={<PackagingProfileFormPage />} />
               <Route path="/vendors" element={<VendorListPage />} />
-              <Route path="/materials" element={<MaterialListPage />} />
-              <Route path="/materials/new" element={<MaterialFormPage />} />
-              <Route path="/materials/:id/edit" element={<MaterialFormPage />} />
+              <Route path="/items" element={<ItemListPage />} />
+              <Route path="/items/new" element={<ItemFormPage />} />
+              <Route path="/items/:id/edit" element={<ItemFormPage />} />
+              <Route path="/product-types" element={<ProductTypeListPage />} />
+              <Route path="/product-types/new" element={<ProductTypeFormPage />} />
+              <Route path="/product-types/:id/edit" element={<ProductTypeFormPage />} />
+              <Route path="/material-types" element={<MaterialTypeListPage />} />
+              <Route path="/material-types/new" element={<MaterialTypeFormPage />} />
+              <Route path="/material-types/:id/edit" element={<MaterialTypeFormPage />} />
+              <Route path="/uoms" element={<UOMListPage />} />
+              <Route path="/uoms/new" element={<UOMFormPage />} />
+              <Route path="/uoms/:id/edit" element={<UOMFormPage />} />
               <Route path="/process-categories" element={<ProcessCategoryListPage />} />
               <Route path="/process-categories/new" element={<ProcessCategoryFormPage />} />
               <Route path="/process-categories/:id/edit" element={<ProcessCategoryFormPage />} />

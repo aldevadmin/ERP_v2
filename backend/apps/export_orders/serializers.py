@@ -1,4 +1,6 @@
+from dataclasses import dataclass
 from datetime import date
+from decimal import Decimal
 from typing import Any, cast
 
 from django.db import transaction
@@ -8,8 +10,9 @@ from rest_framework import serializers
 from apps.accounts.models import Employee
 from apps.accounts.serializers import EmployeeListSerializer, TeamSerializer
 from apps.core.models import Sequence
+from apps.customer_mappings.services import resolve_customer_product
 from apps.customers.serializers import CustomerAddressSerializer
-from apps.products.models import CustomerSKUMapping, Product
+from apps.items.models import Item
 from apps.vendors.serializers import VendorSerializer
 
 from .models import (
@@ -29,6 +32,44 @@ from .models import (
     ShipmentLine,
     SKUSupplyPlan,
 )
+
+
+@dataclass
+class ResolvedPacking:
+    """Adapter over `customer_mappings.resolve_customer_product` exposing
+    just the fields this app's snapshot/weight logic needs, sourced from
+    the resolved mapping version's pinned packaging profile version. Keeps
+    the resolution call itself the single source of truth (per
+    `customer_mappings.services`'s own docstring) while this app's callers
+    below stay unaware of the mapping/packaging schema shape.
+    """
+
+    version_id: int
+    item_id: int
+    pieces_per_pouch: int | None
+    pouches_per_carton: int | None
+    has_retail_sticker: bool | None
+    carton_net_weight_kg: Decimal | None
+    carton_gross_weight_kg: Decimal | None
+
+
+def _resolve_packing(
+    customer_id: int, customer_sku: str, as_of_date: date | None = None
+) -> ResolvedPacking | None:
+    version = resolve_customer_product(customer_id, customer_sku, as_of_date)
+    if version is None:
+        return None
+    packaging = version.packaging_profile_version
+    has_sticker = version.requirements.filter(category="LABEL", key="Retail Sticker").exists()
+    return ResolvedPacking(
+        version_id=version.id,
+        item_id=version.mapping.item_id,
+        pieces_per_pouch=packaging.pieces_per_pouch if packaging else None,
+        pouches_per_carton=packaging.pouches_per_carton if packaging else None,
+        has_retail_sticker=has_sticker or None,
+        carton_net_weight_kg=packaging.carton_net_weight_kg if packaging else None,
+        carton_gross_weight_kg=packaging.carton_gross_weight_kg if packaging else None,
+    )
 
 
 def _earliest_container_type(export_order: ExportOrder) -> str | None:
@@ -235,9 +276,10 @@ class ExportOrderSerializer(serializers.ModelSerializer):
             request = self.context.get("request")
             if request is not None:
                 employee = getattr(request.user, "employee", None)
-                if employee is not None and request.user.groups.filter(
-                    name="Export Coordinator"
-                ).exists():
+                if (
+                    employee is not None
+                    and request.user.groups.filter(name="Export Coordinator").exists()
+                ):
                     validated_data["export_coordinator"] = employee
 
         order = ExportOrder.objects.create(
@@ -271,8 +313,8 @@ class ExportOrderNoteSerializer(serializers.ModelSerializer):
 
 
 class ExportOrderLineSerializer(serializers.ModelSerializer):
-    product_sku_code = serializers.SerializerMethodField()
-    product_name = serializers.SerializerMethodField()
+    item_code = serializers.SerializerMethodField()
+    item_name = serializers.SerializerMethodField()
     pieces_per_carton = serializers.IntegerField(read_only=True)
     required_pieces = serializers.IntegerField(read_only=True)
     required_pouches = serializers.IntegerField(read_only=True, allow_null=True)
@@ -286,15 +328,16 @@ class ExportOrderLineSerializer(serializers.ModelSerializer):
             "line_number",
             "customer_sku_code",
             "customer_description",
-            "product",
-            "product_sku_code",
-            "product_name",
+            "item",
+            "item_code",
+            "item_name",
             "original_customer_quantity",
             "original_customer_unit",
             "pieces_per_pouch",
             "pouches_per_carton",
             "pieces_per_carton",
             "has_retail_sticker",
+            "source_mapping_version",
             "required_pieces",
             "required_pouches",
             "required_cartons",
@@ -307,13 +350,14 @@ class ExportOrderLineSerializer(serializers.ModelSerializer):
             "pieces_per_pouch",
             "pouches_per_carton",
             "has_retail_sticker",
+            "source_mapping_version",
         ]
 
-    def get_product_sku_code(self, obj: ExportOrderLine) -> str | None:
-        return obj.product.sku_code if obj.product else None
+    def get_item_code(self, obj: ExportOrderLine) -> str | None:
+        return obj.item.code if obj.item else None
 
-    def get_product_name(self, obj: ExportOrderLine) -> str | None:
-        return obj.product.name if obj.product else None
+    def get_item_name(self, obj: ExportOrderLine) -> str | None:
+        return obj.item.name if obj.item else None
 
     def validate_original_customer_quantity(self, value: int) -> int:
         if value < 1:
@@ -325,27 +369,35 @@ class ExportOrderLineSerializer(serializers.ModelSerializer):
         unit = attrs.get(
             "original_customer_unit", getattr(self.instance, "original_customer_unit", None)
         )
-        product = attrs.get("product", getattr(self.instance, "product", None))
+        item = attrs.get("item", getattr(self.instance, "item", None))
+        customer_sku_code = attrs.get(
+            "customer_sku_code", getattr(self.instance, "customer_sku_code", None)
+        )
 
         if unit != ExportOrderLine.Unit.PIECE:
-            if product is None:
+            if item is None:
                 raise serializers.ValidationError(
-                    {"product": "Internal SKU is required for Pouch/Carton unit lines."}
+                    {"item": "Internal SKU is required for Pouch/Carton unit lines."}
                 )
-            mapping = self._resolve_mapping(export_order, product)
+            mapping = self._resolve_mapping(export_order, customer_sku_code)
             if mapping is None or mapping.pieces_per_pouch is None:
                 raise serializers.ValidationError(
                     {
-                        "product": (
-                            "No packing configuration found for this customer/SKU. "
-                            "Set Pieces per Pouch in Customer SKU Mappings first."
+                        "item": (
+                            "No published Customer Product Mapping is effective for this "
+                            "customer, SKU, and order date. Set Pieces per Pouch in "
+                            "Customer Product Mappings first."
                         )
                     }
+                )
+            if mapping.item_id != item.id:
+                raise serializers.ValidationError(
+                    {"item": "This Customer SKU is mapped to a different item."}
                 )
             if unit == ExportOrderLine.Unit.CARTON and mapping.pouches_per_carton is None:
                 raise serializers.ValidationError(
                     {
-                        "product": (
+                        "item": (
                             "Packing configuration is missing Pouches per Carton "
                             "for this customer/SKU."
                         )
@@ -354,22 +406,29 @@ class ExportOrderLineSerializer(serializers.ModelSerializer):
         return attrs
 
     @staticmethod
-    def _resolve_mapping(export_order: ExportOrder, product: Product) -> CustomerSKUMapping | None:
-        return (
-            CustomerSKUMapping.objects.filter(customer=export_order.customer, product=product)
-            .order_by("id")
-            .first()
+    def _resolve_mapping(
+        export_order: ExportOrder, customer_sku_code: str | None
+    ) -> ResolvedPacking | None:
+        if not customer_sku_code:
+            return None
+        return _resolve_packing(
+            export_order.customer_id, customer_sku_code, export_order.customer_po_date
         )
 
     def _snapshot_for(
-        self, export_order: ExportOrder, product: Product | None
-    ) -> tuple[int | None, int | None, bool | None]:
-        if product is None:
-            return None, None, None
-        mapping = self._resolve_mapping(export_order, product)
-        if mapping is None:
-            return None, None, None
-        return mapping.pieces_per_pouch, mapping.pouches_per_carton, mapping.has_retail_sticker
+        self, export_order: ExportOrder, item: Item | None, customer_sku_code: str | None
+    ) -> tuple[int | None, int | None, bool | None, int | None]:
+        if item is None:
+            return None, None, None, None
+        mapping = self._resolve_mapping(export_order, customer_sku_code)
+        if mapping is None or mapping.item_id != item.id:
+            return None, None, None, None
+        return (
+            mapping.pieces_per_pouch,
+            mapping.pouches_per_carton,
+            mapping.has_retail_sticker,
+            mapping.version_id,
+        )
 
     def create(self, validated_data: dict[str, Any]) -> ExportOrderLine:
         export_order: ExportOrder = self.context["export_order"]
@@ -383,8 +442,12 @@ class ExportOrderLineSerializer(serializers.ModelSerializer):
                 .first()
                 or 0
             ) + 1
-            pieces_per_pouch, pouches_per_carton, has_retail_sticker = self._snapshot_for(
-                export_order, validated_data.get("product")
+            pieces_per_pouch, pouches_per_carton, has_retail_sticker, mapping_version_id = (
+                self._snapshot_for(
+                    export_order,
+                    validated_data.get("item"),
+                    validated_data.get("customer_sku_code"),
+                )
             )
             return ExportOrderLine.objects.create(
                 export_order=export_order,
@@ -392,16 +455,18 @@ class ExportOrderLineSerializer(serializers.ModelSerializer):
                 pieces_per_pouch=pieces_per_pouch,
                 pouches_per_carton=pouches_per_carton,
                 has_retail_sticker=has_retail_sticker,
+                source_mapping_version_id=mapping_version_id,
                 **validated_data,
             )
 
-    def update(
-        self, instance: ExportOrderLine, validated_data: dict[str, Any]
-    ) -> ExportOrderLine:
-        if "product" in validated_data and validated_data["product"] != instance.product:
-            pieces_per_pouch, pouches_per_carton, has_retail_sticker = self._snapshot_for(
-                instance.export_order, validated_data["product"]
+    def update(self, instance: ExportOrderLine, validated_data: dict[str, Any]) -> ExportOrderLine:
+        new_item = validated_data.get("item", instance.item)
+        new_sku = validated_data.get("customer_sku_code", instance.customer_sku_code)
+        if new_item != instance.item or new_sku != instance.customer_sku_code:
+            pieces_per_pouch, pouches_per_carton, has_retail_sticker, mapping_version_id = (
+                self._snapshot_for(instance.export_order, new_item, new_sku)
             )
+            validated_data["source_mapping_version_id"] = mapping_version_id
             validated_data["pieces_per_pouch"] = pieces_per_pouch
             validated_data["pouches_per_carton"] = pouches_per_carton
             validated_data["has_retail_sticker"] = has_retail_sticker
@@ -494,8 +559,8 @@ class SKUSupplyPlanSummarySerializer(SKUSupplyPlanSerializer):
     customer_sku_code = serializers.CharField(
         source="export_order_line.customer_sku_code", read_only=True
     )
-    product_sku_code = serializers.SerializerMethodField()
-    product_name = serializers.SerializerMethodField()
+    item_code = serializers.SerializerMethodField()
+    item_name = serializers.SerializerMethodField()
     accepted_from_production = serializers.SerializerMethodField()
     accepted_from_procurement = serializers.SerializerMethodField()
 
@@ -505,19 +570,19 @@ class SKUSupplyPlanSummarySerializer(SKUSupplyPlanSerializer):
             "export_order_line",
             "line_number",
             "customer_sku_code",
-            "product_sku_code",
-            "product_name",
+            "item_code",
+            "item_name",
             "accepted_from_production",
             "accepted_from_procurement",
         ]
 
-    def get_product_sku_code(self, obj: SKUSupplyPlan) -> str | None:
-        product = obj.export_order_line.product
-        return product.sku_code if product else None
+    def get_item_code(self, obj: SKUSupplyPlan) -> str | None:
+        item = obj.export_order_line.item
+        return item.code if item else None
 
-    def get_product_name(self, obj: SKUSupplyPlan) -> str | None:
-        product = obj.export_order_line.product
-        return product.name if product else None
+    def get_item_name(self, obj: SKUSupplyPlan) -> str | None:
+        item = obj.export_order_line.item
+        return item.name if item else None
 
     def get_accepted_from_production(self, obj: SKUSupplyPlan) -> int:
         requirement = getattr(obj.export_order_line, "production_requirement", None)
@@ -538,8 +603,8 @@ class ProductionRequirementSummarySerializer(serializers.Serializer):
     export_order_line = serializers.IntegerField(source="export_order_line.id")
     line_number = serializers.IntegerField(source="export_order_line.line_number")
     customer_sku_code = serializers.CharField(source="export_order_line.customer_sku_code")
-    product_sku_code = serializers.SerializerMethodField()
-    product_name = serializers.SerializerMethodField()
+    item_code = serializers.SerializerMethodField()
+    item_name = serializers.SerializerMethodField()
     planned_qty = serializers.IntegerField()
     cumulative_produced = serializers.IntegerField()
     cumulative_accepted = serializers.IntegerField()
@@ -549,13 +614,13 @@ class ProductionRequirementSummarySerializer(serializers.Serializer):
     status = serializers.CharField()
     last_transaction_at = serializers.DateTimeField(allow_null=True)
 
-    def get_product_sku_code(self, obj: ProductionRequirement) -> str | None:
-        product = obj.export_order_line.product
-        return product.sku_code if product else None
+    def get_item_code(self, obj: ProductionRequirement) -> str | None:
+        item = obj.export_order_line.item
+        return item.code if item else None
 
-    def get_product_name(self, obj: ProductionRequirement) -> str | None:
-        product = obj.export_order_line.product
-        return product.name if product else None
+    def get_item_name(self, obj: ProductionRequirement) -> str | None:
+        item = obj.export_order_line.item
+        return item.name if item else None
 
 
 class ProductionTransactionSerializer(serializers.ModelSerializer):
@@ -579,23 +644,13 @@ class ProductionTransactionSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
         instance = cast(ProductionTransaction | None, self.instance)
-        produced = attrs.get(
-            "quantity_produced", instance.quantity_produced if instance else None
-        )
-        accepted = attrs.get(
-            "quantity_accepted", instance.quantity_accepted if instance else None
-        )
-        rejected = attrs.get(
-            "quantity_rejected", instance.quantity_rejected if instance else None
-        )
+        produced = attrs.get("quantity_produced", instance.quantity_produced if instance else None)
+        accepted = attrs.get("quantity_accepted", instance.quantity_accepted if instance else None)
+        rejected = attrs.get("quantity_rejected", instance.quantity_rejected if instance else None)
         if produced is not None and accepted is not None and rejected is not None:
             if accepted + rejected > produced:
                 raise serializers.ValidationError(
-                    {
-                        "quantity_produced": (
-                            "Accepted + Rejected cannot exceed Produced Quantity."
-                        )
-                    }
+                    {"quantity_produced": ("Accepted + Rejected cannot exceed Produced Quantity.")}
                 )
         return attrs
 
@@ -609,8 +664,8 @@ class ProcurementRequirementSummarySerializer(serializers.Serializer):
     export_order_line = serializers.IntegerField(source="export_order_line.id")
     line_number = serializers.IntegerField(source="export_order_line.line_number")
     customer_sku_code = serializers.CharField(source="export_order_line.customer_sku_code")
-    product_sku_code = serializers.SerializerMethodField()
-    product_name = serializers.SerializerMethodField()
+    item_code = serializers.SerializerMethodField()
+    item_name = serializers.SerializerMethodField()
     planned_qty = serializers.IntegerField()
     cumulative_received = serializers.IntegerField()
     cumulative_accepted = serializers.IntegerField()
@@ -620,13 +675,13 @@ class ProcurementRequirementSummarySerializer(serializers.Serializer):
     status = serializers.CharField()
     last_transaction_at = serializers.DateTimeField(allow_null=True)
 
-    def get_product_sku_code(self, obj: ProcurementRequirement) -> str | None:
-        product = obj.export_order_line.product
-        return product.sku_code if product else None
+    def get_item_code(self, obj: ProcurementRequirement) -> str | None:
+        item = obj.export_order_line.item
+        return item.code if item else None
 
-    def get_product_name(self, obj: ProcurementRequirement) -> str | None:
-        product = obj.export_order_line.product
-        return product.name if product else None
+    def get_item_name(self, obj: ProcurementRequirement) -> str | None:
+        item = obj.export_order_line.item
+        return item.name if item else None
 
 
 class ProcurementTransactionSerializer(serializers.ModelSerializer):
@@ -653,23 +708,13 @@ class ProcurementTransactionSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
         instance = cast(ProcurementTransaction | None, self.instance)
-        received = attrs.get(
-            "quantity_received", instance.quantity_received if instance else None
-        )
-        accepted = attrs.get(
-            "quantity_accepted", instance.quantity_accepted if instance else None
-        )
-        rejected = attrs.get(
-            "quantity_rejected", instance.quantity_rejected if instance else None
-        )
+        received = attrs.get("quantity_received", instance.quantity_received if instance else None)
+        accepted = attrs.get("quantity_accepted", instance.quantity_accepted if instance else None)
+        rejected = attrs.get("quantity_rejected", instance.quantity_rejected if instance else None)
         if received is not None and accepted is not None and rejected is not None:
             if accepted + rejected > received:
                 raise serializers.ValidationError(
-                    {
-                        "quantity_received": (
-                            "Accepted + Rejected cannot exceed Received Quantity."
-                        )
-                    }
+                    {"quantity_received": ("Accepted + Rejected cannot exceed Received Quantity.")}
                 )
         return attrs
 
@@ -694,7 +739,7 @@ class FulfilmentTransactionSerializer(serializers.Serializer):
     )
     export_order_line = serializers.IntegerField()
     customer_sku_code = serializers.CharField()
-    product_name = serializers.CharField(allow_null=True)
+    item_name = serializers.CharField(allow_null=True)
     party_team = serializers.CharField()
     quantity = serializers.IntegerField()
     quantity_accepted = serializers.IntegerField()
@@ -767,8 +812,8 @@ class PackingMaterialRequirementSummarySerializer(PackingMaterialRequirementSeri
     customer_sku_code = serializers.CharField(
         source="export_order_line.customer_sku_code", read_only=True
     )
-    product_sku_code = serializers.SerializerMethodField()
-    product_name = serializers.SerializerMethodField()
+    item_code = serializers.SerializerMethodField()
+    item_name = serializers.SerializerMethodField()
 
     class Meta(PackingMaterialRequirementSerializer.Meta):
         fields = [
@@ -776,17 +821,17 @@ class PackingMaterialRequirementSummarySerializer(PackingMaterialRequirementSeri
             "export_order_line",
             "line_number",
             "customer_sku_code",
-            "product_sku_code",
-            "product_name",
+            "item_code",
+            "item_name",
         ]
 
-    def get_product_sku_code(self, obj: PackingMaterialRequirement) -> str | None:
-        product = obj.export_order_line.product
-        return product.sku_code if product else None
+    def get_item_code(self, obj: PackingMaterialRequirement) -> str | None:
+        item = obj.export_order_line.item
+        return item.code if item else None
 
-    def get_product_name(self, obj: PackingMaterialRequirement) -> str | None:
-        product = obj.export_order_line.product
-        return product.name if product else None
+    def get_item_name(self, obj: PackingMaterialRequirement) -> str | None:
+        item = obj.export_order_line.item
+        return item.name if item else None
 
 
 class PackingMonitorRowSerializer(serializers.Serializer):
@@ -800,8 +845,8 @@ class PackingMonitorRowSerializer(serializers.Serializer):
     export_order_line = serializers.IntegerField(source="id")
     line_number = serializers.IntegerField()
     customer_sku_code = serializers.CharField()
-    product_sku_code = serializers.SerializerMethodField()
-    product_name = serializers.SerializerMethodField()
+    item_code = serializers.SerializerMethodField()
+    item_name = serializers.SerializerMethodField()
     required_cartons = serializers.IntegerField()
     packed_cartons = serializers.IntegerField()
     extra_pouches = serializers.IntegerField()
@@ -821,11 +866,11 @@ class PackingMonitorRowSerializer(serializers.Serializer):
         source="last_packing_transaction_at", allow_null=True
     )
 
-    def get_product_sku_code(self, obj: ExportOrderLine) -> str | None:
-        return obj.product.sku_code if obj.product else None
+    def get_item_code(self, obj: ExportOrderLine) -> str | None:
+        return obj.item.code if obj.item else None
 
-    def get_product_name(self, obj: ExportOrderLine) -> str | None:
-        return obj.product.name if obj.product else None
+    def get_item_name(self, obj: ExportOrderLine) -> str | None:
+        return obj.item.name if obj.item else None
 
 
 class PackingTransactionSerializer(serializers.ModelSerializer):
@@ -859,12 +904,8 @@ class PackingTransactionSerializer(serializers.ModelSerializer):
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
         instance = cast(PackingTransaction | None, self.instance)
         entry_type = attrs.get("entry_type", instance.entry_type if instance else None)
-        cartons = attrs.get(
-            "cartons_packed", instance.cartons_packed if instance else None
-        )
-        pouches = attrs.get(
-            "pouches_packed", instance.pouches_packed if instance else None
-        )
+        cartons = attrs.get("cartons_packed", instance.cartons_packed if instance else None)
+        pouches = attrs.get("pouches_packed", instance.pouches_packed if instance else None)
 
         if entry_type == PackingTransaction.EntryType.CARTON_COMPLETED:
             if not cartons or cartons <= 0:
@@ -897,7 +938,7 @@ class PackingTransactionLogSerializer(serializers.ModelSerializer):
 
     export_order_line = serializers.IntegerField(source="export_order_line_id")
     customer_sku_code = serializers.CharField(source="export_order_line.customer_sku_code")
-    product_name = serializers.SerializerMethodField()
+    item_name = serializers.SerializerMethodField()
     packed_by_detail = EmployeeListSerializer(source="packed_by", read_only=True)
     entered_by = serializers.CharField(source="created_by.username", read_only=True)
     calculated_pieces = serializers.IntegerField(read_only=True)
@@ -909,7 +950,7 @@ class PackingTransactionLogSerializer(serializers.ModelSerializer):
             "date",
             "export_order_line",
             "customer_sku_code",
-            "product_name",
+            "item_name",
             "entry_type",
             "cartons_packed",
             "pouches_packed",
@@ -921,9 +962,9 @@ class PackingTransactionLogSerializer(serializers.ModelSerializer):
             "created_at",
         ]
 
-    def get_product_name(self, obj: PackingTransaction) -> str | None:
-        product = obj.export_order_line.product
-        return product.name if product else None
+    def get_item_name(self, obj: PackingTransaction) -> str | None:
+        item = obj.export_order_line.item
+        return item.name if item else None
 
 
 class ShipmentSerializer(serializers.ModelSerializer):
@@ -965,8 +1006,8 @@ class ShipmentLineSerializer(serializers.ModelSerializer):
     customer_sku_code = serializers.CharField(
         source="export_order_line.customer_sku_code", read_only=True
     )
-    product_sku_code = serializers.SerializerMethodField()
-    product_name = serializers.SerializerMethodField()
+    item_code = serializers.SerializerMethodField()
+    item_name = serializers.SerializerMethodField()
     planned_cartons = serializers.IntegerField(read_only=True)
     required_cartons = serializers.IntegerField(
         source="export_order_line.required_cartons", read_only=True
@@ -992,8 +1033,8 @@ class ShipmentLineSerializer(serializers.ModelSerializer):
             "id",
             "export_order_line",
             "customer_sku_code",
-            "product_sku_code",
-            "product_name",
+            "item_code",
+            "item_name",
             "required_cartons",
             "planned_qty",
             "planned_cartons",
@@ -1012,13 +1053,13 @@ class ShipmentLineSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
 
-    def get_product_sku_code(self, obj: ShipmentLine) -> str | None:
-        product = obj.export_order_line.product
-        return product.sku_code if product else None
+    def get_item_code(self, obj: ShipmentLine) -> str | None:
+        item = obj.export_order_line.item
+        return item.code if item else None
 
-    def get_product_name(self, obj: ShipmentLine) -> str | None:
-        product = obj.export_order_line.product
-        return product.name if product else None
+    def get_item_name(self, obj: ShipmentLine) -> str | None:
+        item = obj.export_order_line.item
+        return item.name if item else None
 
     def get_net_weight_kg(self, obj: ShipmentLine) -> float | None:
         return self._weight(obj, "carton_net_weight_kg")
@@ -1029,21 +1070,18 @@ class ShipmentLineSerializer(serializers.ModelSerializer):
     @staticmethod
     def _weight(obj: ShipmentLine, field_name: str) -> float | None:
         """Net/gross weight for the cartons actually loaded — read-only,
-        computed from `products.CustomerSKUMapping`'s per-carton weight
-        (already captured for packing config), not stored anywhere."""
+        computed from the *snapshotted* packaging profile version this
+        line resolved to when it was added (`source_mapping_version`), not
+        a live re-resolution. A later master-data edit — even publishing a
+        new mapping or packaging version — must never change a figure on
+        an already-placed order (see `ExportOrderLine`'s own docstring).
+        """
         if not obj.actual_loaded_cartons:
             return None
-        product = obj.export_order_line.product
-        if product is None:
+        version = obj.export_order_line.source_mapping_version
+        if version is None or version.packaging_profile_version is None:
             return None
-        mapping = (
-            CustomerSKUMapping.objects.filter(
-                customer=obj.export_order_line.export_order.customer, product=product
-            )
-            .order_by("id")
-            .first()
-        )
-        per_carton = getattr(mapping, field_name, None) if mapping else None
+        per_carton = getattr(version.packaging_profile_version, field_name, None)
         if per_carton is None:
             return None
         return float(obj.actual_loaded_cartons * per_carton)
@@ -1156,7 +1194,7 @@ class LoadingTransactionLogSerializer(serializers.ModelSerializer):
     customer_sku_code = serializers.CharField(
         source="shipment_line.export_order_line.customer_sku_code"
     )
-    product_name = serializers.SerializerMethodField()
+    item_name = serializers.SerializerMethodField()
     entered_by = serializers.CharField(source="created_by.username", read_only=True)
     calculated_pieces = serializers.IntegerField(read_only=True)
 
@@ -1167,7 +1205,7 @@ class LoadingTransactionLogSerializer(serializers.ModelSerializer):
             "date",
             "export_order_line",
             "customer_sku_code",
-            "product_name",
+            "item_name",
             "entry_type",
             "cartons_loaded",
             "pouches_loaded",
@@ -1178,6 +1216,6 @@ class LoadingTransactionLogSerializer(serializers.ModelSerializer):
             "created_at",
         ]
 
-    def get_product_name(self, obj: LoadingTransaction) -> str | None:
-        product = obj.shipment_line.export_order_line.product
-        return product.name if product else None
+    def get_item_name(self, obj: LoadingTransaction) -> str | None:
+        item = obj.shipment_line.export_order_line.item
+        return item.name if item else None

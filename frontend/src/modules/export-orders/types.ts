@@ -139,15 +139,16 @@ export interface ExportOrderLine {
   line_number: number
   customer_sku_code: string
   customer_description: string
-  product: number | null
-  product_sku_code: string | null
-  product_name: string | null
+  item: number | null
+  item_code: string | null
+  item_name: string | null
   original_customer_quantity: number
   original_customer_unit: ExportOrderLineUnit
   pieces_per_pouch: number | null
   pouches_per_carton: number | null
   pieces_per_carton: number | null
   has_retail_sticker: boolean | null
+  source_mapping_version: number | null
   required_pieces: number
   required_pouches: number | null
   required_cartons: number | null
@@ -159,7 +160,7 @@ export interface ExportOrderLine {
 export interface ExportOrderLineFormValues {
   customer_sku_code: string
   customer_description: string
-  product: number | null
+  item: number | null
   original_customer_quantity: number
   original_customer_unit: ExportOrderLineUnit
 }
@@ -195,8 +196,8 @@ export interface SKUSupplyPlanSummary extends SKUSupplyPlan {
   export_order_line: number
   line_number: number
   customer_sku_code: string
-  product_sku_code: string | null
-  product_name: string | null
+  item_code: string | null
+  item_name: string | null
   accepted_from_production: number
   accepted_from_procurement: number
 }
@@ -223,8 +224,8 @@ export interface ProductionRequirementSummary {
   export_order_line: number
   line_number: number
   customer_sku_code: string
-  product_sku_code: string | null
-  product_name: string | null
+  item_code: string | null
+  item_name: string | null
   planned_qty: number
   cumulative_produced: number
   cumulative_accepted: number
@@ -261,8 +262,8 @@ export interface ProcurementRequirementSummary {
   export_order_line: number
   line_number: number
   customer_sku_code: string
-  product_sku_code: string | null
-  product_name: string | null
+  item_code: string | null
+  item_name: string | null
   planned_qty: number
   cumulative_received: number
   cumulative_accepted: number
@@ -305,7 +306,7 @@ export interface FulfilmentTransaction {
   source: FulfilmentSource
   export_order_line: number
   customer_sku_code: string
-  product_name: string | null
+  item_name: string | null
   party_team: string
   quantity: number
   quantity_accepted: number
@@ -356,8 +357,8 @@ export interface PackingMaterialRequirementSummary extends PackingMaterialRequir
   export_order_line: number
   line_number: number
   customer_sku_code: string
-  product_sku_code: string | null
-  product_name: string | null
+  item_code: string | null
+  item_name: string | null
 }
 
 export interface PackingMaterialRequirementFormValues {
@@ -379,8 +380,8 @@ export interface PackingMonitorRow {
   export_order_line: number
   line_number: number
   customer_sku_code: string
-  product_sku_code: string | null
-  product_name: string | null
+  item_code: string | null
+  item_name: string | null
   required_cartons: number
   packed_cartons: number
   extra_pouches: number
@@ -427,7 +428,7 @@ export interface PackingTransactionLogEntry {
   date: string
   export_order_line: number
   customer_sku_code: string
-  product_name: string | null
+  item_name: string | null
   entry_type: PackingEntryType
   cartons_packed: number | null
   pouches_packed: number | null
@@ -501,8 +502,8 @@ export interface ShipmentLine {
   id: number
   export_order_line: number
   customer_sku_code: string
-  product_sku_code: string | null
-  product_name: string | null
+  item_code: string | null
+  item_name: string | null
   required_cartons: number | null
   planned_qty: number
   planned_cartons: number | null
@@ -559,7 +560,7 @@ export interface LoadingTransactionLogEntry {
   date: string
   export_order_line: number
   customer_sku_code: string
-  product_name: string | null
+  item_name: string | null
   entry_type: LoadingEntryType
   cartons_loaded: number | null
   pouches_loaded: number | null

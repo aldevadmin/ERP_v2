@@ -4,7 +4,7 @@ from django.contrib.auth.models import Group
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from apps.products.models import Product
+from apps.items.models import Item
 from apps.tooling.models import (
     Tooling,
     ToolingAssignment,
@@ -45,12 +45,11 @@ def _tooling(organization, code: str = "MLD-101") -> Tooling:
     )
 
 
-def _product(organization, sku_code: str = "PLATE-10") -> Product:
-    return Product.objects.create(
-        sku_code=sku_code,
+def _product(organization, sku_code: str = "PLATE-10") -> Item:
+    return Item.objects.create(
+        code=sku_code,
         name="10 Inch Plate",
-        base_unit="Piece",
-        stage=Product.Stage.FINISHED_GOOD,
+        item_class=Item.ItemClass.FINISHED_GOOD,
         organization=organization,
     )
 
@@ -196,7 +195,7 @@ def test_compatible_item_is_accepted(organization):
     position = _position(organization, work_centre)
     tooling = _tooling(organization)
     product = _product(organization)
-    ToolingCompatibility.objects.create(tooling=tooling, product=product, organization=organization)
+    ToolingCompatibility.objects.create(tooling=tooling, item=product, organization=organization)
     client = _client_as("Manager/Admin", "mgr7")
 
     response = client.post(
@@ -300,7 +299,7 @@ def test_six_positions_with_distinct_tooling_and_skus_resolve_independently(orga
         tooling = _tooling(organization, code=f"MLD-{100 + i}")
         product = _product(organization, sku_code=f"SKU-{i}")
         ToolingCompatibility.objects.create(
-            tooling=tooling, product=product, organization=organization
+            tooling=tooling, item=product, organization=organization
         )
         response = client.post(
             f"/api/v1/work-centre-positions/{position_id}/assignments/",

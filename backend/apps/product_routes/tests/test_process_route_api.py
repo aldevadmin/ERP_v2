@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from rest_framework.test import APIClient
 
-from apps.materials.models import Material
+from apps.items.models import Item
 from apps.processes.models import (
     OutputClassification,
     ProcessCategory,
@@ -12,7 +12,6 @@ from apps.processes.models import (
     ProcessOutputDefinition,
 )
 from apps.product_routes.models import ProcessRoute, ProcessRouteVersion, StorageLocation
-from apps.products.models import Product
 
 pytestmark = pytest.mark.django_db
 
@@ -27,14 +26,11 @@ def _client_as(role_name: str, username: str) -> APIClient:
     return client
 
 
-def _product(
-    organization, sku_code: str = "PLATE-10", name: str = "10 Round Areca Plate"
-) -> Product:
-    return Product.objects.create(
-        sku_code=sku_code,
+def _product(organization, sku_code: str = "PLATE-10", name: str = "10 Round Areca Plate") -> Item:
+    return Item.objects.create(
+        code=sku_code,
         name=name,
-        base_unit="Piece",
-        stage=Product.Stage.FINISHED_GOOD,
+        item_class=Item.ItemClass.FINISHED_GOOD,
         organization=organization,
     )
 
@@ -46,9 +42,12 @@ def _classification(organization, name: str = "Good") -> OutputClassification:
     return classification
 
 
-def _material(organization, code: str) -> Material:
-    return Material.objects.create(
-        code=code, name=f"Material {code}", unit="Kg", organization=organization
+def _material(organization, code: str) -> Item:
+    return Item.objects.create(
+        code=code,
+        name=f"Material {code}",
+        item_class=Item.ItemClass.RAW_MATERIAL,
+        organization=organization,
     )
 
 
@@ -73,7 +72,7 @@ def _process(
             process_version=version,
             sequence=i,
             item_type=ProcessOutputDefinition.ItemType.MATERIAL,
-            material=_material(organization, f"{code}-OUT-{i}"),
+            item=_material(organization, f"{code}-OUT-{i}"),
             uom="Kg",
             classification=_classification(organization, output_name),
             organization=organization,
@@ -81,8 +80,8 @@ def _process(
     return definition
 
 
-def _route(organization, product: Product, name: str = "Standard Plate") -> ProcessRoute:
-    definition = ProcessRoute.objects.create(name=name, product=product, organization=organization)
+def _route(organization, product: Item, name: str = "Standard Plate") -> ProcessRoute:
+    definition = ProcessRoute.objects.create(name=name, item=product, organization=organization)
     ProcessRouteVersion.objects.create(
         process_route=definition, version_number=1, organization=organization
     )
@@ -95,7 +94,7 @@ def test_create_route_creates_version_one(organization):
 
     response = client.post(
         "/api/v1/product-routes/",
-        {"name": "Standard Plate Production", "product": product.id, "is_default": True},
+        {"name": "Standard Plate Production", "item": product.id, "is_default": True},
         format="json",
     )
 
@@ -333,7 +332,7 @@ def test_multiple_routes_per_product(organization):
     _route(organization, product, name="Store After Trimming")
     client = _client_as("Export Coordinator", "coord2")
 
-    response = client.get(f"/api/v1/product-routes/?product={product.id}")
+    response = client.get(f"/api/v1/product-routes/?item={product.id}")
 
     assert response.status_code == 200
     assert response.json()["count"] == 3

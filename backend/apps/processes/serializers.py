@@ -3,8 +3,7 @@ from typing import Any
 from rest_framework import serializers
 
 from apps.core.models import Organization
-from apps.materials.models import Material
-from apps.products.models import Product
+from apps.items.models import Item
 
 from .models import (
     OutputClassification,
@@ -51,18 +50,13 @@ class ProcessInputDefinitionSerializer(serializers.ModelSerializer):
         ]
 
     def get_item_id(self, obj: ProcessInputDefinition) -> int | None:
-        if obj.input_type == ProcessInputDefinition.InputType.WIP:
-            return obj.product_id
-        return obj.material_id
+        return obj.item_id
 
     def get_item_label(self, obj: ProcessInputDefinition) -> str:
-        item = (
-            obj.product if obj.input_type == ProcessInputDefinition.InputType.WIP else obj.material
-        )
+        item = obj.item
         if item is None:
             return ""
-        code = getattr(item, "sku_code", None) or getattr(item, "code", "")
-        return f"{item.name} ({code})"
+        return f"{item.name} ({item.code})"
 
 
 class ProcessInputWriteSerializer(serializers.Serializer):
@@ -84,10 +78,14 @@ class ProcessInputWriteSerializer(serializers.Serializer):
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
         item_id = attrs["item"]
         if attrs["input_type"] == ProcessInputDefinition.InputType.WIP:
-            if not Product.objects.filter(id=item_id, stage=Product.Stage.SEMI_FINISHED).exists():
-                raise serializers.ValidationError({"item": "Select a semi-finished product."})
+            if not Item.objects.filter(id=item_id, item_class=Item.ItemClass.WIP).exists():
+                raise serializers.ValidationError({"item": "Select a WIP item."})
         else:
-            if not Material.objects.filter(id=item_id).exists():
+            if (
+                not Item.objects.filter(id=item_id)
+                .exclude(item_class__in=[Item.ItemClass.WIP, Item.ItemClass.FINISHED_GOOD])
+                .exists()
+            ):
                 raise serializers.ValidationError({"item": "Select a material."})
         return attrs
 
@@ -130,20 +128,13 @@ class ProcessOutputDefinitionSerializer(serializers.ModelSerializer):
         ]
 
     def get_item_id(self, obj: ProcessOutputDefinition) -> int | None:
-        if obj.item_type == ProcessOutputDefinition.ItemType.PRODUCT:
-            return obj.product_id
-        return obj.material_id
+        return obj.item_id
 
     def get_item_label(self, obj: ProcessOutputDefinition) -> str:
-        item = (
-            obj.product
-            if obj.item_type == ProcessOutputDefinition.ItemType.PRODUCT
-            else obj.material
-        )
+        item = obj.item
         if item is None:
             return ""
-        code = getattr(item, "sku_code", None) or getattr(item, "code", "")
-        return f"{item.name} ({code})"
+        return f"{item.name} ({item.code})"
 
 
 class ProcessOutputWriteSerializer(serializers.Serializer):
@@ -166,10 +157,16 @@ class ProcessOutputWriteSerializer(serializers.Serializer):
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
         item_id = attrs["item"]
         if attrs["item_type"] == ProcessOutputDefinition.ItemType.PRODUCT:
-            if not Product.objects.filter(id=item_id).exists():
+            if not Item.objects.filter(
+                id=item_id, item_class__in=[Item.ItemClass.WIP, Item.ItemClass.FINISHED_GOOD]
+            ).exists():
                 raise serializers.ValidationError({"item": "Select a product."})
         else:
-            if not Material.objects.filter(id=item_id).exists():
+            if (
+                not Item.objects.filter(id=item_id)
+                .exclude(item_class__in=[Item.ItemClass.WIP, Item.ItemClass.FINISHED_GOOD])
+                .exists()
+            ):
                 raise serializers.ValidationError({"item": "Select a material."})
         if not OutputClassification.objects.filter(id=attrs["classification"]).exists():
             raise serializers.ValidationError({"classification": "Select a classification."})

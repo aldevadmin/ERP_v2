@@ -17,8 +17,8 @@ const planRow: SKUSupplyPlanSummary = {
   export_order_line: 1,
   line_number: 1,
   customer_sku_code: 'CUST-SKU-1',
-  product_sku_code: 'SKU-1',
-  product_name: 'Areca Plate',
+  item_code: 'SKU-1',
+  item_name: 'Areca Plate',
   required_qty: 20000,
   quantity_from_stock: 6000,
   quantity_to_produce: 10000,
@@ -66,8 +66,8 @@ function materialRow(overrides: Partial<PackingMaterialRequirementSummary>): Pac
     export_order_line: 1,
     line_number: 1,
     customer_sku_code: 'CUST-SKU-1',
-    product_sku_code: 'SKU-1',
-    product_name: 'Areca Plate',
+    item_code: 'SKU-1',
+    item_name: 'Areca Plate',
     ...overrides,
   }
 }

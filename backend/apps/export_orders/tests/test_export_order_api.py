@@ -23,9 +23,7 @@ def _client_as(role_name: str, username: str) -> APIClient:
 
 @pytest.fixture
 def customer(organization):
-    return Customer.objects.create(
-        code="CUST-1", name="Acme Exports", organization=organization
-    )
+    return Customer.objects.create(code="CUST-1", name="Acme Exports", organization=organization)
 
 
 def test_create_requires_only_the_minimal_fields(customer):
@@ -325,9 +323,7 @@ def test_filter_by_crd_range(customer):
     )
     client = _client_as("Export Coordinator", "coord12")
 
-    response = client.get(
-        "/api/v1/export-orders/?crd_from=2026-02-15&crd_to=2026-03-31"
-    )
+    response = client.get("/api/v1/export-orders/?crd_from=2026-02-15&crd_to=2026-03-31")
 
     results = response.json()["results"]
     assert len(results) == 1
@@ -366,9 +362,7 @@ def test_advance_moves_to_the_next_stage_and_logs_an_event(customer):
 
     assert response.status_code == 200
     assert response.json()["status"] == "FULFILMENT"
-    assert ExportOrderStageEvent.objects.filter(
-        export_order=order, status="FULFILMENT"
-    ).exists()
+    assert ExportOrderStageEvent.objects.filter(export_order=order, status="FULFILMENT").exists()
 
 
 def test_advance_walks_the_full_sequence(customer):

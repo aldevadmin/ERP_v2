@@ -14,9 +14,7 @@ pytestmark = pytest.mark.django_db
 
 @pytest.fixture
 def customer(organization):
-    return Customer.objects.create(
-        code="CUST-1", name="Acme Exports", organization=organization
-    )
+    return Customer.objects.create(code="CUST-1", name="Acme Exports", organization=organization)
 
 
 @pytest.fixture
@@ -92,11 +90,17 @@ def test_multiple_transactions_sum_correctly(line):
     SKUSupplyPlan.objects.create(export_order_line=line, quantity_to_produce=10_000)
     requirement = ProductionRequirement.objects.create(export_order_line=line)
     _add_transaction(
-        requirement, date="2026-01-05", quantity_produced=4_000, quantity_accepted=3_500,
+        requirement,
+        date="2026-01-05",
+        quantity_produced=4_000,
+        quantity_accepted=3_500,
         quantity_rejected=500,
     )
     _add_transaction(
-        requirement, date="2026-01-06", quantity_produced=4_000, quantity_accepted=3_800,
+        requirement,
+        date="2026-01-06",
+        quantity_produced=4_000,
+        quantity_accepted=3_800,
         quantity_rejected=200,
     )
 

@@ -22,9 +22,7 @@ def _client_as(role_name: str, username: str) -> APIClient:
 
 @pytest.fixture
 def customer(organization):
-    return Customer.objects.create(
-        code="CUST-1", name="Acme Exports", organization=organization
-    )
+    return Customer.objects.create(code="CUST-1", name="Acme Exports", organization=organization)
 
 
 @pytest.fixture
@@ -82,14 +80,22 @@ def test_lists_transactions_across_every_line(order, line_a, line_b, employee):
     client = _client_as("Export Coordinator", "coord1")
     client.post(
         _transactions_url(order, line_a),
-        {"date": "2026-01-05", "entry_type": "CARTON_COMPLETED", "cartons_packed": 10,
-         "packed_by": employee.id},
+        {
+            "date": "2026-01-05",
+            "entry_type": "CARTON_COMPLETED",
+            "cartons_packed": 10,
+            "packed_by": employee.id,
+        },
         format="json",
     )
     client.post(
         _transactions_url(order, line_b),
-        {"date": "2026-01-06", "entry_type": "POUCH_PACKED", "pouches_packed": 5,
-         "packed_by": employee.id},
+        {
+            "date": "2026-01-06",
+            "entry_type": "POUCH_PACKED",
+            "pouches_packed": 5,
+            "packed_by": employee.id,
+        },
         format="json",
     )
 
@@ -106,14 +112,24 @@ def test_sorted_newest_first(order, line_a, employee):
     client = _client_as("Export Coordinator", "coord2")
     client.post(
         _transactions_url(order, line_a),
-        {"date": "2026-01-05", "entry_type": "CARTON_COMPLETED", "cartons_packed": 1,
-         "packed_by": employee.id, "remarks": "first"},
+        {
+            "date": "2026-01-05",
+            "entry_type": "CARTON_COMPLETED",
+            "cartons_packed": 1,
+            "packed_by": employee.id,
+            "remarks": "first",
+        },
         format="json",
     )
     client.post(
         _transactions_url(order, line_a),
-        {"date": "2026-01-06", "entry_type": "CARTON_COMPLETED", "cartons_packed": 2,
-         "packed_by": employee.id, "remarks": "second"},
+        {
+            "date": "2026-01-06",
+            "entry_type": "CARTON_COMPLETED",
+            "cartons_packed": 2,
+            "packed_by": employee.id,
+            "remarks": "second",
+        },
         format="json",
     )
 
@@ -127,14 +143,22 @@ def test_filters_by_line(order, line_a, line_b, employee):
     client = _client_as("Export Coordinator", "coord3")
     client.post(
         _transactions_url(order, line_a),
-        {"date": "2026-01-05", "entry_type": "CARTON_COMPLETED", "cartons_packed": 1,
-         "packed_by": employee.id},
+        {
+            "date": "2026-01-05",
+            "entry_type": "CARTON_COMPLETED",
+            "cartons_packed": 1,
+            "packed_by": employee.id,
+        },
         format="json",
     )
     client.post(
         _transactions_url(order, line_b),
-        {"date": "2026-01-05", "entry_type": "CARTON_COMPLETED", "cartons_packed": 2,
-         "packed_by": employee.id},
+        {
+            "date": "2026-01-05",
+            "entry_type": "CARTON_COMPLETED",
+            "cartons_packed": 2,
+            "packed_by": employee.id,
+        },
         format="json",
     )
 
@@ -149,8 +173,13 @@ def test_row_includes_packed_by_and_shift_team(order, line_a, employee):
     client = _client_as("Export Coordinator", "coord4")
     client.post(
         _transactions_url(order, line_a),
-        {"date": "2026-01-05", "entry_type": "CARTON_COMPLETED", "cartons_packed": 1,
-         "packed_by": employee.id, "shift_team": "Morning Shift"},
+        {
+            "date": "2026-01-05",
+            "entry_type": "CARTON_COMPLETED",
+            "cartons_packed": 1,
+            "packed_by": employee.id,
+            "shift_team": "Morning Shift",
+        },
         format="json",
     )
 
@@ -166,8 +195,12 @@ def test_paginated_default_page_size(order, line_a, employee):
     for _i in range(25):
         client.post(
             _transactions_url(order, line_a),
-            {"date": "2026-01-05", "entry_type": "CARTON_COMPLETED", "cartons_packed": 1,
-             "packed_by": employee.id},
+            {
+                "date": "2026-01-05",
+                "entry_type": "CARTON_COMPLETED",
+                "cartons_packed": 1,
+                "packed_by": employee.id,
+            },
             format="json",
         )
 
@@ -184,8 +217,12 @@ def test_page_size_query_param_overrides_default(order, line_a, employee):
     for _i in range(15):
         client.post(
             _transactions_url(order, line_a),
-            {"date": "2026-01-05", "entry_type": "CARTON_COMPLETED", "cartons_packed": 1,
-             "packed_by": employee.id},
+            {
+                "date": "2026-01-05",
+                "entry_type": "CARTON_COMPLETED",
+                "cartons_packed": 1,
+                "packed_by": employee.id,
+            },
             format="json",
         )
 

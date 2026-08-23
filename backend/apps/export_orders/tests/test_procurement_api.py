@@ -28,9 +28,7 @@ def _client_as(role_name: str, username: str) -> APIClient:
 
 @pytest.fixture
 def customer(organization):
-    return Customer.objects.create(
-        code="CUST-1", name="Acme Exports", organization=organization
-    )
+    return Customer.objects.create(code="CUST-1", name="Acme Exports", organization=organization)
 
 
 @pytest.fixture
@@ -109,8 +107,14 @@ def test_post_transaction_auto_creates_requirement(order, line, vendor):
 
     response = client.post(
         _transactions_url(order, line),
-        {"date": "2026-01-05", "quantity_received": 15_000, "quantity_accepted": 14_200,
-         "quantity_rejected": 800, "vendor": vendor.id, "party_team": "Acme Supplies"},
+        {
+            "date": "2026-01-05",
+            "quantity_received": 15_000,
+            "quantity_accepted": 14_200,
+            "quantity_rejected": 800,
+            "vendor": vendor.id,
+            "party_team": "Acme Supplies",
+        },
         format="json",
     )
 
@@ -127,8 +131,14 @@ def test_worked_example_via_api(order, line, vendor):
 
     client.post(
         _transactions_url(order, line),
-        {"date": "2026-01-05", "quantity_received": 15_000, "quantity_accepted": 14_200,
-         "quantity_rejected": 800, "vendor": vendor.id, "party_team": "Acme Supplies"},
+        {
+            "date": "2026-01-05",
+            "quantity_received": 15_000,
+            "quantity_accepted": 14_200,
+            "quantity_rejected": 800,
+            "vendor": vendor.id,
+            "party_team": "Acme Supplies",
+        },
         format="json",
     )
 
@@ -145,8 +155,14 @@ def test_post_rejected_when_no_planned_procurement(order, line, vendor):
 
     response = client.post(
         _transactions_url(order, line),
-        {"date": "2026-01-05", "quantity_received": 100, "quantity_accepted": 100,
-         "quantity_rejected": 0, "vendor": vendor.id, "party_team": "Acme Supplies"},
+        {
+            "date": "2026-01-05",
+            "quantity_received": 100,
+            "quantity_accepted": 100,
+            "quantity_rejected": 0,
+            "vendor": vendor.id,
+            "party_team": "Acme Supplies",
+        },
         format="json",
     )
 
@@ -160,8 +176,14 @@ def test_post_rejected_when_accepted_plus_rejected_exceeds_received(order, line,
 
     response = client.post(
         _transactions_url(order, line),
-        {"date": "2026-01-05", "quantity_received": 1_000, "quantity_accepted": 900,
-         "quantity_rejected": 200, "vendor": vendor.id, "party_team": "Acme Supplies"},
+        {
+            "date": "2026-01-05",
+            "quantity_received": 1_000,
+            "quantity_accepted": 900,
+            "quantity_rejected": 200,
+            "vendor": vendor.id,
+            "party_team": "Acme Supplies",
+        },
         format="json",
     )
 
@@ -177,8 +199,13 @@ def test_post_succeeds_when_vendor_missing_but_party_team_present(order, line):
 
     response = client.post(
         _transactions_url(order, line),
-        {"date": "2026-01-05", "quantity_received": 1_000, "quantity_accepted": 900,
-         "quantity_rejected": 100, "party_team": "Acme Supplies"},
+        {
+            "date": "2026-01-05",
+            "quantity_received": 1_000,
+            "quantity_accepted": 900,
+            "quantity_rejected": 100,
+            "party_team": "Acme Supplies",
+        },
         format="json",
     )
 
@@ -192,8 +219,13 @@ def test_post_rejected_when_party_team_missing(order, line, vendor):
 
     response = client.post(
         _transactions_url(order, line),
-        {"date": "2026-01-05", "quantity_received": 1_000, "quantity_accepted": 900,
-         "quantity_rejected": 100, "vendor": vendor.id},
+        {
+            "date": "2026-01-05",
+            "quantity_received": 1_000,
+            "quantity_accepted": 900,
+            "quantity_rejected": 100,
+            "vendor": vendor.id,
+        },
         format="json",
     )
 
@@ -206,8 +238,14 @@ def test_patch_corrects_transaction_and_updates_cumulative(order, line, vendor):
     client = _client_as("Export Coordinator", "coord7")
     create_response = client.post(
         _transactions_url(order, line),
-        {"date": "2026-01-05", "quantity_received": 1_000, "quantity_accepted": 900,
-         "quantity_rejected": 100, "vendor": vendor.id, "party_team": "Acme Supplies"},
+        {
+            "date": "2026-01-05",
+            "quantity_received": 1_000,
+            "quantity_accepted": 900,
+            "quantity_rejected": 100,
+            "vendor": vendor.id,
+            "party_team": "Acme Supplies",
+        },
         format="json",
     )
     transaction_id = create_response.json()["id"]
@@ -228,8 +266,14 @@ def test_accepted_from_procurement_reflected_on_sku_planning_summary(order, line
     client = _client_as("Export Coordinator", "coord8")
     client.post(
         _transactions_url(order, line),
-        {"date": "2026-01-05", "quantity_received": 5_000, "quantity_accepted": 4_500,
-         "quantity_rejected": 500, "vendor": vendor.id, "party_team": "Acme Supplies"},
+        {
+            "date": "2026-01-05",
+            "quantity_received": 5_000,
+            "quantity_accepted": 4_500,
+            "quantity_rejected": 500,
+            "vendor": vendor.id,
+            "party_team": "Acme Supplies",
+        },
         format="json",
     )
 
@@ -244,8 +288,14 @@ def test_list_transactions_for_line(order, line, vendor):
     client = _client_as("Export Coordinator", "coord9")
     client.post(
         _transactions_url(order, line),
-        {"date": "2026-01-05", "quantity_received": 1_000, "quantity_accepted": 900,
-         "quantity_rejected": 100, "vendor": vendor.id, "party_team": "Acme Supplies"},
+        {
+            "date": "2026-01-05",
+            "quantity_received": 1_000,
+            "quantity_accepted": 900,
+            "quantity_rejected": 100,
+            "vendor": vendor.id,
+            "party_team": "Acme Supplies",
+        },
         format="json",
     )
 

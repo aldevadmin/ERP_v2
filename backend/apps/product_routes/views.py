@@ -76,7 +76,7 @@ class ProcessRouteViewSet(
     (`DRAFT`) transactionally — see `ProcessRouteSerializer.create`.
     """
 
-    queryset = ProcessRoute.objects.select_related("product").prefetch_related(
+    queryset = ProcessRoute.objects.select_related("item").prefetch_related(
         "versions__nodes__process_definition",
         "versions__edges",
     )
@@ -96,9 +96,9 @@ class ProcessRouteViewSet(
         if is_active is not None:
             queryset = queryset.filter(is_active=is_active.lower() in ("true", "1"))
 
-        product = self.request.query_params.get("product")
-        if product is not None:
-            queryset = queryset.filter(product_id=product)
+        item = self.request.query_params.get("item")
+        if item is not None:
+            queryset = queryset.filter(item_id=item)
 
         return queryset
 
@@ -114,7 +114,7 @@ class ProcessRouteViewSet(
         copy = ProcessRoute.objects.create(
             organization=route.organization,
             name=f"{route.name} (Copy)",
-            product=route.product,
+            item=route.item,
             is_active=True,
             created_by=cast(Any, request.user),
         )
@@ -163,7 +163,7 @@ class ProcessRouteVersionViewSet(
     """
 
     queryset = ProcessRouteVersion.objects.select_related(
-        "process_route", "process_route__product"
+        "process_route", "process_route__item"
     ).prefetch_related(
         "nodes__process_definition",
         "nodes__process_definition_version",
@@ -395,7 +395,7 @@ class ProcessRouteVersionViewSet(
 
             if version.is_default:
                 ProcessRouteVersion.objects.filter(
-                    process_route__product=version.process_route.product,
+                    process_route__item=version.process_route.item,
                     status=ProcessRouteVersion.Status.ACTIVE,
                     is_default=True,
                 ).exclude(process_route=version.process_route).update(is_default=False)

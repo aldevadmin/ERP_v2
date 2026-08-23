@@ -85,8 +85,8 @@ export interface ProcessRouteVersion {
   is_default: boolean
   effective_from: string | null
   effective_to: string | null
-  product: number
-  product_name: string
+  item: number
+  item_name: string
   route_name: string
   nodes: RouteNode[]
   edges: RouteEdge[]
@@ -105,8 +105,8 @@ export interface ProcessRoute {
   is_default: boolean
   effective_from: string | null
   effective_to: string | null
-  product: number
-  product_name: string
+  item: number
+  item_name: string
   nodes: RouteNode[]
   edges: RouteEdge[]
 }
@@ -121,7 +121,7 @@ export interface ProcessRouteListResponse {
 /** What the Basics step alone collects and saves. */
 export interface RouteBasicsValues {
   name: string
-  product: number
+  item: number
   is_default: boolean
   effective_from: string | null
 }

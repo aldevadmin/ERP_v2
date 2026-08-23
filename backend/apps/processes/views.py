@@ -9,8 +9,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from apps.core.mixins import ProtectedDestroyMixin
-from apps.materials.models import Material
-from apps.products.models import Product
+from apps.items.models import Item
 
 from .models import (
     OutputClassification,
@@ -120,10 +119,8 @@ class ProcessDefinitionViewSet(
 
     queryset = ProcessDefinition.objects.prefetch_related(
         "versions__category",
-        "versions__inputs__material",
-        "versions__inputs__product",
-        "versions__outputs__material",
-        "versions__outputs__product",
+        "versions__inputs__item",
+        "versions__outputs__item",
         "versions__outputs__classification",
         "versions__parameters",
     )
@@ -199,8 +196,7 @@ class ProcessDefinitionViewSet(
                 process_version=copy_version,
                 sequence=input_row.sequence,
                 input_type=input_row.input_type,
-                material=input_row.material,
-                product=input_row.product,
+                item=input_row.item,
                 uom=input_row.uom,
                 quantity_capture=input_row.quantity_capture,
                 is_required=input_row.is_required,
@@ -211,8 +207,7 @@ class ProcessDefinitionViewSet(
                 process_version=copy_version,
                 sequence=output_row.sequence,
                 item_type=output_row.item_type,
-                material=output_row.material,
-                product=output_row.product,
+                item=output_row.item,
                 uom=output_row.uom,
                 classification=output_row.classification,
                 can_move_forward=output_row.can_move_forward,
@@ -260,10 +255,8 @@ class ProcessDefinitionVersionViewSet(
     queryset = ProcessDefinitionVersion.objects.select_related(
         "category", "process_definition"
     ).prefetch_related(
-        "inputs__material",
-        "inputs__product",
-        "outputs__material",
-        "outputs__product",
+        "inputs__item",
+        "outputs__item",
         "outputs__classification",
         "parameters",
     )
@@ -315,17 +308,11 @@ class ProcessDefinitionVersionViewSet(
             for sequence, row in enumerate(rows_serializer.validated_data, start=1):
                 row_id = row.get("id")
                 input_type = row["input_type"]
-                material: Material | None = None
-                product: Product | None = None
-                if input_type == ProcessInputDefinition.InputType.WIP:
-                    product = Product.objects.get(id=row["item"])
-                else:
-                    material = Material.objects.get(id=row["item"])
+                item = Item.objects.get(id=row["item"])
                 defaults = {
                     "sequence": sequence,
                     "input_type": input_type,
-                    "material": material,
-                    "product": product,
+                    "item": item,
                     "uom": row["uom"],
                     "quantity_capture": row["quantity_capture"],
                     "is_required": row["is_required"],
@@ -366,17 +353,11 @@ class ProcessDefinitionVersionViewSet(
             for sequence, row in enumerate(rows_serializer.validated_data, start=1):
                 row_id = row.get("id")
                 item_type = row["item_type"]
-                material: Material | None = None
-                product: Product | None = None
-                if item_type == ProcessOutputDefinition.ItemType.PRODUCT:
-                    product = Product.objects.get(id=row["item"])
-                else:
-                    material = Material.objects.get(id=row["item"])
+                item = Item.objects.get(id=row["item"])
                 defaults = {
                     "sequence": sequence,
                     "item_type": item_type,
-                    "material": material,
-                    "product": product,
+                    "item": item,
                     "uom": row["uom"],
                     "classification_id": row["classification"],
                     "can_move_forward": row["can_move_forward"],

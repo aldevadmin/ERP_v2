@@ -3,34 +3,45 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, useParams } from 'react-router'
 import ToolingFormPage from './ToolingFormPage'
 import * as api from './api'
-import * as productsApi from '../products/api'
+import * as itemsApi from '../items/api'
 import type { Tooling, ToolingTypeListResponse } from './types'
-import type { ProductListResponse } from '../products/types'
+import type { ItemListResponse } from '../items/types'
 
 vi.mock('react-router', async () => {
   const actual = await vi.importActual<typeof import('react-router')>('react-router')
   return { ...actual, useParams: vi.fn() }
 })
 vi.mock('./api')
-vi.mock('../products/api')
+vi.mock('../items/api')
 
 const mockedApi = vi.mocked(api)
-const mockedProductsApi = vi.mocked(productsApi)
+const mockedItemsApi = vi.mocked(itemsApi)
 const mockedUseParams = vi.mocked(useParams)
 
-const plate: ProductListResponse = {
+const plate: ItemListResponse = {
   count: 1,
   next: null,
   previous: null,
   results: [
     {
       id: 1,
-      sku_code: 'PLATE-10',
+      code: 'PLATE-10',
       name: '10" Round Plate',
       description: '',
-      base_unit: 'Piece',
-      stage: 'FINISHED_GOOD',
+      item_class: 'FINISHED_GOOD',
+      product_type: null,
+      product_type_name: '',
+      material_type: null,
+      material_type_name: '',
+      inventory_uom: null,
+      inventory_uom_code: '',
+      purchasable: false,
+      manufacturable: true,
+      stockable: true,
+      sellable: true,
+      lot_tracking: 'NONE',
       is_active: true,
+      available_qty: 0,
     },
   ],
 }
@@ -44,7 +55,7 @@ const toolingTypes: ToolingTypeListResponse = {
 
 beforeEach(() => {
   mockedUseParams.mockReturnValue({})
-  mockedProductsApi.listProducts.mockResolvedValue(plate)
+  mockedItemsApi.listItems.mockResolvedValue(plate)
   mockedApi.listToolingTypes.mockResolvedValue(toolingTypes)
 })
 
@@ -106,7 +117,7 @@ describe('ToolingFormPage — edit', () => {
     is_active: true,
     notes: '',
     compatibilities: [
-      { id: 1, product: 1, product_name: '10" Round Plate', product_sku_code: 'PLATE-10', process_definition: null, process_definition_name: '' },
+      { id: 1, item: 1, item_name: '10" Round Plate', item_code: 'PLATE-10', process_definition: null, process_definition_name: '' },
     ],
     compatibilities_count: 1,
   }

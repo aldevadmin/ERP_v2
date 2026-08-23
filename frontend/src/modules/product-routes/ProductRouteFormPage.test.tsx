@@ -3,36 +3,47 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, useNavigate, useParams } from 'react-router'
 import ProductRouteFormPage from './ProductRouteFormPage'
 import * as productRoutesApi from './api'
-import * as productsApi from '../products/api'
+import * as itemsApi from '../items/api'
 import type { ProcessRoute } from './types'
-import type { ProductListResponse } from '../products/types'
+import type { ItemListResponse } from '../items/types'
 
 vi.mock('react-router', async () => {
   const actual = await vi.importActual<typeof import('react-router')>('react-router')
   return { ...actual, useNavigate: vi.fn(), useParams: vi.fn() }
 })
 vi.mock('./api')
-vi.mock('../products/api')
+vi.mock('../items/api')
 
 const mockedApi = vi.mocked(productRoutesApi)
-const mockedProductsApi = vi.mocked(productsApi)
+const mockedItemsApi = vi.mocked(itemsApi)
 const mockedUseNavigate = vi.mocked(useNavigate)
 const mockedUseParams = vi.mocked(useParams)
 const navigateMock = vi.fn()
 
-const productsResponse: ProductListResponse = {
+const itemsResponse: ItemListResponse = {
   count: 1,
   next: null,
   previous: null,
   results: [
     {
       id: 1,
-      sku_code: 'PLATE-10',
+      code: 'PLATE-10',
       name: '10" Round Areca Plate',
       description: '',
-      base_unit: 'Piece',
-      stage: 'FINISHED_GOOD',
+      item_class: 'FINISHED_GOOD',
+      product_type: null,
+      product_type_name: '',
+      material_type: null,
+      material_type_name: '',
+      inventory_uom: null,
+      inventory_uom_code: '',
+      purchasable: false,
+      manufacturable: true,
+      stockable: true,
+      sellable: true,
+      lot_tracking: 'NONE',
       is_active: true,
+      available_qty: 0,
     },
   ],
 }
@@ -40,7 +51,7 @@ const productsResponse: ProductListResponse = {
 beforeEach(() => {
   mockedUseNavigate.mockReturnValue(navigateMock)
   mockedUseParams.mockReturnValue({})
-  mockedProductsApi.listProducts.mockResolvedValue(productsResponse)
+  mockedItemsApi.listItems.mockResolvedValue(itemsResponse)
 })
 
 afterEach(() => {
@@ -79,8 +90,8 @@ describe('ProductRouteFormPage — Basics', () => {
       is_default: true,
       effective_from: null,
       effective_to: null,
-      product: 1,
-      product_name: '10" Round Areca Plate',
+      item: 1,
+      item_name: '10" Round Areca Plate',
       nodes: [],
       edges: [],
     }
@@ -104,7 +115,7 @@ describe('ProductRouteFormPage — Basics', () => {
     await waitFor(() =>
       expect(mockedApi.createProcessRoute).toHaveBeenCalledWith({
         name: 'Standard Plate Production',
-        product: 1,
+        item: 1,
         is_default: true,
         effective_from: null,
       }),

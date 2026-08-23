@@ -38,7 +38,7 @@ class ProcessRouteVersionAdmin(admin.ModelAdmin):
 
 @admin.register(ProcessRoute)
 class ProcessRouteAdmin(admin.ModelAdmin):
-    list_display = ("name", "product", "is_active")
+    list_display = ("name", "item", "is_active")
     list_filter = ("is_active",)
-    search_fields = ("name", "product__name", "product__sku_code")
-    autocomplete_fields = ("product",)
+    search_fields = ("name", "item__name", "item__code")
+    autocomplete_fields = ("item",)

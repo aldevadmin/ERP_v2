@@ -74,7 +74,7 @@ export default function ExportOrderPackingTab({ exportOrderId }: { exportOrderId
 
   const skuOptions = readinessRows.map((row) => ({
     value: row.export_order_line,
-    label: `${row.customer_sku_code}${row.product_name ? ` — ${row.product_name}` : ''}`,
+    label: `${row.customer_sku_code}${row.item_name ? ` — ${row.item_name}` : ''}`,
   }))
 
   const planByLine = new Map(supplyPlans.map((plan) => [plan.export_order_line, plan]))
@@ -147,7 +147,7 @@ export default function ExportOrderPackingTab({ exportOrderId }: { exportOrderId
                 <div>
                   <div>{record.customer_sku_code}</div>
                   <Text type="secondary" style={{ fontSize: 12 }}>
-                    {record.product_name || '—'}
+                    {record.item_name || '—'}
                   </Text>
                 </div>
               ),
@@ -284,7 +284,7 @@ export default function ExportOrderPackingTab({ exportOrderId }: { exportOrderId
                 <div>
                   <div>{record.customer_sku_code}</div>
                   <Text type="secondary" style={{ fontSize: 12 }}>
-                    {record.product_name || '—'}
+                    {record.item_name || '—'}
                   </Text>
                 </div>
               ),

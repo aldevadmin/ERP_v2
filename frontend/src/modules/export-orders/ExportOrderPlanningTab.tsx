@@ -102,7 +102,7 @@ export default function ExportOrderPlanningTab({ exportOrderId }: { exportOrderI
               group = {
                 exportOrderLine: row.export_order_line,
                 customerSkuCode: row.customer_sku_code,
-                productName: row.product_name,
+                productName: row.item_name,
                 materials: [],
               }
               groupsByLine.set(row.export_order_line, group)
@@ -113,7 +113,7 @@ export default function ExportOrderPlanningTab({ exportOrderId }: { exportOrderI
               exportOrderLine: row.export_order_line,
               materialType,
               customerSkuCode: row.customer_sku_code,
-              productName: row.product_name,
+              productName: row.item_name,
               materialLabel: label,
               requiredQty: row.required_qty,
               availableStock: row.available_stock,
@@ -293,7 +293,7 @@ export default function ExportOrderPlanningTab({ exportOrderId }: { exportOrderI
               <div>
                 <div>{record.customer_sku_code}</div>
                 <Text type="secondary" style={{ fontSize: 12 }}>
-                  {record.product_name || record.product_sku_code || '—'}
+                  {record.item_name || record.item_code || '—'}
                 </Text>
               </div>
             ),

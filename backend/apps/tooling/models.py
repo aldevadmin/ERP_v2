@@ -58,15 +58,15 @@ class Tooling(BaseModel):
 
 
 class ToolingCompatibility(BaseModel):
-    """Declares that `tooling` is usable for `product` — advisory for the
+    """Declares that `tooling` is usable for `item` — advisory for the
     frontend's filtering, but the backend treats it as authoritative:
     assigning incompatible tooling to a position is rejected. Optionally
     narrowed to a specific `process_definition` (e.g. this mould is only
-    compatible with this product when run through this specific process).
+    compatible with this item when run through this specific process).
     """
 
     tooling = models.ForeignKey(Tooling, on_delete=models.CASCADE, related_name="compatibilities")
-    product = models.ForeignKey("products.Product", on_delete=models.PROTECT, related_name="+")
+    item = models.ForeignKey("items.Item", on_delete=models.PROTECT, related_name="+")
     process_definition = models.ForeignKey(
         "processes.ProcessDefinition",
         on_delete=models.PROTECT,
@@ -82,13 +82,13 @@ class ToolingCompatibility(BaseModel):
         ordering = ["tooling__name"]
         constraints = [
             models.UniqueConstraint(
-                fields=["tooling", "product", "process_definition"],
-                name="unique_compatibility_per_tooling_product_process",
+                fields=["tooling", "item", "process_definition"],
+                name="unique_compatibility_per_tooling_item_process",
             )
         ]
 
     def __str__(self) -> str:
-        return f"{self.tooling} -> {self.product}"
+        return f"{self.tooling} -> {self.item}"
 
 
 class WorkCentrePosition(BaseModel):
@@ -139,7 +139,7 @@ class ToolingAssignment(BaseModel):
         WorkCentrePosition, on_delete=models.PROTECT, related_name="assignments"
     )
     default_item = models.ForeignKey(
-        "products.Product", on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+        "items.Item", on_delete=models.PROTECT, null=True, blank=True, related_name="+"
     )
     standard_rate_override = models.DecimalField(
         max_digits=10, decimal_places=2, null=True, blank=True

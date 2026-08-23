@@ -10,13 +10,14 @@ urlpatterns: list[Any] = [
     path("api/v1/", include("apps.core.urls")),
     path("api/v1/", include("apps.accounts.urls")),
     path("api/v1/", include("apps.customers.urls")),
-    path("api/v1/", include("apps.products.urls")),
     path("api/v1/", include("apps.vendors.urls")),
-    path("api/v1/", include("apps.materials.urls")),
+    path("api/v1/", include("apps.items.urls")),
     path("api/v1/", include("apps.processes.urls")),
     path("api/v1/", include("apps.work_centres.urls")),
     path("api/v1/", include("apps.product_routes.urls")),
     path("api/v1/", include("apps.tooling.urls")),
+    path("api/v1/", include("apps.packaging.urls")),
+    path("api/v1/", include("apps.customer_mappings.urls")),
     path("api/v1/", include("apps.export_orders.urls")),
 ]
 

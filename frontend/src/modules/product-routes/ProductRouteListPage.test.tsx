@@ -3,19 +3,19 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, useNavigate } from 'react-router'
 import ProductRouteListPage from './ProductRouteListPage'
 import * as productRoutesApi from './api'
-import * as productsApi from '../products/api'
+import * as itemsApi from '../items/api'
 import type { ProcessRoute, ProcessRouteListResponse } from './types'
-import type { ProductListResponse } from '../products/types'
+import type { ItemListResponse } from '../items/types'
 
 vi.mock('react-router', async () => {
   const actual = await vi.importActual<typeof import('react-router')>('react-router')
   return { ...actual, useNavigate: vi.fn() }
 })
 vi.mock('./api')
-vi.mock('../products/api')
+vi.mock('../items/api')
 
 const mockedApi = vi.mocked(productRoutesApi)
-const mockedProductsApi = vi.mocked(productsApi)
+const mockedItemsApi = vi.mocked(itemsApi)
 const mockedUseNavigate = vi.mocked(useNavigate)
 const navigateMock = vi.fn()
 
@@ -29,8 +29,8 @@ const route: ProcessRoute = {
   is_default: true,
   effective_from: null,
   effective_to: null,
-  product: 1,
-  product_name: '10" Round Areca Plate',
+  item: 1,
+  item_name: '10" Round Areca Plate',
   nodes: [
     {
       id: 1,
@@ -46,26 +46,37 @@ const route: ProcessRoute = {
   edges: [],
 }
 
-const productsResponse: ProductListResponse = {
+const itemsResponse: ItemListResponse = {
   count: 1,
   next: null,
   previous: null,
   results: [
     {
       id: 1,
-      sku_code: 'PLATE-10',
+      code: 'PLATE-10',
       name: '10" Round Areca Plate',
       description: '',
-      base_unit: 'Piece',
-      stage: 'FINISHED_GOOD',
+      item_class: 'FINISHED_GOOD',
+      product_type: null,
+      product_type_name: '',
+      material_type: null,
+      material_type_name: '',
+      inventory_uom: null,
+      inventory_uom_code: '',
+      purchasable: false,
+      manufacturable: true,
+      stockable: true,
+      sellable: true,
+      lot_tracking: 'NONE',
       is_active: true,
+      available_qty: 0,
     },
   ],
 }
 
 beforeEach(() => {
   mockedUseNavigate.mockReturnValue(navigateMock)
-  mockedProductsApi.listProducts.mockResolvedValue(productsResponse)
+  mockedItemsApi.listItems.mockResolvedValue(itemsResponse)
 })
 
 afterEach(() => {

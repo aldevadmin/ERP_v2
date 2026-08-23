@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router'
-import { Button, Card, Descriptions, Empty, Flex, Space, Spin, Typography } from 'antd'
+import { Link, useNavigate, useParams } from 'react-router'
+import { Button, Card, Descriptions, Empty, Flex, Space, Spin, Table, Tag, Typography } from 'antd'
 import StatusTag from '../../shared/components/StatusTag'
+import { listCustomerProductMappings } from '../customer-mappings/api'
+import type { CustomerProductMapping } from '../customer-mappings/types'
 import { getCustomer } from './api'
 import type { Customer } from './types'
 
@@ -17,6 +19,7 @@ export default function CustomerDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [customer, setCustomer] = useState<Customer | null>(null)
+  const [mappings, setMappings] = useState<CustomerProductMapping[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -25,6 +28,9 @@ export default function CustomerDetailPage() {
       .then(setCustomer)
       .catch(() => setCustomer(null))
       .finally(() => setLoading(false))
+    listCustomerProductMappings({ customer: Number(id) }).then((response) =>
+      setMappings(response.results),
+    )
   }, [id])
 
   if (loading) {
@@ -87,6 +93,39 @@ export default function CustomerDetailPage() {
             <div>{address.country}</div>
           </Card>
         ))}
+      </Space>
+
+      <Title level={5} style={{ marginTop: 24 }}>
+        Products
+      </Title>
+      <Table<CustomerProductMapping>
+        rowKey="id"
+        size="small"
+        dataSource={mappings}
+        pagination={false}
+        locale={{ emptyText: 'No products mapped to this customer yet.' }}
+        onRow={(record) => ({
+          onClick: () => navigate(`/customer-product-mappings/${record.id}/edit`),
+          style: { cursor: 'pointer' },
+        })}
+        columns={[
+          { title: 'Item', dataIndex: 'item_name' },
+          { title: 'Customer SKU', dataIndex: 'customer_sku' },
+          {
+            title: 'Status',
+            render: (_, r) =>
+              r.current_version ? (
+                <Tag color={r.current_version.status === 'PUBLISHED' ? 'green' : 'default'}>
+                  v{r.current_version.version_number} — {r.current_version.status}
+                </Tag>
+              ) : (
+                '—'
+              ),
+          },
+        ]}
+      />
+      <Space style={{ marginTop: 12 }}>
+        <Link to="/customer-product-mappings/new">+ Map a product for this customer</Link>
       </Space>
     </Card>
   )

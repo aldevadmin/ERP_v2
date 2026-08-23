@@ -172,7 +172,7 @@ class ExportOrderLineViewSet(
     viewsets.GenericViewSet,
 ):
     """Full CRUD — a coordinator correcting a data-entry mistake deletes
-    and re-enters a line, same as `products.CustomerSKUMappingViewSet`.
+    and re-enters a line, same as `customer_mappings.CustomerProductMappingViewSet`.
 
     No pagination: a coordinator entering 10-50 lines needs the full set
     in one response for the rapid-entry grid — the global 20-row default
@@ -194,7 +194,7 @@ class ExportOrderLineViewSet(
     def get_queryset(self) -> QuerySet[ExportOrderLine]:
         return ExportOrderLine.objects.filter(
             export_order_id=self.kwargs["export_order_pk"]
-        ).select_related("product")
+        ).select_related("item")
 
     def get_serializer_context(self) -> dict[str, Any]:
         context = dict(super().get_serializer_context())
@@ -267,7 +267,7 @@ class SKUSupplyPlanListView(APIView):
     def get(self, request: Request, export_order_pk: str) -> Response:
         export_order = get_object_or_404(ExportOrder, pk=export_order_pk)
         lines = ExportOrderLine.objects.filter(export_order=export_order).select_related(
-            "product",
+            "item",
             "supply_plan",
             "supply_plan__responsible_team",
             "supply_plan__responsible_person",
@@ -294,7 +294,7 @@ class ProductionRequirementListView(APIView):
         export_order = get_object_or_404(ExportOrder, pk=export_order_pk)
         lines = (
             ExportOrderLine.objects.filter(export_order=export_order)
-            .select_related("product", "supply_plan", "production_requirement")
+            .select_related("item", "supply_plan", "production_requirement")
             .prefetch_related("production_requirement__transactions")
         )
         rows = []
@@ -368,7 +368,7 @@ class ProcurementRequirementListView(APIView):
         export_order = get_object_or_404(ExportOrder, pk=export_order_pk)
         lines = (
             ExportOrderLine.objects.filter(export_order=export_order)
-            .select_related("product", "supply_plan", "procurement_requirement")
+            .select_related("item", "supply_plan", "procurement_requirement")
             .prefetch_related("procurement_requirement__transactions")
         )
         rows = []
@@ -400,14 +400,10 @@ class FulfilmentTransactionListView(APIView):
 
         production_qs = ProductionTransaction.objects.filter(
             production_requirement__export_order_line__export_order=export_order
-        ).select_related(
-            "production_requirement__export_order_line__product", "created_by"
-        )
+        ).select_related("production_requirement__export_order_line__item", "created_by")
         procurement_qs = ProcurementTransaction.objects.filter(
             procurement_requirement__export_order_line__export_order=export_order
-        ).select_related(
-            "procurement_requirement__export_order_line__product", "created_by"
-        )
+        ).select_related("procurement_requirement__export_order_line__item", "created_by")
         if line_filter:
             line_id = int(line_filter)
             production_qs = production_qs.filter(
@@ -427,7 +423,7 @@ class FulfilmentTransactionListView(APIView):
                     "source": "PRODUCTION",
                     "export_order_line": line.id,
                     "customer_sku_code": line.customer_sku_code,
-                    "product_name": line.product.name if line.product else None,
+                    "item_name": line.item.name if line.item else None,
                     "party_team": production_txn.party_team,
                     "quantity": production_txn.quantity_produced,
                     "quantity_accepted": production_txn.quantity_accepted,
@@ -448,7 +444,7 @@ class FulfilmentTransactionListView(APIView):
                     "source": "PROCUREMENT",
                     "export_order_line": line.id,
                     "customer_sku_code": line.customer_sku_code,
-                    "product_name": line.product.name if line.product else None,
+                    "item_name": line.item.name if line.item else None,
                     "party_team": procurement_txn.party_team,
                     "quantity": procurement_txn.quantity_received,
                     "quantity_accepted": procurement_txn.quantity_accepted,
@@ -616,7 +612,7 @@ class PackingMaterialRequirementListView(APIView):
         export_order = get_object_or_404(ExportOrder, pk=export_order_pk)
         lines = (
             ExportOrderLine.objects.filter(export_order=export_order)
-            .select_related("product")
+            .select_related("item")
             .prefetch_related("packing_material_requirements")
         )
         rows = []
@@ -653,7 +649,7 @@ class PackingMonitorView(APIView):
         export_order = get_object_or_404(ExportOrder, pk=export_order_pk)
         lines = (
             ExportOrderLine.objects.filter(export_order=export_order)
-            .select_related("product")
+            .select_related("item")
             .prefetch_related("packing_transactions")
         )
         rows = [line for line in lines if line.required_cartons is not None]
@@ -686,7 +682,7 @@ class PackingTransactionLogListView(APIView):
         export_order = get_object_or_404(ExportOrder, pk=export_order_pk)
         queryset = (
             PackingTransaction.objects.filter(export_order_line__export_order=export_order)
-            .select_related("export_order_line__product", "packed_by", "created_by")
+            .select_related("export_order_line__item", "packed_by", "created_by")
             .order_by("-created_at")
         )
         line_filter = request.query_params.get("line")
@@ -916,12 +912,10 @@ class LoadingTransactionLogListView(APIView):
     pagination_class = LoadingTransactionLogPagination
 
     def get(self, request: Request, export_order_pk: str, shipment_pk: str) -> Response:
-        shipment = get_object_or_404(
-            Shipment, pk=shipment_pk, export_order_id=export_order_pk
-        )
+        shipment = get_object_or_404(Shipment, pk=shipment_pk, export_order_id=export_order_pk)
         queryset = (
             LoadingTransaction.objects.filter(shipment_line__shipment=shipment)
-            .select_related("shipment_line__export_order_line__product", "created_by")
+            .select_related("shipment_line__export_order_line__item", "created_by")
             .order_by("-created_at")
         )
         line_filter = request.query_params.get("line")

@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from rest_framework.test import APIClient
 
-from apps.materials.models import Material
+from apps.items.models import Item
 from apps.processes.models import (
     OutputClassification,
     ProcessCategory,
@@ -11,7 +11,6 @@ from apps.processes.models import (
     ProcessDefinitionVersion,
     ProcessOutputDefinition,
 )
-from apps.products.models import Product
 
 pytestmark = pytest.mark.django_db
 
@@ -46,19 +45,21 @@ def _classification(organization, name="Grade A") -> OutputClassification:
     return OutputClassification.objects.create(name=name, organization=organization)
 
 
-def _untrimmed_plate(organization) -> Product:
-    return Product.objects.create(
-        sku_code="UNTRIM-10SQ",
+def _untrimmed_plate(organization) -> Item:
+    return Item.objects.create(
+        code="UNTRIM-10SQ",
         name="Untrimmed Plate",
-        base_unit="Piece",
-        stage=Product.Stage.SEMI_FINISHED,
+        item_class=Item.ItemClass.WIP,
         organization=organization,
     )
 
 
-def _scrap(organization) -> Material:
-    return Material.objects.create(
-        code="SCRAP", name="Wood Scrap", unit="Kg", organization=organization
+def _scrap(organization) -> Item:
+    return Item.objects.create(
+        code="SCRAP",
+        name="Wood Scrap",
+        item_class=Item.ItemClass.SCRAP_BY_PRODUCT,
+        organization=organization,
     )
 
 
@@ -88,8 +89,7 @@ def test_add_a_product_output(organization):
     assert response.status_code == 200
     row = version.outputs.get()
     assert row.item_type == "PRODUCT"
-    assert row.product_id == plate.id
-    assert row.material_id is None
+    assert row.item_id == plate.id
     assert row.classification_id == classification.id
     assert row.sequence == 1
 
@@ -149,8 +149,7 @@ def test_add_a_material_output(organization):
     assert response.status_code == 200
     row = version.outputs.get()
     assert row.item_type == "MATERIAL"
-    assert row.material_id == scrap.id
-    assert row.product_id is None
+    assert row.item_id == scrap.id
 
 
 def test_product_output_rejects_a_material_id(organization):
@@ -203,11 +202,10 @@ def test_output_rejects_an_unknown_classification(organization):
 def test_multiple_outputs_can_all_stay_traceable(organization):
     version = _version(organization)
     premium_product = _untrimmed_plate(organization)
-    reject_product = Product.objects.create(
-        sku_code="REJ-10SQ",
+    reject_product = Item.objects.create(
+        code="REJ-10SQ",
         name="Reject Plate",
-        base_unit="Piece",
-        stage=Product.Stage.SEMI_FINISHED,
+        item_class=Item.ItemClass.WIP,
         organization=organization,
     )
     scrap = _scrap(organization)
@@ -262,7 +260,7 @@ def test_whole_list_replace_updates_creates_and_deletes(organization):
         process_version=version,
         sequence=1,
         item_type=ProcessOutputDefinition.ItemType.PRODUCT,
-        product=plate,
+        item=plate,
         uom="Piece",
         classification=good,
         organization=organization,
@@ -271,7 +269,7 @@ def test_whole_list_replace_updates_creates_and_deletes(organization):
         process_version=version,
         sequence=2,
         item_type=ProcessOutputDefinition.ItemType.MATERIAL,
-        material=scrap,
+        item=scrap,
         uom="Kg",
         classification=scrap_class,
         organization=organization,
@@ -312,7 +310,7 @@ def test_reorder_via_resend_reassigns_sequence(organization):
         process_version=version,
         sequence=1,
         item_type=ProcessOutputDefinition.ItemType.PRODUCT,
-        product=plate,
+        item=plate,
         uom="Piece",
         classification=good,
         organization=organization,
@@ -321,7 +319,7 @@ def test_reorder_via_resend_reassigns_sequence(organization):
         process_version=version,
         sequence=2,
         item_type=ProcessOutputDefinition.ItemType.MATERIAL,
-        material=scrap,
+        item=scrap,
         uom="Kg",
         classification=scrap_class,
         organization=organization,
@@ -391,7 +389,7 @@ def test_duplicate_clones_outputs(organization):
         process_version=version,
         sequence=1,
         item_type=ProcessOutputDefinition.ItemType.PRODUCT,
-        product=plate,
+        item=plate,
         uom="Piece",
         classification=classification,
         organization=organization,
@@ -408,4 +406,4 @@ def test_duplicate_clones_outputs(organization):
     copy_version = copy.current_version()
     assert copy_version is not None
     assert copy_version.outputs.count() == 1
-    assert copy_version.outputs.get().product_id == plate.id
+    assert copy_version.outputs.get().item_id == plate.id

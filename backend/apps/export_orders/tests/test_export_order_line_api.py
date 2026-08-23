@@ -3,13 +3,62 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from rest_framework.test import APIClient
 
+from apps.customer_mappings.models import CustomerProductMapping, CustomerProductMappingVersion
 from apps.customers.models import Customer
 from apps.export_orders.models import ExportOrder, ExportOrderLine
-from apps.products.models import CustomerSKUMapping, Product
+from apps.items.models import Item
+from apps.packaging.models import PackagingProfile, PackagingProfileVersion
 
 pytestmark = pytest.mark.django_db
 
 User = get_user_model()
+
+
+def _mapping(
+    customer: Customer,
+    item: Item,
+    customer_sku_code: str = "CUST-SKU-1",
+    pieces_per_pouch: int | None = None,
+    pouches_per_carton: int | None = None,
+) -> PackagingProfileVersion:
+    """Sets up a published Customer Product Mapping (and its pinned,
+    published packaging profile version) resolvable via
+    `customer_mappings.resolve_customer_product(customer, item)` — the
+    same resolution path `ExportOrderLineSerializer` uses to snapshot
+    packing config. Returns the packaging profile version so tests can
+    still mutate `pieces_per_pouch` directly (bypassing the API, same as
+    editing master data after a line already snapshotted it) to assert the
+    snapshot doesn't drift.
+    """
+    profile = PackagingProfile.objects.create(
+        code=f"PKG-{customer.id}-{item.id}-{customer_sku_code}",
+        name=f"{item.name} — {customer.name}",
+        finished_item=item,
+        organization=item.organization,
+    )
+    profile_version = PackagingProfileVersion.objects.create(
+        profile=profile,
+        version_number=1,
+        status=PackagingProfileVersion.Status.PUBLISHED,
+        pieces_per_pouch=pieces_per_pouch,
+        pouches_per_carton=pouches_per_carton,
+        organization=item.organization,
+    )
+    mapping = CustomerProductMapping.objects.create(
+        customer=customer,
+        item=item,
+        customer_sku=customer_sku_code,
+        mapping_code=f"CPM-{customer.id}-{item.id}-{customer_sku_code}",
+        organization=item.organization,
+    )
+    CustomerProductMappingVersion.objects.create(
+        mapping=mapping,
+        version_number=1,
+        status=CustomerProductMappingVersion.Status.PUBLISHED,
+        packaging_profile_version=profile_version,
+        organization=item.organization,
+    )
+    return profile_version
 
 
 def _client_as(role_name: str, username: str) -> APIClient:
@@ -22,16 +71,12 @@ def _client_as(role_name: str, username: str) -> APIClient:
 
 @pytest.fixture
 def customer(organization):
-    return Customer.objects.create(
-        code="CUST-1", name="Acme Exports", organization=organization
-    )
+    return Customer.objects.create(code="CUST-1", name="Acme Exports", organization=organization)
 
 
 @pytest.fixture
 def other_customer(organization):
-    return Customer.objects.create(
-        code="CUST-2", name="Other Co", organization=organization
-    )
+    return Customer.objects.create(code="CUST-2", name="Other Co", organization=organization)
 
 
 @pytest.fixture
@@ -46,8 +91,11 @@ def order(customer):
 
 @pytest.fixture
 def product(organization):
-    return Product.objects.create(
-        sku_code="SKU-1", name="Areca Plate", base_unit="Piece", organization=organization
+    return Item.objects.create(
+        code="SKU-1",
+        name="Areca Plate",
+        item_class=Item.ItemClass.FINISHED_GOOD,
+        organization=organization,
     )
 
 
@@ -79,7 +127,7 @@ def test_create_piece_line_without_product(order):
     assert body["required_pieces"] == 100
     assert body["required_pouches"] is None
     assert body["required_cartons"] is None
-    assert body["product"] is None
+    assert body["item"] is None
 
 
 def test_create_pouch_line_without_resolvable_mapping_is_rejected(order, product):
@@ -89,7 +137,7 @@ def test_create_pouch_line_without_resolvable_mapping_is_rejected(order, product
         _lines_url(order),
         {
             "customer_sku_code": "CUST-SKU-1",
-            "product": product.id,
+            "item": product.id,
             "original_customer_quantity": 10,
             "original_customer_unit": "POUCH",
         },
@@ -97,20 +145,18 @@ def test_create_pouch_line_without_resolvable_mapping_is_rejected(order, product
     )
 
     assert response.status_code == 400
-    assert "product" in response.json()
+    assert "item" in response.json()
 
 
 def test_create_pouch_line_missing_pieces_per_pouch_is_rejected(order, product, customer):
-    CustomerSKUMapping.objects.create(
-        customer=customer, customer_sku_code="CUST-SKU-1", product=product
-    )
+    _mapping(customer, product)
     client = _client_as("Export Coordinator", "coord3")
 
     response = client.post(
         _lines_url(order),
         {
             "customer_sku_code": "CUST-SKU-1",
-            "product": product.id,
+            "item": product.id,
             "original_customer_quantity": 10,
             "original_customer_unit": "POUCH",
         },
@@ -118,23 +164,18 @@ def test_create_pouch_line_missing_pieces_per_pouch_is_rejected(order, product, 
     )
 
     assert response.status_code == 400
-    assert "product" in response.json()
+    assert "item" in response.json()
 
 
 def test_create_carton_line_missing_pouches_per_carton_is_rejected(order, product, customer):
-    CustomerSKUMapping.objects.create(
-        customer=customer,
-        customer_sku_code="CUST-SKU-1",
-        product=product,
-        pieces_per_pouch=10,
-    )
+    _mapping(customer, product, pieces_per_pouch=10)
     client = _client_as("Export Coordinator", "coord4")
 
     response = client.post(
         _lines_url(order),
         {
             "customer_sku_code": "CUST-SKU-1",
-            "product": product.id,
+            "item": product.id,
             "original_customer_quantity": 3,
             "original_customer_unit": "CARTON",
         },
@@ -142,24 +183,18 @@ def test_create_carton_line_missing_pouches_per_carton_is_rejected(order, produc
     )
 
     assert response.status_code == 400
-    assert "product" in response.json()
+    assert "item" in response.json()
 
 
 def test_create_carton_line_resolves_and_snapshots_packing_config(order, product, customer):
-    CustomerSKUMapping.objects.create(
-        customer=customer,
-        customer_sku_code="CUST-SKU-1",
-        product=product,
-        pieces_per_pouch=10,
-        pouches_per_carton=3,
-    )
+    _mapping(customer, product, pieces_per_pouch=10, pouches_per_carton=3)
     client = _client_as("Export Coordinator", "coord5")
 
     response = client.post(
         _lines_url(order),
         {
             "customer_sku_code": "CUST-SKU-1",
-            "product": product.id,
+            "item": product.id,
             "original_customer_quantity": 105,
             "original_customer_unit": "PIECE",
         },
@@ -175,24 +210,19 @@ def test_create_carton_line_resolves_and_snapshots_packing_config(order, product
     # 105 pieces -> 11 pouches (rounded up) -> 4 cartons (rounded up)
     assert body["required_pouches"] == 11
     assert body["required_cartons"] == 4
-    assert body["product_sku_code"] == "SKU-1"
-    assert body["product_name"] == "Areca Plate"
+    assert body["item_code"] == "SKU-1"
+    assert body["item_name"] == "Areca Plate"
 
 
 def test_mapping_resolution_scoped_to_order_customer(order, product, other_customer):
-    CustomerSKUMapping.objects.create(
-        customer=other_customer,
-        customer_sku_code="CUST-SKU-1",
-        product=product,
-        pieces_per_pouch=10,
-    )
+    _mapping(other_customer, product, pieces_per_pouch=10)
     client = _client_as("Export Coordinator", "coord6")
 
     response = client.post(
         _lines_url(order),
         {
             "customer_sku_code": "CUST-SKU-1",
-            "product": product.id,
+            "item": product.id,
             "original_customer_quantity": 10,
             "original_customer_unit": "POUCH",
         },
@@ -218,18 +248,13 @@ def test_line_numbers_increment_within_order(order):
 
 
 def test_update_quantity_does_not_resnapshot_packing_config(order, product, customer):
-    mapping = CustomerSKUMapping.objects.create(
-        customer=customer,
-        customer_sku_code="CUST-SKU-1",
-        product=product,
-        pieces_per_pouch=10,
-    )
+    profile_version = _mapping(customer, product, pieces_per_pouch=10)
     client = _client_as("Export Coordinator", "coord8")
     create_response = client.post(
         _lines_url(order),
         {
             "customer_sku_code": "CUST-SKU-1",
-            "product": product.id,
+            "item": product.id,
             "original_customer_quantity": 10,
             "original_customer_unit": "POUCH",
         },
@@ -237,8 +262,8 @@ def test_update_quantity_does_not_resnapshot_packing_config(order, product, cust
     )
     line_id = create_response.json()["id"]
 
-    mapping.pieces_per_pouch = 999
-    mapping.save()
+    profile_version.pieces_per_pouch = 999
+    profile_version.save()
 
     response = client.patch(
         _line_detail_url(order, line_id), {"original_customer_quantity": 20}, format="json"
@@ -249,55 +274,20 @@ def test_update_quantity_does_not_resnapshot_packing_config(order, product, cust
 
 
 def test_update_product_change_resnapshots_packing_config(order, product, customer):
-    CustomerSKUMapping.objects.create(
-        customer=customer,
-        customer_sku_code="CUST-SKU-1",
-        product=product,
-        pieces_per_pouch=10,
+    _mapping(customer, product, pieces_per_pouch=10)
+    other_product = Item.objects.create(
+        code="SKU-2",
+        name="Areca Bowl",
+        item_class=Item.ItemClass.FINISHED_GOOD,
+        organization=customer.organization,
     )
-    other_product = Product.objects.create(
-        sku_code="SKU-2", name="Areca Bowl", base_unit="Piece", organization=customer.organization
-    )
-    CustomerSKUMapping.objects.create(
-        customer=customer,
-        customer_sku_code="CUST-SKU-2",
-        product=other_product,
-        pieces_per_pouch=25,
-    )
+    _mapping(customer, other_product, customer_sku_code="CUST-SKU-2", pieces_per_pouch=25)
     client = _client_as("Export Coordinator", "coord9")
     create_response = client.post(
         _lines_url(order),
         {
             "customer_sku_code": "CUST-SKU-1",
-            "product": product.id,
-            "original_customer_quantity": 10,
-            "original_customer_unit": "POUCH",
-        },
-        format="json",
-    )
-    line_id = create_response.json()["id"]
-
-    response = client.patch(
-        _line_detail_url(order, line_id), {"product": other_product.id}, format="json"
-    )
-
-    assert response.status_code == 200
-    assert response.json()["pieces_per_pouch"] == 25
-
-
-def test_update_product_cleared_clears_snapshot(order, product, customer):
-    CustomerSKUMapping.objects.create(
-        customer=customer,
-        customer_sku_code="CUST-SKU-1",
-        product=product,
-        pieces_per_pouch=10,
-    )
-    client = _client_as("Manager/Admin", "mgr1")
-    create_response = client.post(
-        _lines_url(order),
-        {
-            "customer_sku_code": "CUST-SKU-1",
-            "product": product.id,
+            "item": product.id,
             "original_customer_quantity": 10,
             "original_customer_unit": "POUCH",
         },
@@ -307,7 +297,32 @@ def test_update_product_cleared_clears_snapshot(order, product, customer):
 
     response = client.patch(
         _line_detail_url(order, line_id),
-        {"product": None, "original_customer_unit": "PIECE"},
+        {"item": other_product.id, "customer_sku_code": "CUST-SKU-2"},
+        format="json",
+    )
+
+    assert response.status_code == 200
+    assert response.json()["pieces_per_pouch"] == 25
+
+
+def test_update_product_cleared_clears_snapshot(order, product, customer):
+    _mapping(customer, product, pieces_per_pouch=10)
+    client = _client_as("Manager/Admin", "mgr1")
+    create_response = client.post(
+        _lines_url(order),
+        {
+            "customer_sku_code": "CUST-SKU-1",
+            "item": product.id,
+            "original_customer_quantity": 10,
+            "original_customer_unit": "POUCH",
+        },
+        format="json",
+    )
+    line_id = create_response.json()["id"]
+
+    response = client.patch(
+        _line_detail_url(order, line_id),
+        {"item": None, "original_customer_unit": "PIECE"},
         format="json",
     )
 

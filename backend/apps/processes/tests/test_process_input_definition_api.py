@@ -3,14 +3,13 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from rest_framework.test import APIClient
 
-from apps.materials.models import Material
+from apps.items.models import Item
 from apps.processes.models import (
     ProcessCategory,
     ProcessDefinition,
     ProcessDefinitionVersion,
     ProcessInputDefinition,
 )
-from apps.products.models import Product
 
 pytestmark = pytest.mark.django_db
 
@@ -41,18 +40,20 @@ def _version(
     )
 
 
-def _leaf(organization) -> Material:
-    return Material.objects.create(
-        code="LEAF", name="Raw Leaf", unit="Kg", organization=organization
+def _leaf(organization) -> Item:
+    return Item.objects.create(
+        code="LEAF",
+        name="Raw Leaf",
+        item_class=Item.ItemClass.RAW_MATERIAL,
+        organization=organization,
     )
 
 
-def _untrimmed_plate(organization) -> Product:
-    return Product.objects.create(
-        sku_code="UNTRIM-10SQ",
+def _untrimmed_plate(organization) -> Item:
+    return Item.objects.create(
+        code="UNTRIM-10SQ",
         name="Untrimmed Plate",
-        base_unit="Piece",
-        stage=Product.Stage.SEMI_FINISHED,
+        item_class=Item.ItemClass.WIP,
         organization=organization,
     )
 
@@ -84,8 +85,7 @@ def test_add_a_material_input(organization):
     assert version.batch_lot_mode == "REQUIRED"
     row = version.inputs.get()
     assert row.input_type == "MATERIAL"
-    assert row.material_id == leaf.id
-    assert row.product_id is None
+    assert row.item_id == leaf.id
     assert row.sequence == 1
 
 
@@ -135,17 +135,15 @@ def test_add_a_wip_input_resolves_to_semi_finished_product(organization):
     assert response.status_code == 200
     row = version.inputs.get()
     assert row.input_type == "WIP"
-    assert row.product_id == plate.id
-    assert row.material_id is None
+    assert row.item_id == plate.id
 
 
 def test_wip_input_rejects_a_finished_good_product(organization):
     version = _version(organization)
-    finished = Product.objects.create(
-        sku_code="SQ10",
+    finished = Item.objects.create(
+        code="SQ10",
         name="Finished Plate",
-        base_unit="Piece",
-        stage=Product.Stage.FINISHED_GOOD,
+        item_class=Item.ItemClass.FINISHED_GOOD,
         organization=organization,
     )
     client = _client_as("Export Coordinator", "coord3")
@@ -176,12 +174,14 @@ def test_material_input_rejects_a_product_id(organization):
 def test_whole_list_replace_updates_creates_and_deletes(organization):
     version = _version(organization)
     leaf = _leaf(organization)
-    stem = Material.objects.create(code="STEM", name="Stem", unit="Kg", organization=organization)
+    stem = Item.objects.create(
+        code="STEM", name="Stem", item_class=Item.ItemClass.RAW_MATERIAL, organization=organization
+    )
     existing = ProcessInputDefinition.objects.create(
         process_version=version,
         sequence=1,
         input_type=ProcessInputDefinition.InputType.MATERIAL,
-        material=leaf,
+        item=leaf,
         uom="Kg",
         organization=organization,
     )
@@ -189,7 +189,7 @@ def test_whole_list_replace_updates_creates_and_deletes(organization):
         process_version=version,
         sequence=2,
         input_type=ProcessInputDefinition.InputType.MATERIAL,
-        material=stem,
+        item=stem,
         uom="Kg",
         organization=organization,
     )
@@ -218,18 +218,20 @@ def test_whole_list_replace_updates_creates_and_deletes(organization):
     assert len(rows) == 2
     assert rows[0].id == existing.id
     assert rows[0].is_required is False
-    assert rows[1].material_id == stem.id
+    assert rows[1].item_id == stem.id
 
 
 def test_reorder_via_resend_reassigns_sequence(organization):
     version = _version(organization)
     leaf = _leaf(organization)
-    stem = Material.objects.create(code="STEM", name="Stem", unit="Kg", organization=organization)
+    stem = Item.objects.create(
+        code="STEM", name="Stem", item_class=Item.ItemClass.RAW_MATERIAL, organization=organization
+    )
     first = ProcessInputDefinition.objects.create(
         process_version=version,
         sequence=1,
         input_type=ProcessInputDefinition.InputType.MATERIAL,
-        material=leaf,
+        item=leaf,
         uom="Kg",
         organization=organization,
     )
@@ -237,7 +239,7 @@ def test_reorder_via_resend_reassigns_sequence(organization):
         process_version=version,
         sequence=2,
         input_type=ProcessInputDefinition.InputType.MATERIAL,
-        material=stem,
+        item=stem,
         uom="Kg",
         organization=organization,
     )

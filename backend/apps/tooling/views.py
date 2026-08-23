@@ -79,7 +79,7 @@ class ToolingViewSet(
     assignment history cascade away with it.
     """
 
-    queryset = Tooling.objects.prefetch_related("compatibilities__product")
+    queryset = Tooling.objects.prefetch_related("compatibilities__item")
     serializer_class = ToolingSerializer
     filter_backends = [filters.SearchFilter]
     search_fields = ["name", "code"]
@@ -102,7 +102,7 @@ class ToolingViewSet(
 
         item_id = self.request.query_params.get("item_id")
         if item_id is not None:
-            queryset = queryset.filter(compatibilities__product_id=item_id).distinct()
+            queryset = queryset.filter(compatibilities__item_id=item_id).distinct()
 
         return queryset
 
@@ -122,7 +122,7 @@ class ToolingViewSet(
             for row in rows_serializer.validated_data:
                 row_id = row.get("id")
                 defaults = {
-                    "product": row["product"],
+                    "item": row["item"],
                     "process_definition": row.get("process_definition"),
                     "organization": tooling.organization,
                 }
@@ -173,7 +173,7 @@ class WorkCentrePositionViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewS
         default_item = data.get("default_item")
         effective_from = data["effective_from"]
 
-        if default_item and not tooling.compatibilities.filter(product=default_item).exists():
+        if default_item and not tooling.compatibilities.filter(item=default_item).exists():
             raise serializers.ValidationError(
                 {"default_item": "This tooling is not compatible with the selected item."}
             )

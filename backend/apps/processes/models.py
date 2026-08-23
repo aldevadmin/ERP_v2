@@ -184,11 +184,11 @@ class ProcessDefinitionVersion(BaseModel):
 
 class ProcessInputDefinition(BaseModel):
     """One configured input row on a `ProcessDefinitionVersion` — Step 2 of
-    the configuration wizard. `input_type` determines which item reference
-    is set: MATERIAL/PACKAGING/OTHER -> `material`, WIP -> `product`
-    (filtered to `Product.Stage.SEMI_FINISHED`) — enforced in the
-    serializer. No quantity/formula execution logic lives here; this is
-    configuration only.
+    the configuration wizard. `input_type` classifies which kind of item
+    `item` must reference: WIP -> an `items.Item` with `item_class=WIP`;
+    MATERIAL/PACKAGING/OTHER -> any non-WIP, non-FINISHED_GOOD item —
+    enforced in the serializer. No quantity/formula execution logic lives
+    here; this is configuration only.
     """
 
     class InputType(models.TextChoices):
@@ -207,11 +207,8 @@ class ProcessInputDefinition(BaseModel):
     )
     sequence = models.PositiveIntegerField()
     input_type = models.CharField(max_length=10, choices=InputType.choices)
-    material = models.ForeignKey(
-        "materials.Material", on_delete=models.PROTECT, null=True, blank=True, related_name="+"
-    )
-    product = models.ForeignKey(
-        "products.Product", on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    item = models.ForeignKey(
+        "items.Item", on_delete=models.PROTECT, null=True, blank=True, related_name="+"
     )
     uom = models.CharField(max_length=20)
     quantity_capture = models.CharField(
@@ -231,8 +228,7 @@ class ProcessInputDefinition(BaseModel):
         ]
 
     def __str__(self) -> str:
-        item = self.material or self.product
-        return f"{item} ({self.input_type})"
+        return f"{self.item} ({self.input_type})"
 
 
 class OutputClassification(BaseModel):
@@ -260,16 +256,16 @@ class OutputClassification(BaseModel):
 
 class ProcessOutputDefinition(BaseModel):
     """One configured output row on a `ProcessDefinitionVersion` — Step 3
-    of the configuration wizard. `item_type` determines which item
-    reference is set (MATERIAL -> `material`, PRODUCT -> `product`) —
-    unlike Step 2's `InputType`, this isn't a user-facing business
-    category (that's `classification` below); it exists only because the
-    Output Item picker searches both the Material and Product masters in
-    one combined list and the API needs to know which one a given id
-    belongs to. `default_storage_destination` is free text, not a Location
-    FK: no Location/Inventory master exists yet in this codebase, and the
-    spec marks the field optional/convenience-only, so adding one now
-    would be premature infrastructure.
+    of the configuration wizard. `item_type` classifies which kind of item
+    `item` must reference (PRODUCT -> `item_class` in {WIP, FINISHED_GOOD},
+    MATERIAL -> any other class) — unlike Step 2's `InputType`, this isn't
+    a user-facing business category (that's `classification` below); it
+    exists only because the Output Item picker needs to know which bucket
+    of the unified Item list a given id must belong to.
+    `default_storage_destination` is free text, not a Location FK: no
+    Location/Inventory master exists yet in this codebase, and the spec
+    marks the field optional/convenience-only, so adding one now would be
+    premature infrastructure.
     """
 
     class ItemType(models.TextChoices):
@@ -281,11 +277,8 @@ class ProcessOutputDefinition(BaseModel):
     )
     sequence = models.PositiveIntegerField()
     item_type = models.CharField(max_length=10, choices=ItemType.choices)
-    material = models.ForeignKey(
-        "materials.Material", on_delete=models.PROTECT, null=True, blank=True, related_name="+"
-    )
-    product = models.ForeignKey(
-        "products.Product", on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    item = models.ForeignKey(
+        "items.Item", on_delete=models.PROTECT, null=True, blank=True, related_name="+"
     )
     uom = models.CharField(max_length=20)
     classification = models.ForeignKey(
@@ -307,8 +300,7 @@ class ProcessOutputDefinition(BaseModel):
         ]
 
     def __str__(self) -> str:
-        item = self.material or self.product
-        return f"{item} ({self.classification})"
+        return f"{self.item} ({self.classification})"
 
 
 class ProcessParameterDefinition(BaseModel):

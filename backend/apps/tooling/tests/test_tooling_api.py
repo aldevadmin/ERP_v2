@@ -3,8 +3,8 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from rest_framework.test import APIClient
 
+from apps.items.models import Item
 from apps.processes.models import ProcessCategory, ProcessDefinition, ProcessDefinitionVersion
-from apps.products.models import Product
 from apps.tooling.models import Tooling, ToolingCompatibility, ToolingType
 
 pytestmark = pytest.mark.django_db
@@ -39,12 +39,11 @@ def _tooling(
     )
 
 
-def _product(organization, sku_code: str = "PLATE-10") -> Product:
-    return Product.objects.create(
-        sku_code=sku_code,
+def _product(organization, sku_code: str = "PLATE-10") -> Item:
+    return Item.objects.create(
+        code=sku_code,
         name="10 Inch Round Plate",
-        base_unit="Piece",
-        stage=Product.Stage.FINISHED_GOOD,
+        item_class=Item.ItemClass.FINISHED_GOOD,
         organization=organization,
     )
 
@@ -103,7 +102,7 @@ def test_list_tooling_filters_by_item_id(organization):
     tooling = _tooling(organization)
     other = _tooling(organization, code="MLD-205")
     product = _product(organization)
-    ToolingCompatibility.objects.create(tooling=tooling, product=product, organization=organization)
+    ToolingCompatibility.objects.create(tooling=tooling, item=product, organization=organization)
     client = _client_as("Export Coordinator", "coord2")
 
     response = client.get(f"/api/v1/tooling/?item_id={product.id}")
@@ -124,8 +123,8 @@ def test_set_compatibilities_whole_list_replace(organization):
         f"/api/v1/tooling/{tooling.id}/compatibilities/",
         {
             "compatibilities": [
-                {"product": plate.id},
-                {"product": veneer.id, "process_definition": process.id},
+                {"item": plate.id},
+                {"item": veneer.id, "process_definition": process.id},
             ]
         },
         format="json",
@@ -147,7 +146,7 @@ def test_compatibilities_response_reflects_new_row(organization):
 
     response = client.put(
         f"/api/v1/tooling/{tooling.id}/compatibilities/",
-        {"compatibilities": [{"product": plate.id}]},
+        {"compatibilities": [{"item": plate.id}]},
         format="json",
     )
 

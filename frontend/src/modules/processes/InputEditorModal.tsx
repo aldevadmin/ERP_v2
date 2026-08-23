@@ -1,10 +1,8 @@
 import { useEffect, useState } from 'react'
 import { InfoCircleOutlined } from '@ant-design/icons'
 import { Form, Modal, Radio, Select, Switch } from 'antd'
-import { listMaterials } from '../materials/api'
-import type { Material } from '../materials/types'
-import { listProducts } from '../products/api'
-import type { Product } from '../products/types'
+import { listItems } from '../items/api'
+import type { Item } from '../items/types'
 import { INPUT_TYPE_OPTIONS, QUANTITY_CAPTURE_OPTIONS } from './types'
 import type { InputType, ProcessInput, ProcessInputFormValues } from './types'
 
@@ -14,12 +12,12 @@ interface ItemOption {
   unit: string
 }
 
-function materialOptions(materials: Material[]): ItemOption[] {
-  return materials.map((m) => ({ value: m.id, label: `${m.name} (${m.code})`, unit: m.unit }))
-}
-
-function productOptions(products: Product[]): ItemOption[] {
-  return products.map((p) => ({ value: p.id, label: `${p.name} (${p.sku_code})`, unit: p.base_unit }))
+function itemOptions(items: Item[]): ItemOption[] {
+  return items.map((i) => ({
+    value: i.id,
+    label: `${i.name} (${i.code})`,
+    unit: i.inventory_uom_code,
+  }))
 }
 
 export default function InputEditorModal({
@@ -35,16 +33,18 @@ export default function InputEditorModal({
 }) {
   const [form] = Form.useForm<ProcessInputFormValues>()
   const [inputType, setInputType] = useState<InputType>('MATERIAL')
-  const [materials, setMaterials] = useState<Material[]>([])
-  const [semiFinishedProducts, setSemiFinishedProducts] = useState<Product[]>([])
+  const [materialItems, setMaterialItems] = useState<Item[]>([])
+  const [wipItems, setWipItems] = useState<Item[]>([])
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     if (!open) return
-    listMaterials({ isActive: true }).then((response) => setMaterials(response.results))
-    listProducts({ isActive: true, stage: 'SEMI_FINISHED' }).then((response) =>
-      setSemiFinishedProducts(response.results),
+    listItems({ isActive: true }).then((response) =>
+      setMaterialItems(
+        response.results.filter((i) => i.item_class !== 'WIP' && i.item_class !== 'FINISHED_GOOD'),
+      ),
     )
+    listItems({ isActive: true, itemClass: 'WIP' }).then((response) => setWipItems(response.results))
   }, [open])
 
   useEffect(() => {
@@ -66,7 +66,7 @@ export default function InputEditorModal({
   }, [open, input, form])
 
   const options: ItemOption[] =
-    inputType === 'WIP' ? productOptions(semiFinishedProducts) : materialOptions(materials)
+    inputType === 'WIP' ? itemOptions(wipItems) : itemOptions(materialItems)
 
   const handleItemChange = (itemId: number) => {
     const option = options.find((o) => o.value === itemId)
@@ -108,7 +108,7 @@ export default function InputEditorModal({
           rules={[{ required: true, message: 'Select an input type.' }]}
           tooltip={{
             title:
-              'Determines which list this item is picked from. Material/Packaging/Other pull from the Material master. WIP pulls from semi-finished products carried over from an earlier process step.',
+              'Determines which list this item is picked from. Material/Packaging/Other pull from the Item catalog. WIP pulls from WIP items carried over from an earlier process step.',
             icon: <InfoCircleOutlined />,
           }}
         >

@@ -14,8 +14,8 @@ import {
   Typography,
 } from 'antd'
 import { ApiError } from '../../shared/api/http'
-import { listProducts } from '../products/api'
-import type { Product } from '../products/types'
+import { listItems } from '../items/api'
+import type { Item } from '../items/types'
 import {
   getTooling,
   createTooling,
@@ -32,7 +32,7 @@ export default function ToolingFormPage() {
   const isEdit = Boolean(id)
   const [form] = Form.useForm<ToolingFormValues>()
   const [tooling, setTooling] = useState<Tooling | null>(null)
-  const [products, setProducts] = useState<Product[]>([])
+  const [items, setItems] = useState<Item[]>([])
   const [types, setTypes] = useState<ToolingType[]>([])
   const [loading, setLoading] = useState(isEdit)
   const [submitting, setSubmitting] = useState(false)
@@ -40,7 +40,9 @@ export default function ToolingFormPage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    listProducts({ isActive: true }).then((response) => setProducts(response.results))
+    listItems({ isActive: true }).then((response) =>
+      setItems(response.results.filter((i) => i.item_class === 'WIP' || i.item_class === 'FINISHED_GOOD')),
+    )
   }, [])
 
   useEffect(() => {
@@ -71,15 +73,15 @@ export default function ToolingFormPage() {
     }
   }
 
-  const handleCompatibleItemsChange = async (productIds: number[]) => {
+  const handleCompatibleItemsChange = async (itemIds: number[]) => {
     if (!tooling) return
     setSavingCompatibilities(true)
     setError(null)
     try {
       const saved = await saveToolingCompatibilities(tooling.id, {
-        compatibilities: productIds.map((productId) => {
-          const existing = tooling.compatibilities.find((c) => c.product === productId)
-          return { id: existing?.id, product: productId, process_definition: null }
+        compatibilities: itemIds.map((itemId) => {
+          const existing = tooling.compatibilities.find((c) => c.item === itemId)
+          return { id: existing?.id, item: itemId, process_definition: null }
         }),
       })
       setTooling(saved)
@@ -177,9 +179,9 @@ export default function ToolingFormPage() {
             style={{ width: '100%' }}
             placeholder="Search and select compatible items"
             loading={savingCompatibilities}
-            value={tooling.compatibilities.map((c) => c.product)}
+            value={tooling.compatibilities.map((c) => c.item)}
             onChange={(values: number[]) => void handleCompatibleItemsChange(values)}
-            options={products.map((p) => ({ value: p.id, label: `${p.name} (${p.sku_code})` }))}
+            options={items.map((i) => ({ value: i.id, label: `${i.name} (${i.code})` }))}
             optionFilterProp="label"
           />
         </div>

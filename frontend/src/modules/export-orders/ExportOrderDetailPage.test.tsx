@@ -3,7 +3,8 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import ExportOrderDetailPage from './ExportOrderDetailPage'
 import * as exportOrdersApi from './api'
-import * as productsApi from '../products/api'
+import * as customerMappingsApi from '../customer-mappings/api'
+import * as itemsApi from '../items/api'
 import * as accountsApi from '../accounts/api'
 import * as vendorsApi from '../vendors/api'
 import type { ExportOrder } from './types'
@@ -13,12 +14,14 @@ vi.mock('react-router', async () => {
   return { ...actual, useParams: () => ({ id: '1' }), useNavigate: () => vi.fn() }
 })
 vi.mock('./api')
-vi.mock('../products/api')
+vi.mock('../customer-mappings/api')
+vi.mock('../items/api')
 vi.mock('../accounts/api')
 vi.mock('../vendors/api')
 
 const mockedApi = vi.mocked(exportOrdersApi)
-const mockedProductsApi = vi.mocked(productsApi)
+const mockedCustomerMappingsApi = vi.mocked(customerMappingsApi)
+const mockedItemsApi = vi.mocked(itemsApi)
 const mockedAccountsApi = vi.mocked(accountsApi)
 const mockedVendorsApi = vi.mocked(vendorsApi)
 
@@ -160,13 +163,13 @@ describe('ExportOrderDetailPage', () => {
     mockedApi.listExportOrderNotes.mockResolvedValue([])
     mockedApi.listExportOrderLines.mockResolvedValue([])
     mockedApi.listPackingMaterialRequirements.mockResolvedValue([])
-    mockedProductsApi.listCustomerSkuMappings.mockResolvedValue({
+    mockedCustomerMappingsApi.listCustomerProductMappings.mockResolvedValue({
       count: 0,
       next: null,
       previous: null,
       results: [],
     })
-    mockedProductsApi.listProducts.mockResolvedValue({
+    mockedItemsApi.listItems.mockResolvedValue({
       count: 0,
       next: null,
       previous: null,

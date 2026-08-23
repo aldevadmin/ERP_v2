@@ -1,10 +1,8 @@
 import { useEffect, useState } from 'react'
 import { InfoCircleOutlined } from '@ant-design/icons'
 import { Form, Input, Modal, Radio, Select } from 'antd'
-import { listMaterials } from '../materials/api'
-import type { Material } from '../materials/types'
-import { listProducts } from '../products/api'
-import type { Product } from '../products/types'
+import { listItems } from '../items/api'
+import type { Item } from '../items/types'
 import { listOutputClassifications } from './api'
 import type { OutputClassification, OutputItemType, ProcessOutput, ProcessOutputFormValues } from './types'
 
@@ -15,22 +13,13 @@ interface ItemOption {
   item_type: OutputItemType
 }
 
-function materialOptions(materials: Material[]): ItemOption[] {
-  return materials.map((m) => ({
-    value: m.id,
-    label: `${m.name} (${m.code})`,
-    unit: m.unit,
-    item_type: 'MATERIAL',
-  }))
-}
-
-function productOptions(products: Product[]): ItemOption[] {
-  return products.map((p) => ({
-    value: p.id,
-    label: `${p.name} (${p.sku_code})`,
-    unit: p.base_unit,
-    item_type: 'PRODUCT',
-  }))
+function toItemOption(item: Item): ItemOption {
+  return {
+    value: item.id,
+    label: `${item.name} (${item.code})`,
+    unit: item.inventory_uom_code,
+    item_type: item.item_class === 'WIP' || item.item_class === 'FINISHED_GOOD' ? 'PRODUCT' : 'MATERIAL',
+  }
 }
 
 export default function OutputEditorModal({
@@ -45,15 +34,13 @@ export default function OutputEditorModal({
   onSave: (values: ProcessOutputFormValues) => Promise<void>
 }) {
   const [form] = Form.useForm<ProcessOutputFormValues>()
-  const [materials, setMaterials] = useState<Material[]>([])
-  const [products, setProducts] = useState<Product[]>([])
+  const [items, setItems] = useState<Item[]>([])
   const [classifications, setClassifications] = useState<OutputClassification[]>([])
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     if (!open) return
-    listMaterials({ isActive: true }).then((response) => setMaterials(response.results))
-    listProducts({ isActive: true }).then((response) => setProducts(response.results))
+    listItems({ isActive: true }).then((response) => setItems(response.results))
     listOutputClassifications({ isActive: true }).then((response) =>
       setClassifications(response.results),
     )
@@ -81,10 +68,10 @@ export default function OutputEditorModal({
     }
   }, [open, output, form])
 
-  // Output Item searches Materials and Products together — unlike Step 2's
-  // Input Type, there's no separate user-facing "item type" selector here;
-  // `item_type` is derived from which master the chosen option came from.
-  const options: ItemOption[] = [...materialOptions(materials), ...productOptions(products)]
+  // Output Item searches the whole Item catalog — unlike Step 2's Input
+  // Type, there's no separate user-facing "item type" selector here;
+  // `item_type` is derived from the chosen item's class.
+  const options: ItemOption[] = items.map(toItemOption)
 
   const handleItemChange = (itemId: number) => {
     const option = options.find((o) => o.value === itemId)

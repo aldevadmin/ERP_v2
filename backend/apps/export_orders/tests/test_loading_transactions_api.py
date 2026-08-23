@@ -21,9 +21,7 @@ def _client_as(role_name: str, username: str) -> APIClient:
 
 @pytest.fixture
 def customer(organization):
-    return Customer.objects.create(
-        code="CUST-1", name="Acme Exports", organization=organization
-    )
+    return Customer.objects.create(code="CUST-1", name="Acme Exports", organization=organization)
 
 
 @pytest.fixture
@@ -269,9 +267,7 @@ def test_log_filters_by_line(order, shipment, shipment_line_a, shipment_line_b):
 
 
 def test_log_excludes_other_shipments(order, shipment, shipment_line_a):
-    other_shipment = Shipment.objects.create(
-        shipment_number="EO-2026-0001-S02", export_order=order
-    )
+    other_shipment = Shipment.objects.create(shipment_number="EO-2026-0001-S02", export_order=order)
     client = _client_as("Export Coordinator", "coord9")
     client.post(
         _transactions_url(order, shipment, shipment_line_a.id),

@@ -33,13 +33,20 @@ INSTALLED_APPS = [
     "apps.core",
     "apps.accounts",
     "apps.customers",
-    "apps.products",
     "apps.vendors",
+    # No models, views, or API surface — kept registered only so its
+    # migration history (which apps.items' merge migration depends on)
+    # stays resolvable when replaying migrations from scratch.
     "apps.materials",
+    # No models, views, or API surface — same reasoning as apps.materials.
+    "apps.products",
+    "apps.items",
     "apps.processes",
     "apps.work_centres",
     "apps.product_routes",
     "apps.tooling",
+    "apps.packaging",
+    "apps.customer_mappings",
     "apps.export_orders",
 ]
 
