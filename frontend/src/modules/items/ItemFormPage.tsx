@@ -15,6 +15,7 @@ import {
   Switch,
   Table,
   Tag,
+  Tooltip,
   Typography,
   message,
 } from 'antd'
@@ -42,6 +43,20 @@ import type { ItemClass, ItemFormValues, MaterialType, ProductType, UOM } from '
 
 const { Title } = Typography
 const { TextArea } = Input
+
+const ITEM_CLASS_HELP: Record<ItemClass, string> = {
+  RAW_MATERIAL:
+    'Bought from outside and fed into your own process — whether truly raw, or already part-processed by a vendor (e.g. job-work pressing).',
+  WIP: 'An in-between output your own process creates — not sellable yet. Only needed if you track/stock that intermediate stage separately (e.g. pressed blanks waiting to be trimmed). Single-step routes usually skip this entirely.',
+  FINISHED_GOOD:
+    'The final product you sell to a customer — what appears on Export Order lines and Customer Product Mappings.',
+  PACKAGING_MATERIAL:
+    'Pouches, cartons, labels — anything consumed while packing a Finished Good. Selectable in a Packaging Profile’s materials list.',
+  CONSUMABLE:
+    'Used up during production or packing but not part of the product itself — tape, gloves, cleaning supplies.',
+  SCRAP_BY_PRODUCT:
+    'Waste or secondary output from a process — trimmings, rejects — tracked but not sold as the main product.',
+}
 
 /** A minimal "name only" create modal for master data that's rarely
  * created and shouldn't need a trip away from the Item form — Product
@@ -205,6 +220,7 @@ export default function ItemFormPage() {
           <Form.Item
             label="What should this item be called?"
             name="name"
+            tooltip="Shown throughout the app — on pickers, order lines, and reports. Use something recognizable on the factory floor, not an internal code."
             rules={[{ required: true, message: 'Enter an item name.' }]}
           >
             <Input size="large" />
@@ -212,6 +228,7 @@ export default function ItemFormPage() {
           <Form.Item
             label="Item Code"
             name="code"
+            tooltip="A short, unique internal reference — your own part number. Fixed once created, since other records point back to this item by it."
             rules={[{ required: true, message: 'Enter an item code.' }]}
           >
             <Input size="large" disabled={isEdit} />
@@ -219,13 +236,24 @@ export default function ItemFormPage() {
           <Form.Item
             label="What kind of item is this?"
             name="item_class"
+            tooltip="Raw Material = bought from outside; WIP = an in-between stage your own process makes; Finished Good = what you sell. Hover an option below for detail."
             rules={[{ required: true, message: 'Select an item class.' }]}
           >
-            <Radio.Group options={ITEM_CLASS_OPTIONS} optionType="button" />
+            <Radio.Group optionType="button">
+              {ITEM_CLASS_OPTIONS.map((option) => (
+                <Tooltip key={option.value} title={ITEM_CLASS_HELP[option.value]}>
+                  <Radio.Button value={option.value}>{option.label}</Radio.Button>
+                </Tooltip>
+              ))}
+            </Radio.Group>
           </Form.Item>
 
           {!hidden.includes('product_type') && (
-            <Form.Item label="Product Type" required={required.includes('product_type')}>
+            <Form.Item
+              label="Product Type"
+              required={required.includes('product_type')}
+              tooltip="What kind of product this is — e.g. Plate, Bowl, Tray. Just a label for grouping and filtering; doesn't change behavior. Rarely created — use the + only when the type you need isn't listed."
+            >
               <Flex gap={8} style={{ maxWidth: 320 }}>
                 <Form.Item
                   name="product_type"
@@ -255,7 +283,11 @@ export default function ItemFormPage() {
             </Form.Item>
           )}
           {!hidden.includes('material_type') && (
-            <Form.Item label="Material" required={required.includes('material_type')}>
+            <Form.Item
+              label="Material"
+              required={required.includes('material_type')}
+              tooltip="What the item is made from — e.g. Areca Palm, Wood Veneer. Also just a grouping label. Use the + to add one on the spot rather than leaving this trip."
+            >
               <Flex gap={8} style={{ maxWidth: 320 }}>
                 <Form.Item
                   name="material_type"
@@ -287,6 +319,7 @@ export default function ItemFormPage() {
           <Form.Item
             label="Inventory Unit"
             name="inventory_uom"
+            tooltip="The unit stock is counted in before any packing — almost always Piece for finished goods. Packaging Profiles convert this into pouches/cartons for selling."
             rules={
               required.includes('inventory_uom')
                 ? [{ required: true, message: 'Select a unit.' }]
@@ -303,7 +336,11 @@ export default function ItemFormPage() {
             />
           </Form.Item>
 
-          <Form.Item label="Description (optional)" name="description">
+          <Form.Item
+            label="Description (optional)"
+            name="description"
+            tooltip="Extra detail for your own reference — dimensions, notes, anything not worth a dedicated field. Not shown to customers."
+          >
             <TextArea rows={2} />
           </Form.Item>
 
@@ -313,25 +350,42 @@ export default function ItemFormPage() {
           >
             <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
               <Form.Item name="manufacturable" valuePropName="checked" noStyle>
-                <Checkbox>Made</Checkbox>
+                <Tooltip title="This item can be produced by a Process/Product Route — it's an output of manufacturing.">
+                  <Checkbox>Made</Checkbox>
+                </Tooltip>
               </Form.Item>
               <Form.Item name="stockable" valuePropName="checked" noStyle>
-                <Checkbox>Stocked</Checkbox>
+                <Tooltip title="You track an on-hand quantity for this item in inventory.">
+                  <Checkbox>Stocked</Checkbox>
+                </Tooltip>
               </Form.Item>
               <Form.Item name="sellable" valuePropName="checked" noStyle>
-                <Checkbox>Sold</Checkbox>
+                <Tooltip title="This item can appear on an Export Order line and be mapped to a customer.">
+                  <Checkbox>Sold</Checkbox>
+                </Tooltip>
               </Form.Item>
               <Form.Item name="purchasable" valuePropName="checked" noStyle>
-                <Checkbox>Bought</Checkbox>
+                <Tooltip title="This item is procured from a vendor.">
+                  <Checkbox>Bought</Checkbox>
+                </Tooltip>
               </Form.Item>
             </div>
           </Form.Item>
 
-          <Form.Item label="Lot Tracking" name="lot_tracking">
+          <Form.Item
+            label="Lot Tracking"
+            name="lot_tracking"
+            tooltip="Whether batches of this item need a lot/batch number for traceability. None — don't track by batch. Optional — a lot can be recorded but isn't required. Required — every unit must trace back to a production lot."
+          >
             <Select size="large" style={{ maxWidth: 240 }} options={LOT_TRACKING_OPTIONS} />
           </Form.Item>
 
-          <Form.Item label="Active" name="is_active" valuePropName="checked">
+          <Form.Item
+            label="Active"
+            name="is_active"
+            valuePropName="checked"
+            tooltip="Turn off to hide this item from pickers without deleting it. Existing records that already reference it are unaffected."
+          >
             <Switch />
           </Form.Item>
 

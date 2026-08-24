@@ -14,7 +14,7 @@ import {
   Typography,
   message,
 } from 'antd'
-import { DeleteOutlined } from '@ant-design/icons'
+import { DeleteOutlined, ReadOutlined } from '@ant-design/icons'
 import { Link, useNavigate } from 'react-router'
 import { ApiError } from '../../shared/api/http'
 import StatusTag from '../../shared/components/StatusTag'
@@ -23,6 +23,8 @@ import { ITEM_CLASS_OPTIONS } from './types'
 import type { Item, ItemClass, MaterialType, ProductType } from './types'
 
 const { Title } = Typography
+
+const SETUP_GUIDE_URL = 'https://claude.ai/code/artifact/72596d3a-b271-42ba-be9f-323daf37a19c'
 
 const TABS: { key: ItemClass | 'ALL'; label: string }[] = [
   { key: 'ALL', label: 'All' },
@@ -104,9 +106,14 @@ export default function ItemListPage() {
           </Title>
         }
         extra={
-          <Button type="primary" onClick={() => navigate('/items/new')}>
-            Create Item
-          </Button>
+          <Space>
+            <Button href={SETUP_GUIDE_URL} target="_blank" rel="noreferrer" icon={<ReadOutlined />}>
+              Setup Guide
+            </Button>
+            <Button type="primary" onClick={() => navigate('/items/new')}>
+              Create Item
+            </Button>
+          </Space>
         }
       >
         <Typography.Paragraph type="secondary">

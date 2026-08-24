@@ -12,7 +12,7 @@ import {
   Typography,
   message,
 } from 'antd'
-import { MoreOutlined } from '@ant-design/icons'
+import { MoreOutlined, ReadOutlined } from '@ant-design/icons'
 import { Link, useNavigate } from 'react-router'
 import { ApiError } from '../../shared/api/http'
 import StatusTag from '../../shared/components/StatusTag'
@@ -27,6 +27,8 @@ import type { Process, ProcessCategory, WorkCentreRequirement } from './types'
 import { WORK_CENTRE_REQUIREMENT_OPTIONS } from './types'
 
 const { Title } = Typography
+
+const SETUP_GUIDE_URL = 'https://claude.ai/code/artifact/7b4b83f1-ded4-4e18-8b41-5aeb1478cf2b'
 
 const WORK_CENTRE_REQUIREMENT_LABELS: Record<WorkCentreRequirement, string> = Object.fromEntries(
   WORK_CENTRE_REQUIREMENT_OPTIONS.map((option) => [option.value, option.label]),
@@ -101,9 +103,14 @@ export default function ProcessListPage() {
           </Title>
         }
         extra={
-          <Button type="primary" onClick={() => navigate('/processes/new')}>
-            Create Process
-          </Button>
+          <Flex gap={8}>
+            <Button href={SETUP_GUIDE_URL} target="_blank" rel="noreferrer" icon={<ReadOutlined />}>
+              Setup Guide
+            </Button>
+            <Button type="primary" onClick={() => navigate('/processes/new')}>
+              Create Process
+            </Button>
+          </Flex>
         }
       >
         <Typography.Paragraph type="secondary">
