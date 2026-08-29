@@ -87,7 +87,6 @@ export interface CustomerProductMappingFormValues {
   customer: number
   item: number
   customer_sku: string
-  mapping_code: string
   is_active: boolean
 }
 

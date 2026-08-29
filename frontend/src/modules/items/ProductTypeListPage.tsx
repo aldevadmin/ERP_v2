@@ -68,7 +68,8 @@ export default function ProductTypeListPage() {
         }
       >
         <Typography.Paragraph type="secondary">
-          What kind of product an Item is — e.g. Plate, Bowl, Tray.
+          What kind of product an Item is — e.g. Plate, Bowl, Tray for Finished Goods, or Carton,
+          Pouch, Label for Packaging Materials.
         </Typography.Paragraph>
         <Flex justify="space-between" style={{ marginBottom: 16 }} wrap="wrap" gap={12}>
           <Input.Search
@@ -92,6 +93,7 @@ export default function ProductTypeListPage() {
           })}
           columns={[
             { title: 'Name', dataIndex: 'name' },
+            { title: 'Short Code', dataIndex: 'short_code', render: (v: string) => v || '—' },
             {
               title: 'Status',
               dataIndex: 'is_active',

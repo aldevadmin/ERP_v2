@@ -122,6 +122,52 @@ def test_create_finished_good_succeeds(organization):
     assert item.organization_id is not None
 
 
+def test_create_packaging_material_requires_product_type(organization):
+    uom = _uom(organization)
+    client = _client_as("Manager/Admin", "mgr-pm1")
+
+    response = client.post(
+        "/api/v1/items/",
+        {
+            "code": "PKG-1",
+            "name": "Carton",
+            "item_class": "PACKAGING_MATERIAL",
+            "inventory_uom": uom.id,
+        },
+        format="json",
+    )
+
+    assert response.status_code == 400
+    body = response.json()
+    assert "product_type" in body
+    assert "material_type" not in body
+
+
+def test_create_packaging_material_succeeds_and_hides_material_type(organization):
+    product_type = _product_type(organization, name="Carton")
+    material_type = _material_type(organization, name="Corrugated Board")
+    uom = _uom(organization)
+    client = _client_as("Manager/Admin", "mgr-pm2")
+
+    response = client.post(
+        "/api/v1/items/",
+        {
+            "code": "PKG-2",
+            "name": "100-Count Plate Carton",
+            "item_class": "PACKAGING_MATERIAL",
+            "product_type": product_type.id,
+            "material_type": material_type.id,  # sent anyway — must be silently cleared
+            "inventory_uom": uom.id,
+        },
+        format="json",
+    )
+
+    assert response.status_code == 201
+    item = Item.objects.get(code="PKG-2")
+    assert item.product_type_id == product_type.id
+    assert item.material_type_id is None
+
+
 def test_create_consumable_only_requires_uom(organization):
     uom = _uom(organization)
     client = _client_as("Manager/Admin", "mgr5")
@@ -138,6 +184,31 @@ def test_create_consumable_only_requires_uom(organization):
     )
 
     assert response.status_code == 201
+
+
+def test_create_consumable_hides_material_type_and_keeps_product_type(organization):
+    product_type = _product_type(organization, name="Tape")
+    material_type = _material_type(organization, name="Adhesive")
+    uom = _uom(organization)
+    client = _client_as("Manager/Admin", "mgr-con1")
+
+    response = client.post(
+        "/api/v1/items/",
+        {
+            "code": "CON-3",
+            "name": "Packing Tape",
+            "item_class": "CONSUMABLE",
+            "product_type": product_type.id,
+            "material_type": material_type.id,  # sent anyway — must be silently cleared
+            "inventory_uom": uom.id,
+        },
+        format="json",
+    )
+
+    assert response.status_code == 201
+    item = Item.objects.get(code="CON-3")
+    assert item.product_type_id == product_type.id
+    assert item.material_type_id is None
 
 
 def test_create_rejects_duplicate_code(organization):

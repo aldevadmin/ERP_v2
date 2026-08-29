@@ -3,11 +3,13 @@ import { Flex, Tag, Tooltip, Typography } from 'antd'
 import {
   ApartmentOutlined,
   AppstoreOutlined,
+  BorderOutlined,
   BranchesOutlined,
   ClusterOutlined,
   ColumnWidthOutlined,
   EnvironmentOutlined,
   ExportOutlined,
+  FontSizeOutlined,
   GiftOutlined,
   GoldOutlined,
   IdcardOutlined,
@@ -15,6 +17,7 @@ import {
   InfoCircleOutlined,
   ShopOutlined,
   SwapOutlined,
+  TableOutlined,
   TagsOutlined,
   TeamOutlined,
   ToolOutlined,
@@ -73,10 +76,30 @@ const GROUPS: SettingsGroup[] = [
         description: 'What kind of material an Item is made from — e.g. Areca Palm, Wood Veneer.',
       },
       {
+        label: 'Shapes',
+        icon: <BorderOutlined />,
+        to: '/shapes',
+        description: 'What physical shape an Item has — Round, Square, Rectangle, Oval...',
+      },
+      {
         label: 'Units of Measure',
         icon: <ColumnWidthOutlined />,
         to: '/uoms',
         description: 'The units Items are stocked, purchased, and sold in — e.g. Piece, Kg, Carton.',
+      },
+      {
+        label: 'Naming Templates',
+        icon: <FontSizeOutlined />,
+        to: '/naming-templates',
+        description:
+          'Suggests an Item Name/Code as its fields are filled in — a hint you can use or ignore, never applied automatically.',
+      },
+      {
+        label: 'Item Classification',
+        icon: <TableOutlined />,
+        to: '/item-classification',
+        description:
+          'Which Item fields are Required/Optional/Hidden per Item Class, and which Product Types/Materials are offered per class — all in one grid.',
       },
       {
         label: 'Packaging Profiles',

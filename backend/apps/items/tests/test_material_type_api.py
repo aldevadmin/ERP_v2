@@ -38,6 +38,28 @@ def test_create_material_type(organization):
     assert MaterialType.objects.filter(name="Paper").exists()
 
 
+def test_create_material_type_defaults_to_no_restriction(organization):
+    client = _client_as("Manager/Admin", "mgr-scope1")
+
+    response = client.post("/api/v1/material-types/", {"name": "Rattan"}, format="json")
+
+    assert response.status_code == 201
+    assert response.json()["applicable_item_classes"] == []
+
+
+def test_create_material_type_scoped_to_packaging_material(organization):
+    client = _client_as("Manager/Admin", "mgr-scope2")
+
+    response = client.post(
+        "/api/v1/material-types/",
+        {"name": "Kraft Paper", "applicable_item_classes": ["PACKAGING_MATERIAL"]},
+        format="json",
+    )
+
+    assert response.status_code == 201
+    assert response.json()["applicable_item_classes"] == ["PACKAGING_MATERIAL"]
+
+
 def test_delete_unused_type_succeeds(organization):
     material_type = MaterialType.objects.create(name="Bamboo", organization=organization)
     client = _client_as("Manager/Admin", "mgr2")

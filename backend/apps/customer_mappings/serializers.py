@@ -120,6 +120,7 @@ class CustomerProductMappingSerializer(serializers.ModelSerializer):
     customer_name = serializers.CharField(source="customer.name", read_only=True)
     item_name = serializers.CharField(source="item.name", read_only=True)
     item_code = serializers.CharField(source="item.code", read_only=True)
+    mapping_code = serializers.CharField(read_only=True)
     current_version = serializers.SerializerMethodField()
 
     class Meta:
@@ -145,6 +146,10 @@ class CustomerProductMappingSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data: dict[str, Any]) -> CustomerProductMapping:
         organization = Organization.get_default()
+        validated_data["mapping_code"] = (
+            f"{validated_data['item'].code}-{validated_data['customer'].code}-"
+            f"{validated_data['customer_sku']}"
+        )
         mapping = CustomerProductMapping.objects.create(organization=organization, **validated_data)
         CustomerProductMappingVersion.objects.create(
             mapping=mapping, version_number=1, organization=organization

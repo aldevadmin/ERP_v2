@@ -42,6 +42,13 @@ class CustomerProductMapping(BaseModel):
     is fixed at creation (immutable — enforced in `views.py`) since it's
     part of this row's identity, not just a commercial detail that can
     drift across versions.
+
+    `mapping_code` is a separate, globally-unique reference code for this
+    row (used in search/list display) — generated server-side from
+    `item.code`-`customer.code`-`customer_sku` at creation
+    (`CustomerProductMappingSerializer.create`), never typed by hand.
+    Deriving it from the same fields `UniqueConstraint(customer,
+    customer_sku)` already guards means it can't collide.
     """
 
     customer = models.ForeignKey(
@@ -51,7 +58,10 @@ class CustomerProductMapping(BaseModel):
         "items.Item", on_delete=models.PROTECT, related_name="product_mappings"
     )
     customer_sku = models.CharField(max_length=64)
-    mapping_code = models.CharField(max_length=32, unique=True)
+    # Generated server-side from item.code-customer.code-customer_sku (see
+    # CustomerProductMappingSerializer.create) — never typed by hand, so it
+    # needs room for the longest realistic combination of the three.
+    mapping_code = models.CharField(max_length=150, unique=True)
     is_active = models.BooleanField(default=True)
     organization = models.ForeignKey(
         "core.Organization", on_delete=models.PROTECT, related_name="customer_product_mappings"

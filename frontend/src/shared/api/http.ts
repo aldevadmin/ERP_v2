@@ -11,6 +11,20 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * `JSON.stringify` silently drops any object key whose value is
+ * `undefined` — exactly what an antd `allowClear` Select produces when a
+ * nullable field gets cleared back to blank. For a PATCH body, an omitted
+ * key means "leave this field unchanged," not "clear it," so a cleared
+ * field would silently fail to save (the old value survives untouched)
+ * unless `undefined` is converted to an explicit `null` first. Use this
+ * instead of `JSON.stringify` for any request body built from form values
+ * that include a clearable nullable field.
+ */
+export function jsonBody(values: unknown): string {
+  return JSON.stringify(values, (_key, value) => (value === undefined ? null : value))
+}
+
 function getCookie(name: string): string | null {
   const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`))
   return match ? decodeURIComponent(match[1]) : null

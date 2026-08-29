@@ -9,6 +9,7 @@ import {
   Flex,
   Form,
   Input,
+  InputNumber,
   Modal,
   Radio,
   Select,
@@ -19,7 +20,7 @@ import {
   Typography,
   message,
 } from 'antd'
-import { PlusOutlined } from '@ant-design/icons'
+import { InfoCircleOutlined, PlusOutlined } from '@ant-design/icons'
 import { ApiError } from '../../shared/api/http'
 import { listCustomerProductMappings } from '../customer-mappings/api'
 import type { CustomerProductMapping } from '../customer-mappings/types'
@@ -27,19 +28,36 @@ import {
   createItem,
   createMaterialType,
   createProductType,
+  createShape,
   getItem,
+  listItemFieldRules,
   listMaterialTypes,
+  listNamingTemplates,
   listProductTypes,
+  listShapes,
   listUOMs,
   updateItem,
 } from './api'
+import { applyTemplate, buildDimensionToken, resolveNamingTemplate } from './namingTemplate'
+import type { NamingTokens } from './namingTemplate'
 import {
-  HIDDEN_FIELDS_BY_CLASS,
+  fieldRulesForClass,
+  isApplicableToClass,
   ITEM_CLASS_OPTIONS,
+  ITEM_CLASS_SHORT_LABELS,
   LOT_TRACKING_OPTIONS,
-  REQUIRED_FIELDS_BY_CLASS,
 } from './types'
-import type { ItemClass, ItemFormValues, MaterialType, ProductType, UOM } from './types'
+import type {
+  Item,
+  ItemClass,
+  ItemFieldRule,
+  ItemFormValues,
+  MaterialType,
+  NamingTemplate,
+  ProductType,
+  Shape,
+  UOM,
+} from './types'
 
 const { Title } = Typography
 const { TextArea } = Input
@@ -60,7 +78,7 @@ const ITEM_CLASS_HELP: Record<ItemClass, string> = {
 
 /** A minimal "name only" create modal for master data that's rarely
  * created and shouldn't need a trip away from the Item form — Product
- * Type and Material Type both fit this (id/name/is_active only). */
+ * Type, Material Type, and Shape all fit this (id/name/is_active only). */
 function QuickAddModal({
   open,
   title,
@@ -105,6 +123,16 @@ function QuickAddModal({
   )
 }
 
+function Suggestion({ value, onUse }: { value: string | null; onUse: () => void }) {
+  if (!value) return null
+  return (
+    <div style={{ marginTop: -16, marginBottom: 16, fontSize: 13, color: '#8c8c8c' }}>
+      Suggested: <span style={{ fontFamily: 'monospace' }}>{value}</span>{' '}
+      <Typography.Link onClick={onUse}>Use</Typography.Link>
+    </div>
+  )
+}
+
 export default function ItemFormPage() {
   const { id } = useParams<{ id: string }>()
   const isEdit = Boolean(id)
@@ -115,26 +143,60 @@ export default function ItemFormPage() {
   const [error, setError] = useState<string | null>(null)
   const [productTypes, setProductTypes] = useState<ProductType[]>([])
   const [materialTypes, setMaterialTypes] = useState<MaterialType[]>([])
+  const [shapes, setShapes] = useState<Shape[]>([])
   const [uoms, setUoms] = useState<UOM[]>([])
+  const [namingTemplates, setNamingTemplates] = useState<NamingTemplate[]>([])
+  const [fieldRules, setFieldRules] = useState<ItemFieldRule[]>([])
   const [mappings, setMappings] = useState<CustomerProductMapping[]>([])
   const [productTypeModalOpen, setProductTypeModalOpen] = useState(false)
   const [materialTypeModalOpen, setMaterialTypeModalOpen] = useState(false)
+  const [shapeModalOpen, setShapeModalOpen] = useState(false)
   const [quickAddSubmitting, setQuickAddSubmitting] = useState(false)
 
   const itemClass = Form.useWatch('item_class', form) as ItemClass | undefined
-  const required = itemClass ? REQUIRED_FIELDS_BY_CLASS[itemClass] : []
-  const hidden = itemClass ? HIDDEN_FIELDS_BY_CLASS[itemClass] : []
+  const productType = Form.useWatch('product_type', form) as number | null | undefined
+  const materialType = Form.useWatch('material_type', form) as number | null | undefined
+  const shape = Form.useWatch('shape', form) as number | null | undefined
+  const lengthIn = Form.useWatch('length_in', form) as number | null | undefined
+  const breadthIn = Form.useWatch('breadth_in', form) as number | null | undefined
+  const heightMm = Form.useWatch('height_mm', form) as number | null | undefined
+  const inventoryUom = Form.useWatch('inventory_uom', form) as number | null | undefined
+
+  const rules = itemClass ? fieldRulesForClass(fieldRules, itemClass) : {}
+  const required: ('product_type' | 'material_type' | 'inventory_uom')[] = [
+    'inventory_uom',
+    ...(rules.product_type === 'REQUIRED' ? (['product_type'] as const) : []),
+    ...(rules.material_type === 'REQUIRED' ? (['material_type'] as const) : []),
+  ]
+  const hidden: ('product_type' | 'material_type')[] = [
+    ...(rules.product_type === 'HIDDEN' ? (['product_type'] as const) : []),
+    ...(rules.material_type === 'HIDDEN' ? (['material_type'] as const) : []),
+  ]
+  const showShape = rules.shape !== 'HIDDEN' && rules.shape !== undefined
+  const showDimensions = rules.dimensions !== 'HIDDEN' && rules.dimensions !== undefined
+  const requireShape = rules.shape === 'REQUIRED'
+  const requireDimensions = rules.dimensions === 'REQUIRED'
 
   useEffect(() => {
     listProductTypes({ isActive: true }).then((response) => setProductTypes(response.results))
     listMaterialTypes({ isActive: true }).then((response) => setMaterialTypes(response.results))
+    listShapes({ isActive: true }).then((response) => setShapes(response.results))
     listUOMs({ isActive: true }).then((response) => setUoms(response.results))
+    listNamingTemplates({ isActive: true }).then((response) => setNamingTemplates(response.results))
+    listItemFieldRules().then(setFieldRules)
   }, [])
 
   useEffect(() => {
     if (!id) return
     getItem(Number(id))
-      .then((item) => form.setFieldsValue(item))
+      .then((item: Item) =>
+        form.setFieldsValue({
+          ...item,
+          length_in: item.length_in != null ? Number(item.length_in) : null,
+          breadth_in: item.breadth_in != null ? Number(item.breadth_in) : null,
+          height_mm: item.height_mm != null ? Number(item.height_mm) : null,
+        }),
+      )
       .catch(() => setError('Could not load this item.'))
       .finally(() => setLoading(false))
     listCustomerProductMappings({ item: Number(id) }).then((response) =>
@@ -162,7 +224,7 @@ export default function ItemFormPage() {
   const handleCreateProductType = async (name: string) => {
     setQuickAddSubmitting(true)
     try {
-      const created = await createProductType({ name, is_active: true })
+      const created = await createProductType({ name, short_code: '', is_active: true })
       setProductTypes((prev) => [...prev, created])
       form.setFieldValue('product_type', created.id)
       setProductTypeModalOpen(false)
@@ -176,7 +238,7 @@ export default function ItemFormPage() {
   const handleCreateMaterialType = async (name: string) => {
     setQuickAddSubmitting(true)
     try {
-      const created = await createMaterialType({ name, is_active: true })
+      const created = await createMaterialType({ name, short_code: '', is_active: true })
       setMaterialTypes((prev) => [...prev, created])
       form.setFieldValue('material_type', created.id)
       setMaterialTypeModalOpen(false)
@@ -186,6 +248,52 @@ export default function ItemFormPage() {
       setQuickAddSubmitting(false)
     }
   }
+
+  const handleCreateShape = async (name: string) => {
+    setQuickAddSubmitting(true)
+    try {
+      const created = await createShape({ name, short_code: '', is_active: true })
+      setShapes((prev) => [...prev, created])
+      form.setFieldValue('shape', created.id)
+      setShapeModalOpen(false)
+    } catch (err) {
+      message.error(err instanceof ApiError ? err.message : 'Could not create this shape.')
+    } finally {
+      setQuickAddSubmitting(false)
+    }
+  }
+
+  const selectedProductType = productTypes.find((t) => t.id === productType)
+  const selectedMaterialType = materialTypes.find((t) => t.id === materialType)
+  const selectedShape = shapes.find((s) => s.id === shape)
+  const selectedUom = uoms.find((u) => u.id === inventoryUom)
+
+  const dimension = buildDimensionToken(
+    lengthIn != null ? String(lengthIn) : undefined,
+    breadthIn != null ? String(breadthIn) : undefined,
+    heightMm != null ? String(heightMm) : undefined,
+    selectedShape?.short_code,
+  )
+
+  const tokens: NamingTokens = {
+    class: ITEM_CLASS_OPTIONS.find((option) => option.value === itemClass)?.label,
+    class_short: itemClass ? ITEM_CLASS_SHORT_LABELS[itemClass] : undefined,
+    product_type: selectedProductType?.name,
+    product_type_short: selectedProductType?.short_code,
+    material_type: selectedMaterialType?.name,
+    material_type_short: selectedMaterialType?.short_code,
+    shape: selectedShape?.name,
+    shape_short: selectedShape?.short_code,
+    length: lengthIn != null ? String(lengthIn) : undefined,
+    breadth: breadthIn != null ? String(breadthIn) : undefined,
+    height: heightMm != null ? String(heightMm) : undefined,
+    uom: selectedUom?.code,
+    dimension,
+  }
+
+  const matchedTemplate = resolveNamingTemplate(namingTemplates, itemClass, productType, shape)
+  const suggestedName = matchedTemplate ? applyTemplate(matchedTemplate.name_pattern, tokens) : null
+  const suggestedCode = matchedTemplate ? applyTemplate(matchedTemplate.code_pattern, tokens) : null
 
   const pageTitle = isEdit ? 'Edit Item' : 'Create Item'
 
@@ -217,22 +325,6 @@ export default function ItemFormPage() {
             sellable: false,
           }}
         >
-          <Form.Item
-            label="What should this item be called?"
-            name="name"
-            tooltip="Shown throughout the app — on pickers, order lines, and reports. Use something recognizable on the factory floor, not an internal code."
-            rules={[{ required: true, message: 'Enter an item name.' }]}
-          >
-            <Input size="large" />
-          </Form.Item>
-          <Form.Item
-            label="Item Code"
-            name="code"
-            tooltip="A short, unique internal reference — your own part number. Fixed once created, since other records point back to this item by it."
-            rules={[{ required: true, message: 'Enter an item code.' }]}
-          >
-            <Input size="large" disabled={isEdit} />
-          </Form.Item>
           <Form.Item
             label="What kind of item is this?"
             name="item_class"
@@ -268,7 +360,10 @@ export default function ItemFormPage() {
                     allowClear
                     size="large"
                     style={{ flex: 1, minWidth: 0 }}
-                    options={productTypes.map((t) => ({ value: t.id, label: t.name }))}
+                    options={(itemClass
+                      ? productTypes.filter((t) => isApplicableToClass(t, itemClass))
+                      : productTypes
+                    ).map((t) => ({ value: t.id, label: t.name }))}
                     showSearch
                     optionFilterProp="label"
                   />
@@ -302,7 +397,10 @@ export default function ItemFormPage() {
                     allowClear
                     size="large"
                     style={{ flex: 1, minWidth: 0 }}
-                    options={materialTypes.map((t) => ({ value: t.id, label: t.name }))}
+                    options={(itemClass
+                      ? materialTypes.filter((t) => isApplicableToClass(t, itemClass))
+                      : materialTypes
+                    ).map((t) => ({ value: t.id, label: t.name }))}
                     showSearch
                     optionFilterProp="label"
                   />
@@ -316,6 +414,94 @@ export default function ItemFormPage() {
               </Flex>
             </Form.Item>
           )}
+
+          {showShape && (
+            <Form.Item
+              label={requireShape ? 'Shape' : 'Shape (optional)'}
+              required={requireShape}
+              tooltip="Round, Square, Rectangle... — used together with Dimensions below to suggest a Name and Code."
+            >
+              <Flex gap={8} style={{ maxWidth: 320 }}>
+                <Form.Item
+                  name="shape"
+                  noStyle
+                  rules={requireShape ? [{ required: true, message: 'Select a shape.' }] : []}
+                >
+                  <Select
+                    allowClear
+                    size="large"
+                    style={{ flex: 1, minWidth: 0 }}
+                    options={shapes.map((s) => ({ value: s.id, label: s.name }))}
+                    showSearch
+                    optionFilterProp="label"
+                  />
+                </Form.Item>
+                <Button
+                  size="large"
+                  icon={<PlusOutlined />}
+                  aria-label="Add Shape"
+                  onClick={() => setShapeModalOpen(true)}
+                />
+              </Flex>
+            </Form.Item>
+          )}
+
+          {showDimensions && (
+            <Form.Item
+              label={requireDimensions ? 'Dimensions' : 'Dimensions (optional)'}
+              required={requireDimensions}
+              tooltip="Feeds the suggested Name/Code below. Length × Breadth for square/rectangular items, Length alone (as a diameter) for round ones — the diameter form needs a Shape, so it only applies where Shape is also shown. Breadth stays optional either way — a round item genuinely has none."
+            >
+              <Flex gap={12}>
+                <Form.Item
+                  name="length_in"
+                  noStyle
+                  rules={requireDimensions ? [{ required: true, message: 'Enter a length.' }] : []}
+                >
+                  <InputNumber min={0} addonAfter="in" placeholder="Length" style={{ width: 130 }} />
+                </Form.Item>
+                <Form.Item name="breadth_in" noStyle>
+                  <InputNumber min={0} addonAfter="in" placeholder="Breadth" style={{ width: 130 }} />
+                </Form.Item>
+                <Form.Item
+                  name="height_mm"
+                  noStyle
+                  rules={requireDimensions ? [{ required: true, message: 'Enter a height.' }] : []}
+                >
+                  <InputNumber min={0} addonAfter="mm" placeholder="Height" style={{ width: 130 }} />
+                </Form.Item>
+              </Flex>
+            </Form.Item>
+          )}
+
+          <Form.Item
+            label="What should this item be called?"
+            name="name"
+            tooltip="Shown throughout the app — on pickers, order lines, and reports. Use something recognizable on the factory floor, not an internal code."
+            rules={[{ required: true, message: 'Enter an item name.' }]}
+          >
+            <Input size="large" />
+          </Form.Item>
+          <Suggestion
+            value={suggestedName}
+            onUse={() => form.setFieldValue('name', suggestedName)}
+          />
+
+          <Form.Item
+            label="Item Code"
+            name="code"
+            tooltip="A short, unique internal reference — your own part number. Fixed once created, since other records point back to this item by it."
+            rules={[{ required: true, message: 'Enter an item code.' }]}
+          >
+            <Input size="large" disabled={isEdit} />
+          </Form.Item>
+          {!isEdit && (
+            <Suggestion
+              value={suggestedCode}
+              onUse={() => form.setFieldValue('code', suggestedCode)}
+            />
+          )}
+
           <Form.Item
             label="Inventory Unit"
             name="inventory_uom"
@@ -349,26 +535,38 @@ export default function ItemFormPage() {
             tooltip="Collapses into the Usage tags shown on the Items list — not raw checkboxes there."
           >
             <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-              <Form.Item name="manufacturable" valuePropName="checked" noStyle>
-                <Tooltip title="This item can be produced by a Process/Product Route — it's an output of manufacturing.">
+              <Flex align="center" gap={4}>
+                <Form.Item name="manufacturable" valuePropName="checked" noStyle>
                   <Checkbox>Made</Checkbox>
+                </Form.Item>
+                <Tooltip title="This item can be produced by a Process/Product Route — it's an output of manufacturing.">
+                  <InfoCircleOutlined style={{ color: '#8c8c8c', fontSize: 13 }} />
                 </Tooltip>
-              </Form.Item>
-              <Form.Item name="stockable" valuePropName="checked" noStyle>
-                <Tooltip title="You track an on-hand quantity for this item in inventory.">
+              </Flex>
+              <Flex align="center" gap={4}>
+                <Form.Item name="stockable" valuePropName="checked" noStyle>
                   <Checkbox>Stocked</Checkbox>
+                </Form.Item>
+                <Tooltip title="You track an on-hand quantity for this item in inventory.">
+                  <InfoCircleOutlined style={{ color: '#8c8c8c', fontSize: 13 }} />
                 </Tooltip>
-              </Form.Item>
-              <Form.Item name="sellable" valuePropName="checked" noStyle>
-                <Tooltip title="This item can appear on an Export Order line and be mapped to a customer.">
+              </Flex>
+              <Flex align="center" gap={4}>
+                <Form.Item name="sellable" valuePropName="checked" noStyle>
                   <Checkbox>Sold</Checkbox>
+                </Form.Item>
+                <Tooltip title="This item can appear on an Export Order line and be mapped to a customer.">
+                  <InfoCircleOutlined style={{ color: '#8c8c8c', fontSize: 13 }} />
                 </Tooltip>
-              </Form.Item>
-              <Form.Item name="purchasable" valuePropName="checked" noStyle>
-                <Tooltip title="This item is procured from a vendor.">
+              </Flex>
+              <Flex align="center" gap={4}>
+                <Form.Item name="purchasable" valuePropName="checked" noStyle>
                   <Checkbox>Bought</Checkbox>
+                </Form.Item>
+                <Tooltip title="This item is procured from a vendor.">
+                  <InfoCircleOutlined style={{ color: '#8c8c8c', fontSize: 13 }} />
                 </Tooltip>
-              </Form.Item>
+              </Flex>
             </div>
           </Form.Item>
 
@@ -442,6 +640,13 @@ export default function ItemFormPage() {
         submitting={quickAddSubmitting}
         onCancel={() => setMaterialTypeModalOpen(false)}
         onCreate={(name) => void handleCreateMaterialType(name)}
+      />
+      <QuickAddModal
+        open={shapeModalOpen}
+        title="Add Shape"
+        submitting={quickAddSubmitting}
+        onCancel={() => setShapeModalOpen(false)}
+        onCreate={(name) => void handleCreateShape(name)}
       />
     </div>
   )

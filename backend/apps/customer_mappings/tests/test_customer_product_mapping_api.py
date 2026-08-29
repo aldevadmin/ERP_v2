@@ -86,13 +86,13 @@ def test_create_mapping_creates_draft_v1(customer, finished_item):
             "customer": customer.id,
             "item": finished_item.id,
             "customer_sku": "SKU-1",
-            "mapping_code": "CPM-1",
         },
         format="json",
     )
 
     assert response.status_code == 201
     body = response.json()
+    assert body["mapping_code"] == f"{finished_item.code}-{customer.code}-SKU-1"
     assert body["current_version"]["version_number"] == 1
     assert body["current_version"]["status"] == "DRAFT"
 
@@ -107,7 +107,6 @@ def test_duplicate_sku_for_same_customer_rejected(customer, finished_item):
             "customer": customer.id,
             "item": finished_item.id,
             "customer_sku": "SKU-1",
-            "mapping_code": "CPM-2",
         },
         format="json",
     )
@@ -127,7 +126,6 @@ def test_same_customer_can_have_two_skus_for_same_item(customer, finished_item):
             "customer": customer.id,
             "item": finished_item.id,
             "customer_sku": "SKU-2",
-            "mapping_code": "CPM-2",
         },
         format="json",
     )

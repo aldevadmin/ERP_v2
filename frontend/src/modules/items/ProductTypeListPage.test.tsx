@@ -18,7 +18,9 @@ const response: ProductTypeListResponse = {
   count: 1,
   next: null,
   previous: null,
-  results: [{ id: 1, name: 'Plate', is_active: true }],
+  results: [
+    { id: 1, name: 'Plate', short_code: 'PL', applicable_item_classes: [], is_active: true },
+  ],
 }
 
 describe('ProductTypeListPage', () => {

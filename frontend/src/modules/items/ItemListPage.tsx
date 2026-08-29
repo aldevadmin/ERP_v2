@@ -19,7 +19,7 @@ import { Link, useNavigate } from 'react-router'
 import { ApiError } from '../../shared/api/http'
 import StatusTag from '../../shared/components/StatusTag'
 import { deleteItem, listItems, listMaterialTypes, listProductTypes } from './api'
-import { ITEM_CLASS_OPTIONS } from './types'
+import { ITEM_CLASS_LABELS } from './types'
 import type { Item, ItemClass, MaterialType, ProductType } from './types'
 
 const { Title } = Typography
@@ -35,10 +35,6 @@ const TABS: { key: ItemClass | 'ALL'; label: string }[] = [
   { key: 'CONSUMABLE', label: 'Consumables' },
   { key: 'SCRAP_BY_PRODUCT', label: 'Scrap' },
 ]
-
-const ITEM_CLASS_LABELS: Record<ItemClass, string> = Object.fromEntries(
-  ITEM_CLASS_OPTIONS.map((option) => [option.value, option.label]),
-) as Record<ItemClass, string>
 
 function usageTags(item: Item): string[] {
   const tags: string[] = []

@@ -60,6 +60,11 @@ const itemsResponse: ItemListResponse = {
       product_type_name: '',
       material_type: null,
       material_type_name: '',
+      shape: null,
+      shape_name: '',
+      length_in: null,
+      breadth_in: null,
+      height_mm: null,
       inventory_uom: null,
       inventory_uom_code: '',
       purchasable: false,
@@ -159,14 +164,13 @@ describe('CustomerProductMappingFormPage — Customer & Product', () => {
         <CustomerProductMappingFormPage />
       </MemoryRouter>,
     )
-    await screen.findByLabelText('Mapping Code')
+    await screen.findByLabelText('Customer SKU')
 
     fireEvent.mouseDown(screen.getByLabelText('Customer'))
     fireEvent.click(await screen.findByTitle('Acme Exports (CUST-1)'))
     fireEvent.mouseDown(screen.getByLabelText('Item'))
     fireEvent.click(await screen.findByTitle('10 Inch Plate (SQ10)'))
     fireEvent.change(screen.getByLabelText('Customer SKU'), { target: { value: 'CPM-SKU-1' } })
-    fireEvent.change(screen.getByLabelText('Mapping Code'), { target: { value: 'CPM-1' } })
 
     fireEvent.click(screen.getByRole('button', { name: 'Save & Continue →' }))
 
@@ -175,7 +179,6 @@ describe('CustomerProductMappingFormPage — Customer & Product', () => {
         customer: 1,
         item: 1,
         customer_sku: 'CPM-SKU-1',
-        mapping_code: 'CPM-1',
         is_active: true,
       }),
     )

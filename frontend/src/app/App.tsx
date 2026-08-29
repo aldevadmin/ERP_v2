@@ -16,6 +16,11 @@ import ProductTypeFormPage from '../modules/items/ProductTypeFormPage'
 import ProductTypeListPage from '../modules/items/ProductTypeListPage'
 import MaterialTypeFormPage from '../modules/items/MaterialTypeFormPage'
 import MaterialTypeListPage from '../modules/items/MaterialTypeListPage'
+import ShapeFormPage from '../modules/items/ShapeFormPage'
+import ShapeListPage from '../modules/items/ShapeListPage'
+import NamingTemplateFormPage from '../modules/items/NamingTemplateFormPage'
+import NamingTemplateListPage from '../modules/items/NamingTemplateListPage'
+import ItemClassificationSettingsPage from '../modules/items/ItemClassificationSettingsPage'
 import UOMFormPage from '../modules/items/UOMFormPage'
 import UOMListPage from '../modules/items/UOMListPage'
 import ProcessCategoryFormPage from '../modules/processes/ProcessCategoryFormPage'
@@ -82,6 +87,16 @@ function AuthenticatedShell() {
               <Route path="/material-types" element={<MaterialTypeListPage />} />
               <Route path="/material-types/new" element={<MaterialTypeFormPage />} />
               <Route path="/material-types/:id/edit" element={<MaterialTypeFormPage />} />
+              <Route path="/shapes" element={<ShapeListPage />} />
+              <Route path="/shapes/new" element={<ShapeFormPage />} />
+              <Route path="/shapes/:id/edit" element={<ShapeFormPage />} />
+              <Route path="/naming-templates" element={<NamingTemplateListPage />} />
+              <Route path="/naming-templates/new" element={<NamingTemplateFormPage />} />
+              <Route path="/naming-templates/:id/edit" element={<NamingTemplateFormPage />} />
+              <Route
+                path="/item-classification"
+                element={<ItemClassificationSettingsPage />}
+              />
               <Route path="/uoms" element={<UOMListPage />} />
               <Route path="/uoms/new" element={<UOMFormPage />} />
               <Route path="/uoms/:id/edit" element={<UOMFormPage />} />

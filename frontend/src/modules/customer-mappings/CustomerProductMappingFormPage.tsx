@@ -365,13 +365,6 @@ export default function CustomerProductMappingFormPage() {
                 >
                   <Input size="large" disabled={isEdit} />
                 </Form.Item>
-                <Form.Item
-                  label="Mapping Code"
-                  name="mapping_code"
-                  rules={[{ required: true, message: 'Enter a mapping code.' }]}
-                >
-                  <Input size="large" disabled={isEdit} />
-                </Form.Item>
                 <Form.Item label="Active" name="is_active" valuePropName="checked">
                   <Switch />
                 </Form.Item>

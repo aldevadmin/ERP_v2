@@ -70,6 +70,13 @@ export default function ProductTypeFormPage() {
           >
             <Input size="large" placeholder="e.g. Plate" />
           </Form.Item>
+          <Form.Item
+            label="Short Code (optional)"
+            name="short_code"
+            tooltip="A 2-4 letter abbreviation (e.g. PL for Plate) used when suggesting an Item Name/Code — leave blank if you don't need one."
+          >
+            <Input size="large" placeholder="e.g. PL" maxLength={4} style={{ maxWidth: 160 }} />
+          </Form.Item>
           <Form.Item label="Active" name="is_active" valuePropName="checked">
             <Switch />
           </Form.Item>

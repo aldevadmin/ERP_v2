@@ -2,46 +2,46 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { Alert, Breadcrumb, Button, Card, Form, Input, Switch, Typography } from 'antd'
 import { ApiError } from '../../shared/api/http'
-import { createMaterialType, getMaterialType, updateMaterialType } from './api'
-import type { MaterialTypeFormValues } from './types'
+import { createShape, getShape, updateShape } from './api'
+import type { ShapeFormValues } from './types'
 
 const { Title } = Typography
 
-export default function MaterialTypeFormPage() {
+export default function ShapeFormPage() {
   const { id } = useParams<{ id: string }>()
   const isEdit = Boolean(id)
   const navigate = useNavigate()
-  const [form] = Form.useForm<MaterialTypeFormValues>()
+  const [form] = Form.useForm<ShapeFormValues>()
   const [loading, setLoading] = useState(isEdit)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!id) return
-    getMaterialType(Number(id))
-      .then((type) => form.setFieldsValue(type))
-      .catch(() => setError('Could not load this material type.'))
+    getShape(Number(id))
+      .then((shape) => form.setFieldsValue(shape))
+      .catch(() => setError('Could not load this shape.'))
       .finally(() => setLoading(false))
   }, [id, form])
 
-  const handleSubmit = async (values: MaterialTypeFormValues) => {
+  const handleSubmit = async (values: ShapeFormValues) => {
     setError(null)
     setSubmitting(true)
     try {
       if (id) {
-        await updateMaterialType(Number(id), values)
+        await updateShape(Number(id), values)
       } else {
-        await createMaterialType(values)
+        await createShape(values)
       }
-      navigate('/material-types')
+      navigate('/shapes')
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not save this material type.')
+      setError(err instanceof ApiError ? err.message : 'Could not save this shape.')
     } finally {
       setSubmitting(false)
     }
   }
 
-  const pageTitle = isEdit ? 'Edit Material Type' : 'New Material Type'
+  const pageTitle = isEdit ? 'Edit Shape' : 'New Shape'
 
   return (
     <div>
@@ -49,14 +49,14 @@ export default function MaterialTypeFormPage() {
         style={{ marginBottom: 12 }}
         items={[
           { title: <Link to="/settings">Settings</Link> },
-          { title: <Link to="/material-types">Material Types</Link> },
+          { title: <Link to="/shapes">Shapes</Link> },
           { title: pageTitle },
         ]}
       />
       <Card style={{ maxWidth: 640, margin: '0 auto' }}>
         <Title level={4}>{pageTitle}</Title>
         {error && <Alert type="error" title={error} showIcon style={{ marginBottom: 16 }} />}
-        <Form<MaterialTypeFormValues>
+        <Form<ShapeFormValues>
           form={form}
           layout="vertical"
           onFinish={handleSubmit}
@@ -68,14 +68,14 @@ export default function MaterialTypeFormPage() {
             name="name"
             rules={[{ required: true, message: 'Enter a name.' }]}
           >
-            <Input size="large" placeholder="e.g. Areca Palm" />
+            <Input size="large" placeholder="e.g. Round" />
           </Form.Item>
           <Form.Item
             label="Short Code (optional)"
             name="short_code"
-            tooltip="A 2-4 letter abbreviation (e.g. AL for Areca Palm) used when suggesting an Item Name/Code — leave blank if you don't need one."
+            tooltip="A 2-4 letter abbreviation (e.g. RD for Round) used when suggesting an Item Name/Code — leave blank if you don't need one."
           >
-            <Input size="large" placeholder="e.g. AL" maxLength={4} style={{ maxWidth: 160 }} />
+            <Input size="large" placeholder="e.g. RD" maxLength={4} style={{ maxWidth: 160 }} />
           </Form.Item>
           <Form.Item label="Active" name="is_active" valuePropName="checked">
             <Switch />

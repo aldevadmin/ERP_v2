@@ -250,7 +250,10 @@ export default function PackagingProfileFormPage() {
               <div
                 key={step.key}
                 role="button"
-                onClick={() => setCurrentStep(step.key)}
+                onClick={() => {
+                  setError(null)
+                  setCurrentStep(step.key)
+                }}
                 style={{
                   padding: '10px 24px',
                   cursor: 'pointer',
@@ -328,7 +331,10 @@ export default function PackagingProfileFormPage() {
                             showSearch
                             optionFilterProp="label"
                             options={packagingItems.map((i) => ({ value: i.id, label: `${i.name} (${i.code})` }))}
-                            onChange={(v) => updateMaterialRow(index, { item: v })}
+                            onChange={(v) => {
+                              const selected = packagingItems.find((i) => i.id === v)
+                              updateMaterialRow(index, { item: v, uom: selected?.inventory_uom ?? 0 })
+                            }}
                           />
                         ),
                       },

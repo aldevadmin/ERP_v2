@@ -16,22 +16,22 @@ import { DeleteOutlined } from '@ant-design/icons'
 import { Link, useNavigate } from 'react-router'
 import { ApiError } from '../../shared/api/http'
 import StatusTag from '../../shared/components/StatusTag'
-import { deleteMaterialType, listMaterialTypes } from './api'
-import type { MaterialType } from './types'
+import { deleteShape, listShapes } from './api'
+import type { Shape } from './types'
 
 const { Title } = Typography
 
-export default function MaterialTypeListPage() {
+export default function ShapeListPage() {
   const navigate = useNavigate()
-  const [types, setTypes] = useState<MaterialType[]>([])
+  const [shapes, setShapes] = useState<Shape[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [activeOnly, setActiveOnly] = useState(true)
 
   const load = useCallback(() => {
     setLoading(true)
-    listMaterialTypes({ search: search || undefined, isActive: activeOnly ? true : undefined })
-      .then((response) => setTypes(response.results))
+    listShapes({ search: search || undefined, isActive: activeOnly ? true : undefined })
+      .then((response) => setShapes(response.results))
       .finally(() => setLoading(false))
   }, [search, activeOnly])
 
@@ -39,13 +39,13 @@ export default function MaterialTypeListPage() {
     load()
   }, [load])
 
-  const handleDelete = async (type: MaterialType) => {
+  const handleDelete = async (shape: Shape) => {
     try {
-      await deleteMaterialType(type.id)
-      message.success('Material type deleted.')
+      await deleteShape(shape.id)
+      message.success('Shape deleted.')
       load()
     } catch (err) {
-      message.error(err instanceof ApiError ? err.message : 'Could not delete this material type.')
+      message.error(err instanceof ApiError ? err.message : 'Could not delete this shape.')
     }
   }
 
@@ -53,22 +53,23 @@ export default function MaterialTypeListPage() {
     <div>
       <Breadcrumb
         style={{ marginBottom: 12 }}
-        items={[{ title: <Link to="/settings">Settings</Link> }, { title: 'Material Types' }]}
+        items={[{ title: <Link to="/settings">Settings</Link> }, { title: 'Shapes' }]}
       />
       <Card
         title={
           <Title level={4} style={{ margin: 0 }}>
-            Material Types
+            Shapes
           </Title>
         }
         extra={
-          <Button type="primary" onClick={() => navigate('/material-types/new')}>
-            Add Material Type
+          <Button type="primary" onClick={() => navigate('/shapes/new')}>
+            Add Shape
           </Button>
         }
       >
         <Typography.Paragraph type="secondary">
-          What kind of material an Item is made from — e.g. Areca Palm, Wood, Bagasse.
+          What physical shape an Item has — Round, Square, Rectangle, Oval... — used together with
+          dimensions to suggest an Item Name/Code.
         </Typography.Paragraph>
         <Flex justify="space-between" style={{ marginBottom: 16 }} wrap="wrap" gap={12}>
           <Input.Search
@@ -82,12 +83,12 @@ export default function MaterialTypeListPage() {
             <Switch checked={activeOnly} onChange={setActiveOnly} />
           </Space>
         </Flex>
-        <Table<MaterialType>
+        <Table<Shape>
           rowKey="id"
           loading={loading}
-          dataSource={types}
+          dataSource={shapes}
           onRow={(record) => ({
-            onClick: () => navigate(`/material-types/${record.id}/edit`),
+            onClick: () => navigate(`/shapes/${record.id}/edit`),
             style: { cursor: 'pointer' },
           })}
           columns={[
@@ -104,7 +105,7 @@ export default function MaterialTypeListPage() {
               width: 48,
               render: (_, record) => (
                 <Popconfirm
-                  title="Delete this material type?"
+                  title="Delete this shape?"
                   description="This can't be undone."
                   okText="Delete"
                   okButtonProps={{ danger: true }}

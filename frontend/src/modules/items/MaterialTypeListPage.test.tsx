@@ -18,7 +18,9 @@ const response: MaterialTypeListResponse = {
   count: 1,
   next: null,
   previous: null,
-  results: [{ id: 1, name: 'Areca Palm', is_active: true }],
+  results: [
+    { id: 1, name: 'Areca Palm', short_code: 'AL', applicable_item_classes: [], is_active: true },
+  ],
 }
 
 describe('MaterialTypeListPage', () => {
