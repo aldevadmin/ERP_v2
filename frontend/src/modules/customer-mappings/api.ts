@@ -15,6 +15,7 @@ export interface ListMappingsParams {
   isActive?: boolean
   customer?: number
   item?: number
+  packagingProfile?: number
 }
 
 export function listCustomerProductMappings(
@@ -25,6 +26,9 @@ export function listCustomerProductMappings(
   if (params.isActive !== undefined) query.set('is_active', String(params.isActive))
   if (params.customer !== undefined) query.set('customer', String(params.customer))
   if (params.item !== undefined) query.set('item', String(params.item))
+  if (params.packagingProfile !== undefined) {
+    query.set('packaging_profile', String(params.packagingProfile))
+  }
   const queryString = query.toString()
   return apiFetch<CustomerProductMappingListResponse>(
     `/customer-product-mappings/${queryString ? `?${queryString}` : ''}`,

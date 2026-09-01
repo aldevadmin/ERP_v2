@@ -4,6 +4,7 @@ import type {
   PackagingProfile,
   PackagingProfileFormValues,
   PackagingProfileListResponse,
+  PackagingProfileMaterialUsageListResponse,
   PackagingProfileVersion,
   PackagingProfileVersionFormValues,
 } from './types'
@@ -54,6 +55,16 @@ export function updatePackagingProfile(
 
 export function deletePackagingProfile(id: number): Promise<void> {
   return apiFetch<void>(`/packaging-profiles/${id}/`, { method: 'DELETE' })
+}
+
+// Reverse lookup for the Item form's "Used In Packaging Profiles" card —
+// every profile version that lists the given Packaging Material item.
+export function listPackagingProfileMaterialUsage(
+  itemId: number,
+): Promise<PackagingProfileMaterialUsageListResponse> {
+  return apiFetch<PackagingProfileMaterialUsageListResponse>(
+    `/packaging-profile-materials/?item=${itemId}`,
+  )
 }
 
 export function getPackagingProfileVersion(id: number): Promise<PackagingProfileVersion> {

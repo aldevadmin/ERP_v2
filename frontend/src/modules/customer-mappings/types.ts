@@ -5,7 +5,11 @@ export type RequirementCategory = 'LABEL' | 'DOCUMENT' | 'QUALITY' | 'PALLET' | 
 export const REQUIREMENT_CATEGORY_OPTIONS: { value: RequirementCategory; label: string }[] = [
   { value: 'LABEL', label: 'Label' },
   { value: 'DOCUMENT', label: 'Document' },
-  { value: 'QUALITY', label: 'Quality' },
+  // Labeled "Quality Requirement" rather than plain "Quality" — this is an
+  // unrelated free-text customer requirement (e.g. "needs ISO cert"), not
+  // the Premium/Standard production-output grading from `OutputClassification`
+  // elsewhere in the app. The two share the word "quality" but nothing else.
+  { value: 'QUALITY', label: 'Quality Requirement' },
   { value: 'PALLET', label: 'Pallet' },
   { value: 'COMPLIANCE', label: 'Compliance' },
   { value: 'OTHER', label: 'Other' },

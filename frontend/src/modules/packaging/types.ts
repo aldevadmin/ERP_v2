@@ -77,6 +77,30 @@ export interface PackagingProfileListResponse {
   results: PackagingProfile[]
 }
 
+// Reverse view of `PackagingProfileMaterial` from a Packaging Material
+// item's side — one row per profile version that lists this item as a
+// material. Backs the Item form's "Used In Packaging Profiles" card.
+export interface PackagingProfileMaterialUsage {
+  id: number
+  profile_id: number
+  profile_name: string
+  profile_code: string
+  finished_item_name: string
+  version_number: number
+  version_status: PackagingVersionStatus
+  pieces_per_selling_unit: number | null
+  level: PackagingMaterialLevel
+  quantity: string
+  uom_code: string
+}
+
+export interface PackagingProfileMaterialUsageListResponse {
+  count: number
+  next: string | null
+  previous: string | null
+  results: PackagingProfileMaterialUsage[]
+}
+
 export interface PackagingProfileFormValues {
   code: string
   name: string

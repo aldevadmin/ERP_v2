@@ -22,6 +22,8 @@ import {
 } from 'antd'
 import { DeleteOutlined } from '@ant-design/icons'
 import { ApiError } from '../../shared/api/http'
+import { listCustomerProductMappings } from '../customer-mappings/api'
+import type { CustomerProductMapping } from '../customer-mappings/types'
 import { listItems, listUOMs } from '../items/api'
 import type { Item, UOM } from '../items/types'
 import {
@@ -43,6 +45,16 @@ import type {
 } from './types'
 
 const { Title, Text } = Typography
+
+function Suggestion({ value, onUse }: { value: string | null; onUse: () => void }) {
+  if (!value) return null
+  return (
+    <div style={{ marginTop: -16, marginBottom: 16, fontSize: 13, color: '#8c8c8c' }}>
+      Suggested: <span style={{ fontFamily: 'monospace' }}>{value}</span>{' '}
+      <Typography.Link onClick={onUse}>Use</Typography.Link>
+    </div>
+  )
+}
 
 const STEPS = [
   { key: 'basics', label: 'Basics' },
@@ -69,8 +81,37 @@ export default function PackagingProfileFormPage() {
   const [packagingItems, setPackagingItems] = useState<Item[]>([])
   const [uoms, setUoms] = useState<UOM[]>([])
   const [materialRows, setMaterialRows] = useState<PackagingMaterialRow[]>([])
+  const [mappings, setMappings] = useState<CustomerProductMapping[]>([])
+  // Most profiles target a Finished Good — WIP is the occasional case
+  // (packing an intermediate stage before it's fully finished), so it
+  // starts hidden to keep the common list short, with this as the easy way
+  // back in rather than a permanent, always-mixed list.
+  const [includeWip, setIncludeWip] = useState(false)
+  // Pieces per Pouch/Box live here on Basics (not Specifications) because
+  // they're what actually distinguishes one profile from another for the
+  // same finished item (e.g. a 300-piece box vs. a 100-piece box), and
+  // because Name/Code suggestions need them before the user ever reaches
+  // Specifications. They still persist onto the *version* (via
+  // `updatePackagingProfileVersion` inside `saveBasics`), not the profile,
+  // so the immutable-once-published guarantee for packing math is
+  // unchanged — only where they're captured in the wizard has moved, not
+  // where the fact lives. Pouches per Box (`pouchesPerBox` below) is
+  // derived, not entered directly.
+  const [piecesPerPouch, setPiecesPerPouch] = useState<number | null>(null)
+  const [piecesPerBox, setPiecesPerBox] = useState<number | null>(null)
 
   const editable = !version || version.status === 'DRAFT'
+  // Name/Scope/Active are just descriptive metadata on the stable profile
+  // row — safe to edit anytime, unlike Materials/Specifications which live
+  // on the (intentionally frozen-once-published) version. Finished Item is
+  // the one Basics field that still needs its own lock: once ANY version of
+  // this profile has ever been published (not just the current one — a new
+  // draft flips `version.status` back to DRAFT, which would otherwise
+  // reopen this), changing it would retroactively redefine what an
+  // already-published, possibly Customer-Mapping-pinned version means. The
+  // backend enforces this same rule independently (`PackagingProfileSerializer.validate`).
+  const finishedItemLocked =
+    version !== null && (version.status !== 'DRAFT' || version.version_number > 1)
 
   useEffect(() => {
     listItems({ isActive: true }).then((response) =>
@@ -96,6 +137,12 @@ export default function PackagingProfileFormPage() {
             uom: m.uom,
           })),
         )
+        setPiecesPerPouch(v.pieces_per_pouch)
+        setPiecesPerBox(
+          v.pieces_per_pouch && v.pouches_per_carton
+            ? v.pieces_per_pouch * v.pouches_per_carton
+            : null,
+        )
       })
     },
     [specForm],
@@ -113,6 +160,9 @@ export default function PackagingProfileFormPage() {
       })
       .catch(() => setError('Could not load this profile.'))
       .finally(() => setLoading(false))
+    listCustomerProductMappings({ packagingProfile: Number(id) }).then((response) =>
+      setMappings(response.results),
+    )
   }, [id, basicsForm, loadVersion])
 
   const saveBasics = async () => {
@@ -122,17 +172,50 @@ export default function PackagingProfileFormPage() {
     } catch {
       return
     }
+    if ((piecesPerPouch != null) !== (piecesPerBox != null)) {
+      setError('Enter both Pieces per Pouch and Pieces per Box, or leave both blank.')
+      return
+    }
+    if (piecesPerPouch != null && piecesPerBox != null && !pouchesPerBoxValid) {
+      setError('Pieces per Box must be an exact multiple of Pieces per Pouch.')
+      return
+    }
     setError(null)
     setSubmitting(true)
     try {
+      let versionId: number | undefined
       if (profile) {
         const updated = await updatePackagingProfile(profile.id, values)
         setProfile(updated)
+        versionId = version?.id
       } else {
         const created = await createPackagingProfile(values)
         setProfile(created)
-        if (created.current_version) loadVersion(created.current_version.id)
+        versionId = created.current_version?.id
         navigate(`/packaging-profiles/${created.id}/edit`, { replace: true })
+      }
+      // Pack quantities are version-level (see the state comment above) —
+      // only worth (re)saving while the version is still a draft, same
+      // rule Materials/Specifications already follow.
+      if (versionId && editable && piecesPerPouch != null && pouchesPerBox != null) {
+        const patched = await updatePackagingProfileVersion(versionId, {
+          pieces_per_pouch: piecesPerPouch,
+          pouches_per_carton: pouchesPerBox,
+          pack_mode: 'CARTON',
+        })
+        setVersion(patched)
+        specForm.setFieldsValue(patched)
+        setMaterialRows(
+          patched.materials.map((m) => ({
+            id: m.id,
+            item: m.item,
+            level: m.level,
+            quantity: Number(m.quantity),
+            uom: m.uom,
+          })),
+        )
+      } else if (versionId) {
+        loadVersion(versionId)
       }
       setCurrentStep('materials')
     } catch (err) {
@@ -223,6 +306,44 @@ export default function PackagingProfileFormPage() {
   const pageTitle = isEdit ? 'Edit Packaging Profile' : 'Create Packaging Profile'
   const uomOptions = uoms.map((u) => ({ value: u.id, label: `${u.name} (${u.code})` }))
 
+  const finishedItemId = Form.useWatch('finished_item', basicsForm) as number | undefined
+  const selectedFinishedItem = finishedItems.find((i) => i.id === finishedItemId)
+  // A finished item can have more than one profile (e.g. a customer
+  // template alongside the standard one), so this is only a starting
+  // point, not a guaranteed-unique value — the backend's own uniqueness
+  // check on `code` catches a collision the same way it already does for
+  // an untouched suggestion on the Item form.
+  const pouchesPerBox =
+    piecesPerPouch != null && piecesPerBox != null ? piecesPerBox / piecesPerPouch : null
+  const pouchesPerBoxValid = pouchesPerBox === null || Number.isInteger(pouchesPerBox)
+  // Explicit about the pack structure in the suggestion itself —
+  // {totalPieces}_{piecesPerPouch}x{pouches} — e.g. "300_50x6" reads as
+  // "300 total, 50 per pouch, 6 pouches per box", which is what actually
+  // distinguishes one profile from another for the same finished item.
+  // Falls back to the plain item name/code until both quantities (and
+  // their exact-multiple relationship) are filled in.
+  const packSuffix =
+    piecesPerPouch != null && piecesPerBox != null && pouchesPerBoxValid
+      ? `${piecesPerBox}_${piecesPerPouch}x${pouchesPerBox}`
+      : null
+  const suggestedCode = selectedFinishedItem
+    ? packSuffix
+      ? `${selectedFinishedItem.code}-${packSuffix}`
+      : `${selectedFinishedItem.code}-PKG`
+    : null
+  const suggestedName = selectedFinishedItem
+    ? packSuffix
+      ? `${selectedFinishedItem.name} (${packSuffix})`
+      : `${selectedFinishedItem.name} Packaging`
+    : null
+
+  // Keep whichever item is already selected visible even with the toggle
+  // off — flipping "Include WIP" off should never silently blank out an
+  // existing WIP selection, only hide it from the picker for *new* choices.
+  const finishedItemOptions = finishedItems
+    .filter((i) => includeWip || i.item_class === 'FINISHED_GOOD' || i.id === finishedItemId)
+    .map((i) => ({ value: i.id, label: `${i.name} | (${i.code})` }))
+
   return (
     <div>
       <Breadcrumb
@@ -272,27 +393,91 @@ export default function PackagingProfileFormPage() {
               <Form<PackagingProfileFormValues>
                 form={basicsForm}
                 layout="vertical"
-                disabled={loading || !editable}
+                disabled={loading}
                 initialValues={{ scope: 'STANDARD', is_active: true }}
               >
-                <Form.Item label="Profile Code" name="code" rules={[{ required: true, message: 'Enter a code.' }]}>
-                  <Input size="large" disabled={isEdit} />
-                </Form.Item>
-                <Form.Item label="Profile Name" name="name" rules={[{ required: true, message: 'Enter a name.' }]}>
-                  <Input size="large" />
-                </Form.Item>
                 <Form.Item
                   label="Finished Item"
                   name="finished_item"
                   rules={[{ required: true, message: 'Select the finished item.' }]}
+                  extra={
+                    finishedItemLocked ? (
+                      <Text type="secondary" style={{ fontSize: 13 }}>
+                        Locked — a version of this profile has already been published, so
+                        changing the finished item would redefine what that version means.
+                      </Text>
+                    ) : (
+                      <Flex align="center" gap={8} style={{ marginTop: 4 }}>
+                        <Switch
+                          size="small"
+                          aria-label="Include WIP items"
+                          checked={includeWip}
+                          onChange={setIncludeWip}
+                        />
+                        <Text type="secondary" style={{ fontSize: 13 }}>
+                          Include WIP items — for packing an intermediate stage, not a Finished
+                          Good
+                        </Text>
+                      </Flex>
+                    )
+                  }
                 >
                   <Select
                     size="large"
                     showSearch
                     optionFilterProp="label"
-                    options={finishedItems.map((i) => ({ value: i.id, label: `${i.name} (${i.code})` }))}
+                    disabled={finishedItemLocked}
+                    options={finishedItemOptions}
                   />
                 </Form.Item>
+                <Form.Item
+                  label="Pieces per Pouch / Box (optional)"
+                  tooltip="What actually distinguishes one packing profile from another for the same finished item — e.g. a 300-piece box vs. a 100-piece box. Pouches per Box is worked out automatically. Leave both blank if this profile doesn't pack into pouches/cartons at all."
+                >
+                  <Flex align="center" gap={12} wrap="wrap">
+                    <InputNumber
+                      min={1}
+                      style={{ width: 170 }}
+                      placeholder="Pieces per Pouch"
+                      disabled={!editable}
+                      value={piecesPerPouch}
+                      onChange={setPiecesPerPouch}
+                    />
+                    <InputNumber
+                      min={1}
+                      style={{ width: 170 }}
+                      placeholder="Pieces per Box"
+                      disabled={!editable}
+                      value={piecesPerBox}
+                      onChange={setPiecesPerBox}
+                    />
+                    {pouchesPerBox !== null && (
+                      <Text type={pouchesPerBoxValid ? 'secondary' : 'danger'} style={{ fontSize: 13 }}>
+                        {pouchesPerBoxValid
+                          ? `= ${pouchesPerBox} pouches per box`
+                          : 'Pieces per Box must be an exact multiple of Pieces per Pouch.'}
+                      </Text>
+                    )}
+                  </Flex>
+                </Form.Item>
+                <Form.Item label="Profile Code" name="code" rules={[{ required: true, message: 'Enter a code.' }]}>
+                  <Input size="large" disabled={isEdit} />
+                </Form.Item>
+                {!isEdit && (
+                  <Suggestion
+                    value={suggestedCode}
+                    onUse={() => basicsForm.setFieldValue('code', suggestedCode)}
+                  />
+                )}
+                <Form.Item label="Profile Name" name="name" rules={[{ required: true, message: 'Enter a name.' }]}>
+                  <Input size="large" />
+                </Form.Item>
+                {!isEdit && (
+                  <Suggestion
+                    value={suggestedName}
+                    onUse={() => basicsForm.setFieldValue('name', suggestedName)}
+                  />
+                )}
                 <Form.Item label="Scope" name="scope">
                   <Radio.Group options={PACKAGING_PROFILE_SCOPE_OPTIONS} optionType="button" />
                 </Form.Item>
@@ -300,7 +485,7 @@ export default function PackagingProfileFormPage() {
                   <Switch />
                 </Form.Item>
                 <Flex justify="end">
-                  <Button type="primary" loading={submitting} disabled={!editable} onClick={() => void saveBasics()}>
+                  <Button type="primary" loading={submitting} onClick={() => void saveBasics()}>
                     Save &amp; Continue →
                   </Button>
                 </Flex>
@@ -317,14 +502,23 @@ export default function PackagingProfileFormPage() {
                     rowKey={(_, i) => String(i)}
                     dataSource={materialRows}
                     pagination={false}
+                    tableLayout="fixed"
                     locale={{ emptyText: 'No materials yet.' }}
                     columns={[
                       {
                         title: 'Item',
                         dataIndex: 'item',
+                        width: '45%',
+                        ellipsis: true,
                         render: (value, _row, index) => (
                           <Select
-                            style={{ minWidth: 200 }}
+                            style={{ width: '100%' }}
+                            // The trigger truncates a long item name to fit its
+                            // fixed column (see `tableLayout="fixed"` above) —
+                            // the open dropdown shouldn't inherit that same
+                            // narrow width, or the full name becomes unreadable
+                            // exactly when the user is trying to pick it.
+                            popupMatchSelectWidth={false}
                             disabled={!editable}
                             value={value || undefined}
                             placeholder="Select item"
@@ -341,9 +535,10 @@ export default function PackagingProfileFormPage() {
                       {
                         title: 'Level',
                         dataIndex: 'level',
+                        width: 140,
                         render: (value, _row, index) => (
                           <Select
-                            style={{ width: 130 }}
+                            style={{ width: '100%' }}
                             disabled={!editable}
                             value={value}
                             options={PACKAGING_MATERIAL_LEVEL_OPTIONS}
@@ -354,9 +549,11 @@ export default function PackagingProfileFormPage() {
                       {
                         title: 'Quantity',
                         dataIndex: 'quantity',
+                        width: 120,
                         render: (value, _row, index) => (
                           <InputNumber
                             min={0}
+                            style={{ width: '100%' }}
                             disabled={!editable}
                             value={value}
                             onChange={(v) => updateMaterialRow(index, { quantity: v ?? 0 })}
@@ -366,9 +563,10 @@ export default function PackagingProfileFormPage() {
                       {
                         title: 'UOM',
                         dataIndex: 'uom',
+                        width: 150,
                         render: (value, _row, index) => (
                           <Select
-                            style={{ width: 140 }}
+                            style={{ width: '100%' }}
                             disabled={!editable}
                             value={value || undefined}
                             placeholder="UOM"
@@ -416,13 +614,18 @@ export default function PackagingProfileFormPage() {
             {currentStep === 'specifications' &&
               (version ? (
                 <Form form={specForm} layout="vertical" disabled={!editable}>
-                  <Form.Item label="Pack Mode" name="pack_mode">
+                  <Form.Item
+                    label="Pack Mode"
+                    name="pack_mode"
+                    tooltip="How pieces are physically bundled — Piece (sold loose), Pouch (grouped into pouches), or Carton (pouches grouped into cartons). Set automatically to Carton on Basics once Pieces per Pouch/Box are filled in there — change it here if that's not actually right for this profile."
+                  >
                     <Radio.Group options={PACK_MODE_OPTIONS} optionType="button" />
                   </Form.Item>
                   <Form.Item
                     label="Selling Unit"
                     name="selling_uom"
                     rules={[{ required: true, message: 'Select a selling unit.' }]}
+                    tooltip="The unit you invoice the customer in — Carton, Piece, Kg, etc. Usually matches Pack Mode's top level (packed in cartons, sold by the carton), but doesn't have to — e.g. packed in cartons, still sold by the piece."
                   >
                     <Select
                       style={{ maxWidth: 240 }}
@@ -431,14 +634,6 @@ export default function PackagingProfileFormPage() {
                       options={uomOptions}
                     />
                   </Form.Item>
-                  <Flex gap={16} wrap="wrap">
-                    <Form.Item label="Pieces per Pouch" name="pieces_per_pouch">
-                      <InputNumber min={0} style={{ width: 160 }} />
-                    </Form.Item>
-                    <Form.Item label="Pouches per Carton" name="pouches_per_carton">
-                      <InputNumber min={0} style={{ width: 160 }} />
-                    </Form.Item>
-                  </Flex>
                   <Flex gap={16} wrap="wrap">
                     <Form.Item label="Carton Length (mm)" name="carton_length_mm">
                       <InputNumber min={0} style={{ width: 150 }} />
@@ -504,6 +699,45 @@ export default function PackagingProfileFormPage() {
           </div>
         </Flex>
       </Card>
+      {isEdit && profile && (
+        <Card style={{ maxWidth: 960, margin: '16px auto 0' }}>
+          <Title level={5} style={{ marginTop: 0 }}>
+            Used By Customers
+          </Title>
+          <Text type="secondary" style={{ display: 'block', marginBottom: 16, fontSize: 13 }}>
+            Customer Product Mappings currently pinned to a version of this profile — this is
+            where a "Customer Template" scope profile actually gets tied to a specific customer,
+            not on this screen.
+          </Text>
+          <Table<CustomerProductMapping>
+            rowKey="id"
+            size="small"
+            dataSource={mappings}
+            pagination={false}
+            locale={{ emptyText: 'Not used by any customer mapping yet.' }}
+            onRow={(record) => ({
+              onClick: () => navigate(`/customer-product-mappings/${record.id}/edit`),
+              style: { cursor: 'pointer' },
+            })}
+            columns={[
+              { title: 'Customer', dataIndex: 'customer_name' },
+              { title: 'Item', dataIndex: 'item_name' },
+              { title: 'Customer SKU', dataIndex: 'customer_sku' },
+              {
+                title: 'Status',
+                render: (_, r) =>
+                  r.current_version ? (
+                    <Tag color={r.current_version.status === 'PUBLISHED' ? 'green' : 'default'}>
+                      v{r.current_version.version_number} — {r.current_version.status}
+                    </Tag>
+                  ) : (
+                    '—'
+                  ),
+              },
+            ]}
+          />
+        </Card>
+      )}
     </div>
   )
 }

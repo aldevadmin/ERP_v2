@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
-  Breadcrumb,
   Button,
   Card,
   Flex,
@@ -15,7 +14,7 @@ import {
   message,
 } from 'antd'
 import { DeleteOutlined, ReadOutlined } from '@ant-design/icons'
-import { Link, useNavigate } from 'react-router'
+import { useNavigate } from 'react-router'
 import { ApiError } from '../../shared/api/http'
 import StatusTag from '../../shared/components/StatusTag'
 import { deleteItem, listItems, listMaterialTypes, listProductTypes } from './api'
@@ -91,10 +90,6 @@ export default function ItemListPage() {
 
   return (
     <div>
-      <Breadcrumb
-        style={{ marginBottom: 12 }}
-        items={[{ title: <Link to="/settings">Settings</Link> }, { title: 'Items' }]}
-      />
       <Card
         title={
           <Title level={4} style={{ margin: 0 }}>

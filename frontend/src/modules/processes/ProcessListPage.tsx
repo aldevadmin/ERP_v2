@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
-  Breadcrumb,
   Button,
   Card,
   Dropdown,
@@ -13,7 +12,7 @@ import {
   message,
 } from 'antd'
 import { MoreOutlined, ReadOutlined } from '@ant-design/icons'
-import { Link, useNavigate } from 'react-router'
+import { useNavigate } from 'react-router'
 import { ApiError } from '../../shared/api/http'
 import StatusTag from '../../shared/components/StatusTag'
 import {
@@ -92,10 +91,6 @@ export default function ProcessListPage() {
 
   return (
     <div>
-      <Breadcrumb
-        style={{ marginBottom: 12 }}
-        items={[{ title: <Link to="/settings">Settings</Link> }, { title: 'Processes' }]}
-      />
       <Card
         title={
           <Title level={4} style={{ margin: 0 }}>

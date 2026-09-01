@@ -143,9 +143,9 @@ def test_dimensions_required_rule_enforces_length_and_height_not_breadth(organiz
 
     assert missing_response.status_code == 400
     body = missing_response.json()
-    assert "length_in" in body
-    assert "height_mm" in body
-    assert "breadth_in" not in body
+    assert "length" in body
+    assert "height" in body
+    assert "breadth" not in body
 
     # Length + height alone (no breadth) is enough — a round item has none.
     success_response = client.post(
@@ -157,8 +157,8 @@ def test_dimensions_required_rule_enforces_length_and_height_not_breadth(organiz
             "product_type": product_type.id,
             "material_type": material_type.id,
             "inventory_uom": uom.id,
-            "length_in": "10.00",
-            "height_mm": "20.00",
+            "length": "10.00",
+            "height": "20.00",
         },
         format="json",
     )

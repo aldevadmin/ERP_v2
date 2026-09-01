@@ -122,6 +122,38 @@ def test_create_finished_good_succeeds(organization):
     assert item.organization_id is not None
 
 
+def test_dimension_uom_accepts_cm_alongside_in_and_mm(organization):
+    product_type = _product_type(organization)
+    material_type = _material_type(organization)
+    uom = _uom(organization)
+    client = _client_as("Manager/Admin", "mgr-cm1")
+
+    response = client.post(
+        "/api/v1/items/",
+        {
+            "code": "FG-CM",
+            "name": "25 cm Tray",
+            "item_class": "FINISHED_GOOD",
+            "product_type": product_type.id,
+            "material_type": material_type.id,
+            "inventory_uom": uom.id,
+            "length": "25.00",
+            "breadth": "18.00",
+            "height": "5.00",
+            "length_uom": "CM",
+            "breadth_uom": "CM",
+            "height_uom": "MM",
+        },
+        format="json",
+    )
+
+    assert response.status_code == 201
+    item = Item.objects.get(code="FG-CM")
+    assert item.length_uom == "CM"
+    assert item.breadth_uom == "CM"
+    assert item.height_uom == "MM"
+
+
 def test_create_packaging_material_requires_product_type(organization):
     uom = _uom(organization)
     client = _client_as("Manager/Admin", "mgr-pm1")

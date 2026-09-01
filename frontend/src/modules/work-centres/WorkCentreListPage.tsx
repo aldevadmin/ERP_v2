@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
-  Breadcrumb,
   Button,
   Card,
   Flex,
@@ -14,7 +13,7 @@ import {
   message,
 } from 'antd'
 import { DeleteOutlined } from '@ant-design/icons'
-import { Link, useNavigate } from 'react-router'
+import { useNavigate } from 'react-router'
 import { ApiError } from '../../shared/api/http'
 import StatusTag from '../../shared/components/StatusTag'
 import { deleteWorkCentre, listWorkCentres, listWorkCentreTypes } from './api'
@@ -62,10 +61,6 @@ export default function WorkCentreListPage() {
 
   return (
     <div>
-      <Breadcrumb
-        style={{ marginBottom: 12 }}
-        items={[{ title: <Link to="/settings">Settings</Link> }, { title: 'Work Centres' }]}
-      />
       <Card
         title={
           <Title level={4} style={{ margin: 0 }}>

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Breadcrumb, Button, Card, Flex, Input, Popconfirm, Select, Table, Tag, Typography, message } from 'antd'
-import { DeleteOutlined } from '@ant-design/icons'
-import { Link, useNavigate } from 'react-router'
+import { Button, Card, Flex, Input, Popconfirm, Select, Table, Tag, Typography, message } from 'antd'
+import { DeleteOutlined, EditOutlined } from '@ant-design/icons'
+import { useNavigate } from 'react-router'
 import { ApiError } from '../../shared/api/http'
 import { deletePackagingProfile, listPackagingProfiles } from './api'
 import { PACKAGING_PROFILE_SCOPE_OPTIONS } from './types'
@@ -50,10 +50,6 @@ export default function PackagingProfileListPage() {
 
   return (
     <div>
-      <Breadcrumb
-        style={{ marginBottom: 12 }}
-        items={[{ title: <Link to="/settings">Settings</Link> }, { title: 'Packaging Profiles' }]}
-      />
       <Card
         title={
           <Title level={4} style={{ margin: 0 }}>
@@ -127,27 +123,38 @@ export default function PackagingProfileListPage() {
             {
               title: '',
               key: 'actions',
-              width: 48,
+              width: 88,
               render: (_, record) => (
-                <Popconfirm
-                  title="Delete this profile?"
-                  description="This can't be undone."
-                  okText="Delete"
-                  okButtonProps={{ danger: true }}
-                  onConfirm={(e) => {
-                    e?.stopPropagation()
-                    void handleDelete(record)
-                  }}
-                  onCancel={(e) => e?.stopPropagation()}
-                >
+                <Flex gap={8}>
                   <Button
                     size="small"
-                    danger
-                    icon={<DeleteOutlined />}
-                    aria-label={`Delete ${record.name}`}
-                    onClick={(e) => e.stopPropagation()}
+                    icon={<EditOutlined />}
+                    aria-label={`Edit ${record.name}`}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      navigate(`/packaging-profiles/${record.id}/edit`)
+                    }}
                   />
-                </Popconfirm>
+                  <Popconfirm
+                    title="Delete this profile?"
+                    description="This can't be undone."
+                    okText="Delete"
+                    okButtonProps={{ danger: true }}
+                    onConfirm={(e) => {
+                      e?.stopPropagation()
+                      void handleDelete(record)
+                    }}
+                    onCancel={(e) => e?.stopPropagation()}
+                  >
+                    <Button
+                      size="small"
+                      danger
+                      icon={<DeleteOutlined />}
+                      aria-label={`Delete ${record.name}`}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </Popconfirm>
+                </Flex>
               ),
             },
           ]}

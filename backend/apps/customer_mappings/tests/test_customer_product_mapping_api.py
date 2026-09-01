@@ -307,3 +307,30 @@ def test_delete_unused_mapping_succeeds(customer, finished_item):
     response = client.delete(f"/api/v1/customer-product-mappings/{mapping.id}/")
 
     assert response.status_code == 204
+
+
+def test_filters_by_packaging_profile(customer, finished_item, published_packaging_version):
+    mapping = _mapping(customer, finished_item)
+    version = mapping.versions.get()
+    version.packaging_profile_version = published_packaging_version
+    version.save()
+
+    # A second, unrelated mapping (not pinned to this profile) — proves the
+    # filter excludes it rather than just happening to return everything.
+    other_item = Item.objects.create(
+        code="OTHER-FG",
+        name="Other Finished Good",
+        item_class=Item.ItemClass.FINISHED_GOOD,
+        organization=finished_item.organization,
+    )
+    _mapping(customer, other_item, customer_sku="SKU-2")
+    client = _client_as("Export Coordinator", "coord-pkg1")
+
+    response = client.get(
+        f"/api/v1/customer-product-mappings/?packaging_profile={published_packaging_version.profile_id}"
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["count"] == 1
+    assert body["results"][0]["id"] == mapping.id

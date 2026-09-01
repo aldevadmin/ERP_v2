@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Breadcrumb, Button, Card, Flex, Input, Space, Switch, Table, Typography } from 'antd'
-import { Link, useNavigate } from 'react-router'
+import { Button, Card, Flex, Input, Space, Switch, Table, Typography } from 'antd'
+import { useNavigate } from 'react-router'
 import StatusTag from '../../shared/components/StatusTag'
 import { listCustomers } from './api'
 import type { CustomerListItem } from './types'
@@ -27,10 +27,6 @@ export default function CustomerListPage() {
 
   return (
     <div>
-      <Breadcrumb
-        style={{ marginBottom: 12 }}
-        items={[{ title: <Link to="/settings">Settings</Link> }, { title: 'Customers' }]}
-      />
       <Card
         title={
           <Title level={4} style={{ margin: 0 }}>

@@ -6,9 +6,17 @@ from apps.core.models import Organization
 
 from .models import UOM, Item, ItemFieldRule, MaterialType, NamingTemplate, ProductType, Shape
 
-# `dimensions` (one ItemFieldRule row) maps to three actual Item columns —
-# there's no single "dimensions" field on the model itself.
-_DIMENSION_MODEL_FIELDS = ("length_in", "breadth_in", "height_mm")
+# `dimensions` (one ItemFieldRule row) maps to six actual Item columns —
+# each measurement plus its own unit — there's no single "dimensions" field
+# on the model itself.
+_DIMENSION_MODEL_FIELDS = (
+    "length",
+    "breadth",
+    "height",
+    "length_uom",
+    "breadth_uom",
+    "height_uom",
+)
 
 
 def _field_rules_for_class(item_class: str) -> dict[str, str]:
@@ -150,9 +158,12 @@ class ItemSerializer(serializers.ModelSerializer):
             "material_type_name",
             "shape",
             "shape_name",
-            "length_in",
-            "breadth_in",
-            "height_mm",
+            "length",
+            "breadth",
+            "height",
+            "length_uom",
+            "breadth_uom",
+            "height_uom",
             "inventory_uom",
             "inventory_uom_code",
             "purchasable",
@@ -182,7 +193,7 @@ class ItemSerializer(serializers.ModelSerializer):
             # optional even when dimensions matter (a round item has none;
             # see `buildDimensionToken` on the frontend, which treats
             # length+height as the real minimum for a usable dimension).
-            required.update({"length_in", "height_mm"})
+            required.update({"length", "height"})
 
         hidden_fields = {
             field

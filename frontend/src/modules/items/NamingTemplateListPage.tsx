@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
-  Breadcrumb,
   Button,
   Card,
   Flex,
@@ -13,7 +12,7 @@ import {
   message,
 } from 'antd'
 import { CopyOutlined, DeleteOutlined } from '@ant-design/icons'
-import { Link, useNavigate } from 'react-router'
+import { useNavigate } from 'react-router'
 import { ApiError } from '../../shared/api/http'
 import StatusTag from '../../shared/components/StatusTag'
 import { deleteNamingTemplate, listItemFieldRules, listNamingTemplates } from './api'
@@ -60,10 +59,6 @@ export default function NamingTemplateListPage() {
 
   return (
     <div>
-      <Breadcrumb
-        style={{ marginBottom: 12 }}
-        items={[{ title: <Link to="/settings">Settings</Link> }, { title: 'Naming Templates' }]}
-      />
       <Card
         title={
           <Title level={4} style={{ margin: 0 }}>

@@ -44,6 +44,9 @@ export interface NamingTokens {
   length?: string
   breadth?: string
   height?: string
+  length_uom?: string
+  breadth_uom?: string
+  height_uom?: string
   uom?: string
   dimension?: string
 }
@@ -73,7 +76,9 @@ export function availableNamingTokens(
     ...(showProductType ? ['product_type', 'product_type_short'] : []),
     ...(showMaterialType ? ['material_type', 'material_type_short'] : []),
     ...(showShape ? ['shape', 'shape_short'] : []),
-    ...(showDimensions ? ['length', 'breadth', 'height', 'dimension'] : []),
+    ...(showDimensions
+      ? ['length', 'breadth', 'height', 'length_uom', 'breadth_uom', 'height_uom', 'dimension']
+      : []),
     'uom',
   ]
 }
@@ -92,6 +97,9 @@ const EXAMPLE_VALUES: Record<string, string> = {
   length: '10',
   breadth: '10',
   height: '20',
+  length_uom: 'in',
+  breadth_uom: 'in',
+  height_uom: 'mm',
   uom: 'PC',
 }
 

@@ -68,6 +68,9 @@ describe('availableNamingTokens', () => {
       'length',
       'breadth',
       'height',
+      'length_uom',
+      'breadth_uom',
+      'height_uom',
       'dimension',
       'uom',
     ])
@@ -109,6 +112,9 @@ describe('availableNamingTokens', () => {
     expect(tokens).toContain('length')
     expect(tokens).toContain('breadth')
     expect(tokens).toContain('height')
+    expect(tokens).toContain('length_uom')
+    expect(tokens).toContain('breadth_uom')
+    expect(tokens).toContain('height_uom')
     expect(tokens).toContain('dimension')
     expect(tokens).not.toContain('shape')
     expect(tokens).not.toContain('shape_short')
@@ -138,6 +144,9 @@ describe('exampleNamingTokens', () => {
     expect(tokens.length).toBeTruthy()
     expect(tokens.breadth).toBeTruthy()
     expect(tokens.height).toBeTruthy()
+    expect(tokens.length_uom).toBeTruthy()
+    expect(tokens.breadth_uom).toBeTruthy()
+    expect(tokens.height_uom).toBeTruthy()
     expect(tokens.uom).toBeTruthy()
     expect(tokens.dimension).toBeTruthy()
   })
@@ -159,6 +168,14 @@ describe('exampleNamingTokens', () => {
     expect(applyTemplate('{material_type_short}_{shape_short}-{dimension}', tokens)).toBe(
       'BG_RD-10x10D20',
     )
+  })
+
+  it('lets a pattern be explicit about each dimension unit via {length_uom}/{breadth_uom}/{height_uom}', () => {
+    const tokens = exampleNamingTokens('FINISHED_GOOD', ALL_RULES)
+
+    expect(
+      applyTemplate('{length}{length_uom} x {breadth}{breadth_uom} x {height}{height_uom}', tokens),
+    ).toBe('10in x 10in x 20mm')
   })
 
   it('returns null via applyTemplate for a token the class hides, instead of a misleading result', () => {

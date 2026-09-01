@@ -13,6 +13,7 @@ from apps.core.mixins import ProtectedDestroyMixin
 from .models import PackagingProfile, PackagingProfileMaterial, PackagingProfileVersion
 from .permissions import CanManagePackaging, IsInternalStaff
 from .serializers import (
+    PackagingProfileMaterialUsageSerializer,
     PackagingProfileMaterialWriteSerializer,
     PackagingProfileSerializer,
     PackagingProfileVersionSerializer,
@@ -73,6 +74,32 @@ class PackagingProfileViewSet(
         finished_item = self.request.query_params.get("finished_item")
         if finished_item is not None:
             queryset = queryset.filter(finished_item_id=finished_item)
+
+        return queryset
+
+
+class PackagingProfileMaterialViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
+    """Read-only — backs the Item form's "Used In Packaging Profiles"
+    reverse-lookup card for Packaging Material items. `?item=` is required
+    in practice (mirrors `CustomerProductMappingViewSet`'s `?item=`); an
+    unfiltered call would return every material row across every profile
+    version, which nothing needs.
+    """
+
+    queryset = PackagingProfileMaterial.objects.select_related(
+        "version__profile__finished_item", "uom"
+    )
+    serializer_class = PackagingProfileMaterialUsageSerializer
+
+    def get_permissions(self) -> list[BasePermission]:
+        return [IsInternalStaff()]
+
+    def get_queryset(self) -> QuerySet[PackagingProfileMaterial]:
+        queryset = super().get_queryset()
+
+        item = self.request.query_params.get("item")
+        if item is not None:
+            queryset = queryset.filter(item_id=item)
 
         return queryset
 

@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Breadcrumb, Button, Checkbox, Select, Typography, message } from 'antd'
-import { Link } from 'react-router'
+import { Button, Checkbox, Select, Typography, message } from 'antd'
 import { ApiError } from '../../shared/api/http'
 import SectionCard from '../../shared/components/SectionCard'
 import {
@@ -282,10 +281,6 @@ function ApplicabilityGrid({
 export default function ItemClassificationSettingsPage() {
   return (
     <div>
-      <Breadcrumb
-        style={{ marginBottom: 12 }}
-        items={[{ title: <Link to="/settings">Settings</Link> }, { title: 'Item Classification' }]}
-      />
       <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
         <FieldVisibilityGrid />
         <ApplicabilityGrid

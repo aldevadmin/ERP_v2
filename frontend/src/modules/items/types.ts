@@ -28,6 +28,14 @@ export const ITEM_CLASS_SHORT_LABELS: Record<ItemClass, string> = {
   SCRAP_BY_PRODUCT: 'SCR',
 }
 
+export type DimensionUOM = 'IN' | 'CM' | 'MM'
+
+export const DIMENSION_UOM_OPTIONS: { value: DimensionUOM; label: string }[] = [
+  { value: 'IN', label: 'in' },
+  { value: 'CM', label: 'cm' },
+  { value: 'MM', label: 'mm' },
+]
+
 export type LotTracking = 'NONE' | 'OPTIONAL' | 'REQUIRED'
 
 export const LOT_TRACKING_OPTIONS: { value: LotTracking; label: string }[] = [
@@ -79,9 +87,12 @@ export interface Item {
   material_type_name: string
   shape: number | null
   shape_name: string
-  length_in: string | null
-  breadth_in: string | null
-  height_mm: string | null
+  length: string | null
+  breadth: string | null
+  height: string | null
+  length_uom: DimensionUOM | null
+  breadth_uom: DimensionUOM | null
+  height_uom: DimensionUOM | null
   inventory_uom: number | null
   inventory_uom_code: string
   purchasable: boolean
@@ -108,9 +119,12 @@ export interface ItemFormValues {
   product_type: number | null
   material_type: number | null
   shape: number | null
-  length_in: number | null
-  breadth_in: number | null
-  height_mm: number | null
+  length: number | null
+  breadth: number | null
+  height: number | null
+  length_uom: DimensionUOM | null
+  breadth_uom: DimensionUOM | null
+  height_uom: DimensionUOM | null
   inventory_uom: number | null
   purchasable: boolean
   manufacturable: boolean

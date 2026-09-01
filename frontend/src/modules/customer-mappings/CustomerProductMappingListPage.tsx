@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Breadcrumb, Button, Card, Flex, Input, Popconfirm, Select, Table, Tag, Typography, message } from 'antd'
+import { Button, Card, Flex, Input, Popconfirm, Select, Table, Tag, Typography, message } from 'antd'
 import { DeleteOutlined } from '@ant-design/icons'
-import { Link, useNavigate } from 'react-router'
+import { useNavigate } from 'react-router'
 import { ApiError } from '../../shared/api/http'
 import { deleteCustomerProductMapping, listCustomerProductMappings } from './api'
 import type { CustomerProductMapping, MappingVersionStatus } from './types'
@@ -47,10 +47,6 @@ export default function CustomerProductMappingListPage() {
 
   return (
     <div>
-      <Breadcrumb
-        style={{ marginBottom: 12 }}
-        items={[{ title: <Link to="/settings">Settings</Link> }, { title: 'Customer Product Mappings' }]}
-      />
       <Card
         title={
           <Title level={4} style={{ margin: 0 }}>

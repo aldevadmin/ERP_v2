@@ -92,6 +92,34 @@ describe('NamingTemplateFormPage', () => {
     expect(await screen.findByText('Plate — Bagasse')).toBeInTheDocument()
   })
 
+  it('submits an untouched Name/Code Pattern as empty strings, not undefined, on create', async () => {
+    setup()
+    mockedUseParams.mockReturnValue({})
+    mockedApi.createNamingTemplate.mockResolvedValue({} as NamingTemplate)
+
+    render(
+      <MemoryRouter>
+        <NamingTemplateFormPage />
+      </MemoryRouter>,
+    )
+
+    const classField = screen.getByLabelText('Item Class')
+    fireEvent.mouseDown(classField)
+    fireEvent.click(await screen.findByTitle('Finished Good'))
+
+    // Name Pattern / Code Pattern are left blank — never typed into.
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+
+    await waitFor(() => expect(mockedApi.createNamingTemplate).toHaveBeenCalled())
+    const submitted = mockedApi.createNamingTemplate.mock.calls[0][0]
+    // undefined here would become an explicit `null` via jsonBody, which
+    // the backend rejects (`name_pattern`/`code_pattern` are blank=True
+    // but not null=True) — see the identical fix on ItemFormPage's
+    // `description`.
+    expect(submitted.name_pattern).toBe('')
+    expect(submitted.code_pattern).toBe('')
+  })
+
   it('warns instead of previewing when the pattern uses a token the class hides', async () => {
     setup()
     mockedUseParams.mockReturnValue({})

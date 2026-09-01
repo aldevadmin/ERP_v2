@@ -41,7 +41,8 @@ import ToolingFormPage from '../modules/tooling/ToolingFormPage'
 import ToolingListPage from '../modules/tooling/ToolingListPage'
 import ToolingTypeFormPage from '../modules/tooling/ToolingTypeFormPage'
 import ToolingTypeListPage from '../modules/tooling/ToolingTypeListPage'
-import SettingsPage from '../modules/settings/SettingsPage'
+import SettingsLayout from '../modules/settings/SettingsLayout'
+import SettingsRedirect from '../modules/settings/SettingsRedirect'
 import ProductionPage from '../modules/production/ProductionPage'
 import PackingPage from '../modules/packing/PackingPage'
 import InventoryPage from '../modules/inventory/InventoryPage'
@@ -64,76 +65,466 @@ function AuthenticatedShell() {
           <Content style={{ padding: 24, background: '#f5f7fa' }}>
             <Routes>
               <Route path="/" element={<DashboardPage />} />
-              <Route path="/customers" element={<CustomerListPage />} />
-              <Route path="/customers/new" element={<CustomerFormPage />} />
-              <Route path="/customers/:id" element={<CustomerDetailPage />} />
-              <Route path="/customers/:id/edit" element={<CustomerFormPage />} />
-              <Route path="/customer-product-mappings" element={<CustomerProductMappingListPage />} />
-              <Route path="/customer-product-mappings/new" element={<CustomerProductMappingFormPage />} />
+              <Route
+                path="/customers"
+                element={
+                  <SettingsLayout>
+                    <CustomerListPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/customers/new"
+                element={
+                  <SettingsLayout>
+                    <CustomerFormPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/customers/:id"
+                element={
+                  <SettingsLayout>
+                    <CustomerDetailPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/customers/:id/edit"
+                element={
+                  <SettingsLayout>
+                    <CustomerFormPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/customer-product-mappings"
+                element={
+                  <SettingsLayout>
+                    <CustomerProductMappingListPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/customer-product-mappings/new"
+                element={
+                  <SettingsLayout>
+                    <CustomerProductMappingFormPage />
+                  </SettingsLayout>
+                }
+              />
               <Route
                 path="/customer-product-mappings/:id/edit"
-                element={<CustomerProductMappingFormPage />}
+                element={
+                  <SettingsLayout>
+                    <CustomerProductMappingFormPage />
+                  </SettingsLayout>
+                }
               />
-              <Route path="/packaging-profiles" element={<PackagingProfileListPage />} />
-              <Route path="/packaging-profiles/new" element={<PackagingProfileFormPage />} />
-              <Route path="/packaging-profiles/:id/edit" element={<PackagingProfileFormPage />} />
-              <Route path="/vendors" element={<VendorListPage />} />
-              <Route path="/items" element={<ItemListPage />} />
-              <Route path="/items/new" element={<ItemFormPage />} />
-              <Route path="/items/:id/edit" element={<ItemFormPage />} />
-              <Route path="/product-types" element={<ProductTypeListPage />} />
-              <Route path="/product-types/new" element={<ProductTypeFormPage />} />
-              <Route path="/product-types/:id/edit" element={<ProductTypeFormPage />} />
-              <Route path="/material-types" element={<MaterialTypeListPage />} />
-              <Route path="/material-types/new" element={<MaterialTypeFormPage />} />
-              <Route path="/material-types/:id/edit" element={<MaterialTypeFormPage />} />
-              <Route path="/shapes" element={<ShapeListPage />} />
-              <Route path="/shapes/new" element={<ShapeFormPage />} />
-              <Route path="/shapes/:id/edit" element={<ShapeFormPage />} />
-              <Route path="/naming-templates" element={<NamingTemplateListPage />} />
-              <Route path="/naming-templates/new" element={<NamingTemplateFormPage />} />
-              <Route path="/naming-templates/:id/edit" element={<NamingTemplateFormPage />} />
+              <Route
+                path="/packaging-profiles"
+                element={
+                  <SettingsLayout>
+                    <PackagingProfileListPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/packaging-profiles/new"
+                element={
+                  <SettingsLayout>
+                    <PackagingProfileFormPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/packaging-profiles/:id/edit"
+                element={
+                  <SettingsLayout>
+                    <PackagingProfileFormPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/vendors"
+                element={
+                  <SettingsLayout>
+                    <VendorListPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/items"
+                element={
+                  <SettingsLayout>
+                    <ItemListPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/items/new"
+                element={
+                  <SettingsLayout>
+                    <ItemFormPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/items/:id/edit"
+                element={
+                  <SettingsLayout>
+                    <ItemFormPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/product-types"
+                element={
+                  <SettingsLayout>
+                    <ProductTypeListPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/product-types/new"
+                element={
+                  <SettingsLayout>
+                    <ProductTypeFormPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/product-types/:id/edit"
+                element={
+                  <SettingsLayout>
+                    <ProductTypeFormPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/material-types"
+                element={
+                  <SettingsLayout>
+                    <MaterialTypeListPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/material-types/new"
+                element={
+                  <SettingsLayout>
+                    <MaterialTypeFormPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/material-types/:id/edit"
+                element={
+                  <SettingsLayout>
+                    <MaterialTypeFormPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/shapes"
+                element={
+                  <SettingsLayout>
+                    <ShapeListPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/shapes/new"
+                element={
+                  <SettingsLayout>
+                    <ShapeFormPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/shapes/:id/edit"
+                element={
+                  <SettingsLayout>
+                    <ShapeFormPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/naming-templates"
+                element={
+                  <SettingsLayout>
+                    <NamingTemplateListPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/naming-templates/new"
+                element={
+                  <SettingsLayout>
+                    <NamingTemplateFormPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/naming-templates/:id/edit"
+                element={
+                  <SettingsLayout>
+                    <NamingTemplateFormPage />
+                  </SettingsLayout>
+                }
+              />
               <Route
                 path="/item-classification"
-                element={<ItemClassificationSettingsPage />}
+                element={
+                  <SettingsLayout>
+                    <ItemClassificationSettingsPage />
+                  </SettingsLayout>
+                }
               />
-              <Route path="/uoms" element={<UOMListPage />} />
-              <Route path="/uoms/new" element={<UOMFormPage />} />
-              <Route path="/uoms/:id/edit" element={<UOMFormPage />} />
-              <Route path="/process-categories" element={<ProcessCategoryListPage />} />
-              <Route path="/process-categories/new" element={<ProcessCategoryFormPage />} />
-              <Route path="/process-categories/:id/edit" element={<ProcessCategoryFormPage />} />
-              <Route path="/output-classifications" element={<OutputClassificationListPage />} />
-              <Route path="/output-classifications/new" element={<OutputClassificationFormPage />} />
+              <Route
+                path="/uoms"
+                element={
+                  <SettingsLayout>
+                    <UOMListPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/uoms/new"
+                element={
+                  <SettingsLayout>
+                    <UOMFormPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/uoms/:id/edit"
+                element={
+                  <SettingsLayout>
+                    <UOMFormPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/process-categories"
+                element={
+                  <SettingsLayout>
+                    <ProcessCategoryListPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/process-categories/new"
+                element={
+                  <SettingsLayout>
+                    <ProcessCategoryFormPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/process-categories/:id/edit"
+                element={
+                  <SettingsLayout>
+                    <ProcessCategoryFormPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/output-classifications"
+                element={
+                  <SettingsLayout>
+                    <OutputClassificationListPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/output-classifications/new"
+                element={
+                  <SettingsLayout>
+                    <OutputClassificationFormPage />
+                  </SettingsLayout>
+                }
+              />
               <Route
                 path="/output-classifications/:id/edit"
-                element={<OutputClassificationFormPage />}
+                element={
+                  <SettingsLayout>
+                    <OutputClassificationFormPage />
+                  </SettingsLayout>
+                }
               />
-              <Route path="/processes" element={<ProcessListPage />} />
-              <Route path="/processes/new" element={<ProcessFormPage />} />
-              <Route path="/processes/:id/edit" element={<ProcessFormPage />} />
-              <Route path="/work-centres" element={<WorkCentreListPage />} />
-              <Route path="/work-centres/new" element={<WorkCentreFormPage />} />
-              <Route path="/work-centres/:id/edit" element={<WorkCentreFormPage />} />
-              <Route path="/work-centre-types" element={<WorkCentreTypeListPage />} />
-              <Route path="/work-centre-types/new" element={<WorkCentreTypeFormPage />} />
-              <Route path="/work-centre-types/:id/edit" element={<WorkCentreTypeFormPage />} />
-              <Route path="/product-routes" element={<ProductRouteListPage />} />
-              <Route path="/product-routes/new" element={<ProductRouteFormPage />} />
-              <Route path="/product-routes/:id/edit" element={<ProductRouteFormPage />} />
-              <Route path="/storage-locations" element={<StorageLocationListPage />} />
-              <Route path="/storage-locations/new" element={<StorageLocationFormPage />} />
-              <Route path="/storage-locations/:id/edit" element={<StorageLocationFormPage />} />
-              <Route path="/tooling" element={<ToolingListPage />} />
-              <Route path="/tooling/new" element={<ToolingFormPage />} />
-              <Route path="/tooling/:id/edit" element={<ToolingFormPage />} />
-              <Route path="/tooling-types" element={<ToolingTypeListPage />} />
-              <Route path="/tooling-types/new" element={<ToolingTypeFormPage />} />
-              <Route path="/tooling-types/:id/edit" element={<ToolingTypeFormPage />} />
+              <Route
+                path="/processes"
+                element={
+                  <SettingsLayout>
+                    <ProcessListPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/processes/new"
+                element={
+                  <SettingsLayout>
+                    <ProcessFormPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/processes/:id/edit"
+                element={
+                  <SettingsLayout>
+                    <ProcessFormPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/work-centres"
+                element={
+                  <SettingsLayout>
+                    <WorkCentreListPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/work-centres/new"
+                element={
+                  <SettingsLayout>
+                    <WorkCentreFormPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/work-centres/:id/edit"
+                element={
+                  <SettingsLayout>
+                    <WorkCentreFormPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/work-centre-types"
+                element={
+                  <SettingsLayout>
+                    <WorkCentreTypeListPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/work-centre-types/new"
+                element={
+                  <SettingsLayout>
+                    <WorkCentreTypeFormPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/work-centre-types/:id/edit"
+                element={
+                  <SettingsLayout>
+                    <WorkCentreTypeFormPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/product-routes"
+                element={
+                  <SettingsLayout>
+                    <ProductRouteListPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/product-routes/new"
+                element={
+                  <SettingsLayout>
+                    <ProductRouteFormPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/product-routes/:id/edit"
+                element={
+                  <SettingsLayout>
+                    <ProductRouteFormPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/storage-locations"
+                element={
+                  <SettingsLayout>
+                    <StorageLocationListPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/storage-locations/new"
+                element={
+                  <SettingsLayout>
+                    <StorageLocationFormPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/storage-locations/:id/edit"
+                element={
+                  <SettingsLayout>
+                    <StorageLocationFormPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/tooling"
+                element={
+                  <SettingsLayout>
+                    <ToolingListPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/tooling/new"
+                element={
+                  <SettingsLayout>
+                    <ToolingFormPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/tooling/:id/edit"
+                element={
+                  <SettingsLayout>
+                    <ToolingFormPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/tooling-types"
+                element={
+                  <SettingsLayout>
+                    <ToolingTypeListPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/tooling-types/new"
+                element={
+                  <SettingsLayout>
+                    <ToolingTypeFormPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/tooling-types/:id/edit"
+                element={
+                  <SettingsLayout>
+                    <ToolingTypeFormPage />
+                  </SettingsLayout>
+                }
+              />
               <Route path="/production" element={<ProductionPage />} />
               <Route path="/packing" element={<PackingPage />} />
               <Route path="/inventory" element={<InventoryPage />} />
-              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/settings" element={<SettingsRedirect />} />
               <Route path="/export-orders" element={<ExportOrderListPage />} />
               <Route path="/export-orders/:id" element={<ExportOrderDetailPage />} />
               <Route path="/export-orders/:id/edit" element={<ExportOrderEditPage />} />

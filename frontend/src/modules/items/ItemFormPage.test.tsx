@@ -4,6 +4,7 @@ import { MemoryRouter, useParams } from 'react-router'
 import ItemFormPage from './ItemFormPage'
 import * as api from './api'
 import * as customerMappingsApi from '../customer-mappings/api'
+import * as packagingApi from '../packaging/api'
 import type {
   ItemFieldRule,
   ItemFieldRuleField,
@@ -21,9 +22,11 @@ vi.mock('react-router', async () => {
 })
 vi.mock('./api')
 vi.mock('../customer-mappings/api')
+vi.mock('../packaging/api')
 
 const mockedApi = vi.mocked(api)
 const mockedCustomerMappingsApi = vi.mocked(customerMappingsApi)
+const mockedPackagingApi = vi.mocked(packagingApi)
 const mockedUseParams = vi.mocked(useParams)
 
 afterEach(() => {
@@ -162,6 +165,75 @@ describe('ItemFormPage', () => {
     expect(screen.getByText('Dimensions (optional)')).toBeInTheDocument()
   })
 
+  it('defaults Length/Breadth/Height all to mm for Packaging Material, each independently switchable', async () => {
+    setup()
+
+    render(
+      <MemoryRouter>
+        <ItemFormPage />
+      </MemoryRouter>,
+    )
+    await screen.findByText('Product Type')
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Packaging Material' }))
+    await screen.findByText('Dimensions (optional)')
+
+    const dimensionsField = screen
+      .getByText('Dimensions (optional)')
+      .closest('.ant-form-item') as HTMLElement
+    const unitSelects = within(dimensionsField).getAllByRole('combobox')
+    expect(unitSelects).toHaveLength(3)
+    expect(within(dimensionsField).getAllByText('mm')).toHaveLength(3)
+
+    // Switching just the Length unit doesn't touch Breadth/Height.
+    fireEvent.mouseDown(unitSelects[0])
+    fireEvent.click(await screen.findByTitle('in'))
+
+    await waitFor(() => expect(within(dimensionsField).getAllByText('in')).toHaveLength(1))
+    expect(within(dimensionsField).getAllByText('mm')).toHaveLength(2)
+  })
+
+  it('defaults Length/Breadth to in and Height to mm for classes other than Packaging Material', async () => {
+    setup()
+
+    render(
+      <MemoryRouter>
+        <ItemFormPage />
+      </MemoryRouter>,
+    )
+    await screen.findByText('Product Type')
+
+    fireEvent.click(screen.getByRole('radio', { name: 'WIP' }))
+    await screen.findByText('Dimensions (optional)')
+
+    const dimensionsField = screen
+      .getByText('Dimensions (optional)')
+      .closest('.ant-form-item') as HTMLElement
+    expect(within(dimensionsField).getAllByRole('combobox')).toHaveLength(3)
+    expect(within(dimensionsField).getAllByText('in')).toHaveLength(2)
+    expect(within(dimensionsField).getAllByText('mm')).toHaveLength(1)
+  })
+
+  it('resets dimension units to the new class defaults on switching, e.g. Finished Good to Packaging Material', async () => {
+    setup()
+
+    render(
+      <MemoryRouter>
+        <ItemFormPage />
+      </MemoryRouter>,
+    )
+    // Default class is Finished Good — Length/Breadth "in", Height "mm".
+    await screen.findByText('Dimensions (optional)')
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Packaging Material' }))
+    await screen.findByText('Product Type')
+
+    const dimensionsField = screen
+      .getByText('Dimensions (optional)')
+      .closest('.ant-form-item') as HTMLElement
+    await waitFor(() => expect(within(dimensionsField).getAllByText('mm')).toHaveLength(3))
+  })
+
   it('marks Shape and Dimensions as required, not optional, when configured that way', async () => {
     setup()
     mockedApi.listItemFieldRules.mockResolvedValue(
@@ -198,9 +270,12 @@ describe('ItemFormPage', () => {
       material_type_name: '',
       shape: null,
       shape_name: '',
-      length_in: null,
-      breadth_in: null,
-      height_mm: null,
+      length: null,
+      breadth: null,
+      height: null,
+      length_uom: null,
+      breadth_uom: null,
+      height_uom: null,
       inventory_uom: 3,
       inventory_uom_code: 'PC',
       purchasable: false,
@@ -246,6 +321,10 @@ describe('ItemFormPage', () => {
     expect(submitted.stockable).toBe(true)
     expect(submitted.sellable).toBe(false)
     expect(submitted.purchasable).toBe(false)
+    // A never-touched Description must submit as '', not undefined —
+    // undefined would become an explicit `null` via jsonBody, which the
+    // backend rejects (`description` is blank=True but not null=True).
+    expect(submitted.description).toBe('')
   })
 
   it('suggests a Name/Code using human-readable class and shape labels, not raw codes', async () => {
@@ -310,9 +389,12 @@ describe('ItemFormPage — edit mode', () => {
       material_type_name: 'Areca Palm',
       shape: null,
       shape_name: '',
-      length_in: null,
-      breadth_in: null,
-      height_mm: null,
+      length: null,
+      breadth: null,
+      height: null,
+      length_uom: null,
+      breadth_uom: null,
+      height_uom: null,
       inventory_uom: 3,
       inventory_uom_code: 'PC',
       purchasable: false,
@@ -375,5 +457,80 @@ describe('ItemFormPage — edit mode', () => {
     expect(await screen.findByText('Acme Exports')).toBeInTheDocument()
     expect(screen.getByText('SKU-A')).toBeInTheDocument()
     expect(screen.getByText('v1 — PUBLISHED')).toBeInTheDocument()
+    // Not a Packaging Material item — the reverse "used in" card shouldn't
+    // even attempt to render for it.
+    expect(screen.queryByText('Used In Packaging Profiles')).not.toBeInTheDocument()
+  })
+
+  it('renders packaging profile usage as a reverse projection, only for Packaging Material items', async () => {
+    setup()
+    mockedUseParams.mockReturnValue({ id: '8' })
+    mockedApi.getItem.mockResolvedValue({
+      id: 8,
+      code: 'CARTON-1',
+      name: 'Standard Carton',
+      description: '',
+      item_class: 'PACKAGING_MATERIAL',
+      product_type: null,
+      product_type_name: '',
+      material_type: null,
+      material_type_name: '',
+      shape: null,
+      shape_name: '',
+      length: '250',
+      breadth: '180',
+      height: '120',
+      length_uom: 'MM',
+      breadth_uom: 'MM',
+      height_uom: 'MM',
+      inventory_uom: 3,
+      inventory_uom_code: 'PC',
+      purchasable: true,
+      manufacturable: false,
+      stockable: true,
+      sellable: false,
+      lot_tracking: 'NONE',
+      is_active: true,
+      available_qty: 0,
+    })
+    mockedCustomerMappingsApi.listCustomerProductMappings.mockResolvedValue({
+      count: 0,
+      next: null,
+      previous: null,
+      results: [],
+    })
+    mockedPackagingApi.listPackagingProfileMaterialUsage.mockResolvedValue({
+      count: 1,
+      next: null,
+      previous: null,
+      results: [
+        {
+          id: 1,
+          profile_id: 12,
+          profile_name: 'Standard Packing',
+          profile_code: 'PKG-1',
+          finished_item_name: '10 Inch Plate',
+          version_number: 2,
+          version_status: 'PUBLISHED',
+          pieces_per_selling_unit: 100,
+          level: 'CARTON',
+          quantity: '1.000',
+          uom_code: 'PC',
+        },
+      ],
+    })
+
+    render(
+      <MemoryRouter>
+        <ItemFormPage />
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByText('Used In Packaging Profiles')).toBeInTheDocument()
+    expect(await screen.findByText('10 Inch Plate')).toBeInTheDocument()
+    expect(screen.getByText('Standard Packing')).toBeInTheDocument()
+    expect(screen.getByText('100')).toBeInTheDocument()
+    expect(screen.getByText('v2 — PUBLISHED')).toBeInTheDocument()
+    expect(mockedPackagingApi.listPackagingProfileMaterialUsage).toHaveBeenCalledWith(8)
   })
 })

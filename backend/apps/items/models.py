@@ -91,6 +91,11 @@ class Item(BaseModel):
         OPTIONAL = "OPTIONAL", "Optional"
         REQUIRED = "REQUIRED", "Required"
 
+    class DimensionUOM(models.TextChoices):
+        IN = "IN", "Inches"
+        CM = "CM", "Centimeters"
+        MM = "MM", "Millimeters"
+
     code = models.CharField(max_length=32, unique=True)
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
@@ -105,11 +110,23 @@ class Item(BaseModel):
         Shape, on_delete=models.PROTECT, null=True, blank=True, related_name="items"
     )
     # Physical dimensions — optional on every class, only ever populated
-    # where meaningful (chiefly Finished Good/WIP). Purely descriptive/for
-    # `NamingTemplate` suggestions; nothing here branches on their presence.
-    length_in = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
-    breadth_in = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
-    height_mm = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    # where meaningful (chiefly Finished Good/WIP/Packaging Material).
+    # Purely descriptive/for `NamingTemplate` suggestions; nothing here
+    # branches on their presence. Each has its own unit, not one shared
+    # unit for all three — Length/Breadth and Height genuinely vary
+    # independently in practice (e.g. a plate's diameter in inches vs. its
+    # thickness in mm), and Packaging Material commonly wants all three in
+    # mm. The form defaults length/breadth to Inches and height to
+    # Millimeters for every class except Packaging Material (all three
+    # default Millimeters there), but every one of the three is a real,
+    # independently-editable per-item field, not inferred from class at
+    # read time.
+    length = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    breadth = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    height = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    length_uom = models.CharField(max_length=2, choices=DimensionUOM.choices, null=True, blank=True)
+    breadth_uom = models.CharField(max_length=2, choices=DimensionUOM.choices, null=True, blank=True)
+    height_uom = models.CharField(max_length=2, choices=DimensionUOM.choices, null=True, blank=True)
     inventory_uom = models.ForeignKey(
         UOM, on_delete=models.PROTECT, null=True, blank=True, related_name="items"
     )
@@ -164,7 +181,7 @@ class ItemFieldRule(BaseModel):
     Optional/Hidden only, since a dropdown that silently drops an option
     depending on which row it's in is worse than one that's occasionally a
     business decision an admin might not want. `dimensions` REQUIRED
-    enforces `length_in`+`height_mm` only, never `breadth_in` — a round
+    enforces `length`+`height` only, never `breadth` — a round
     item legitimately has no breadth even when dimensions otherwise matter
     (see `buildDimensionToken` on the frontend, which treats length+height
     as the real minimum for a usable dimension).

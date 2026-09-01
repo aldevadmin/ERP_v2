@@ -65,6 +65,18 @@ class CustomerProductMappingViewSet(
         if item is not None:
             queryset = queryset.filter(item_id=item)
 
+        # Reverse lookup for the Packaging Profile form's "Used By
+        # Customers" card — every mapping with any version pinned to any
+        # version of this profile, mirroring `items` view's own `?item=`
+        # (any version, not just each mapping's current one — same
+        # simplicity tradeoff as `PackagingProfileMaterialViewSet`'s
+        # `?item=` reverse lookup).
+        packaging_profile = self.request.query_params.get("packaging_profile")
+        if packaging_profile is not None:
+            queryset = queryset.filter(
+                versions__packaging_profile_version__profile_id=packaging_profile
+            ).distinct()
+
         return queryset
 
     def perform_update(self, serializer: serializers.BaseSerializer[Any]) -> None:

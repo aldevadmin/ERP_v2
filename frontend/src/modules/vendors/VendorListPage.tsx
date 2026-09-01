@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Breadcrumb, Input, Table, Typography } from 'antd'
-import { Link } from 'react-router'
+import { Input, Table, Typography } from 'antd'
 import SectionCard from '../../shared/components/SectionCard'
 import StatusTag from '../../shared/components/StatusTag'
 import { listVendors } from './api'
@@ -26,10 +25,6 @@ export default function VendorListPage() {
 
   return (
     <div>
-      <Breadcrumb
-        style={{ marginBottom: 12 }}
-        items={[{ title: <Link to="/settings">Settings</Link> }, { title: 'Vendors' }]}
-      />
       <SectionCard
         title={
           <Title level={4} style={{ margin: 0 }}>

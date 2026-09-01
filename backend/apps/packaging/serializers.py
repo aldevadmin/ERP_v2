@@ -18,6 +18,45 @@ class PackagingProfileMaterialSerializer(serializers.ModelSerializer):
         fields = ["id", "item", "item_name", "item_code", "level", "quantity", "uom", "uom_code"]
 
 
+class PackagingProfileMaterialUsageSerializer(serializers.ModelSerializer):
+    """Read-only reverse view of `PackagingProfileMaterial` from a
+    Packaging Material item's side — "which Finished Goods use this carton,
+    via which Packaging Profile, and how many pieces per box" — for the
+    Item form's "Used In Packaging Profiles" card. Mirrors
+    `customer_mappings.CustomerProductMappingSerializer`'s `?item=` reverse
+    lookup, one layer down (a version's materials, not the profile itself).
+    """
+
+    profile_id = serializers.IntegerField(source="version.profile.id", read_only=True)
+    profile_name = serializers.CharField(source="version.profile.name", read_only=True)
+    profile_code = serializers.CharField(source="version.profile.code", read_only=True)
+    finished_item_name = serializers.CharField(
+        source="version.profile.finished_item.name", read_only=True
+    )
+    version_number = serializers.IntegerField(source="version.version_number", read_only=True)
+    version_status = serializers.CharField(source="version.status", read_only=True)
+    pieces_per_selling_unit = serializers.IntegerField(
+        source="version.pieces_per_selling_unit", read_only=True
+    )
+    uom_code = serializers.CharField(source="uom.code", read_only=True)
+
+    class Meta:
+        model = PackagingProfileMaterial
+        fields = [
+            "id",
+            "profile_id",
+            "profile_name",
+            "profile_code",
+            "finished_item_name",
+            "version_number",
+            "version_status",
+            "pieces_per_selling_unit",
+            "level",
+            "quantity",
+            "uom_code",
+        ]
+
+
 class PackagingProfileMaterialWriteSerializer(serializers.Serializer):
     """Validates one row of the `materials` whole-list-replace payload —
     same shape as `processes.ProcessInputWriteSerializer`.
@@ -91,6 +130,30 @@ class PackagingProfileSerializer(serializers.ModelSerializer):
         if version is None:
             return None
         return PackagingProfileVersionSerializer(version).data
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        # Once any version of this profile has ever been published, changing
+        # `finished_item` would retroactively redefine what that (possibly
+        # already Customer-Mapping-pinned) version means — exactly what the
+        # immutable-published-version guarantee elsewhere on this model
+        # exists to prevent. A still-all-draft profile (never published) can
+        # still have this corrected freely.
+        new_finished_item = attrs.get("finished_item")
+        if (
+            self.instance
+            and new_finished_item is not None
+            and new_finished_item != self.instance.finished_item
+            and self.instance.versions.exclude(status=PackagingProfileVersion.Status.DRAFT).exists()
+        ):
+            raise serializers.ValidationError(
+                {
+                    "finished_item": (
+                        "Can't change the finished item once a version of this profile has "
+                        "been published — create a new profile instead."
+                    )
+                }
+            )
+        return attrs
 
     def create(self, validated_data: dict[str, Any]) -> PackagingProfile:
         organization = Organization.get_default()

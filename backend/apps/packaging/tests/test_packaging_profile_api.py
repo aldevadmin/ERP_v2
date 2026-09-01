@@ -78,6 +78,102 @@ def test_create_profile_creates_draft_v1(finished_item):
     assert body["current_version"]["status"] == "DRAFT"
 
 
+def _publish(finished_item, pouch_item, pc, profile) -> PackagingProfileVersion:
+    version = profile.versions.get()
+    version.selling_uom = pc
+    version.pack_mode = PackagingProfileVersion.PackMode.POUCH
+    version.pieces_per_pouch = 25
+    version.save()
+    PackagingProfileMaterial.objects.create(
+        version=version,
+        item=pouch_item,
+        level="POUCH",
+        quantity=1,
+        uom=pc,
+        organization=finished_item.organization,
+    )
+    client = _client_as("Export Coordinator", "publisher")
+    response = client.post(f"/api/v1/packaging-profile-versions/{version.id}/publish/")
+    assert response.status_code == 200
+    version.refresh_from_db()
+    return version
+
+
+def test_finished_item_locked_once_a_version_has_been_published(finished_item, pouch_item, pc):
+    profile = _profile(finished_item)
+    _publish(finished_item, pouch_item, pc, profile)
+    other_item = Item.objects.create(
+        code="OTHER-FG",
+        name="Other Finished Good",
+        item_class=Item.ItemClass.FINISHED_GOOD,
+        organization=finished_item.organization,
+    )
+    client = _client_as("Manager/Admin", "mgr-lock1")
+
+    response = client.patch(
+        f"/api/v1/packaging-profiles/{profile.id}/",
+        {"finished_item": other_item.id},
+        format="json",
+    )
+
+    assert response.status_code == 400
+    assert "finished_item" in response.json()
+    profile.refresh_from_db()
+    assert profile.finished_item_id == finished_item.id
+
+
+def test_name_scope_active_stay_editable_after_publish(finished_item, pouch_item, pc):
+    profile = _profile(finished_item)
+    _publish(finished_item, pouch_item, pc, profile)
+    client = _client_as("Manager/Admin", "mgr-lock2")
+
+    response = client.patch(
+        f"/api/v1/packaging-profiles/{profile.id}/",
+        {"name": "Renamed After Publish", "is_active": False},
+        format="json",
+    )
+
+    assert response.status_code == 200
+    profile.refresh_from_db()
+    assert profile.name == "Renamed After Publish"
+    assert profile.is_active is False
+
+
+def test_finished_item_unchanged_value_is_not_blocked_after_publish(finished_item, pouch_item, pc):
+    profile = _profile(finished_item)
+    _publish(finished_item, pouch_item, pc, profile)
+    client = _client_as("Manager/Admin", "mgr-lock3")
+
+    response = client.patch(
+        f"/api/v1/packaging-profiles/{profile.id}/",
+        {"finished_item": finished_item.id, "name": "Still Fine"},
+        format="json",
+    )
+
+    assert response.status_code == 200
+
+
+def test_finished_item_still_editable_on_a_never_published_profile(finished_item):
+    profile = _profile(finished_item)
+    other_item = Item.objects.create(
+        code="OTHER-FG2",
+        name="Other Finished Good 2",
+        item_class=Item.ItemClass.FINISHED_GOOD,
+        organization=finished_item.organization,
+    )
+    client = _client_as("Manager/Admin", "mgr-lock4")
+
+    response = client.patch(
+        f"/api/v1/packaging-profiles/{profile.id}/",
+        {"finished_item": other_item.id},
+        format="json",
+    )
+
+    assert response.status_code == 200
+    profile.refresh_from_db()
+    assert profile.finished_item_id == other_item.id
+
+
 def test_materials_whole_list_replace(finished_item, pouch_item, pc):
     profile = _profile(finished_item)
     version = profile.versions.get()
@@ -203,3 +299,41 @@ def test_delete_profile_used_by_published_mapping_is_blocked(finished_item, orga
     response = client.delete(f"/api/v1/packaging-profiles/{profile.id}/")
 
     assert response.status_code == 400
+
+
+def test_packaging_profile_materials_filters_by_item(finished_item, pouch_item, pc):
+    profile = _profile(finished_item)
+    version = profile.versions.get()
+    version.selling_uom = pc
+    version.pack_mode = PackagingProfileVersion.PackMode.POUCH
+    version.pieces_per_pouch = 25
+    version.save()
+    PackagingProfileMaterial.objects.create(
+        version=version,
+        item=pouch_item,
+        level="POUCH",
+        quantity=1,
+        uom=pc,
+        organization=finished_item.organization,
+    )
+    other_item = Item.objects.create(
+        code="POUCH-2",
+        name="Other Pouch",
+        item_class=Item.ItemClass.PACKAGING_MATERIAL,
+        organization=finished_item.organization,
+    )
+    client = _client_as("Export Coordinator", "coord5")
+
+    response = client.get(f"/api/v1/packaging-profile-materials/?item={pouch_item.id}")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["count"] == 1
+    row = body["results"][0]
+    assert row["profile_name"] == "Standard Packing"
+    assert row["finished_item_name"] == "10 Inch Plate"
+    assert row["version_status"] == "DRAFT"
+    assert row["level"] == "POUCH"
+
+    empty_response = client.get(f"/api/v1/packaging-profile-materials/?item={other_item.id}")
+    assert empty_response.json()["count"] == 0

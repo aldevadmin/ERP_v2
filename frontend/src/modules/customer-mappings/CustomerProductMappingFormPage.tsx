@@ -16,11 +16,12 @@ import {
   Switch,
   Table,
   Tag,
+  Tooltip,
   Typography,
   Upload,
   message,
 } from 'antd'
-import { DeleteOutlined, UploadOutlined } from '@ant-design/icons'
+import { DeleteOutlined, InfoCircleOutlined, UploadOutlined } from '@ant-design/icons'
 import type { UploadFile, UploadProps } from 'antd/es/upload/interface'
 import { ApiError } from '../../shared/api/http'
 import { listCustomers } from '../customers/api'
@@ -55,7 +56,12 @@ const { Title, Text } = Typography
 const STEPS = [
   { key: 'customer_product', label: 'Customer & Product' },
   { key: 'commercial', label: 'Commercial' },
-  { key: 'requirements', label: 'Requirements' },
+  {
+    key: 'requirements',
+    label: 'Requirements',
+    tooltip:
+      "This customer's own bespoke requirements for this product — labeling specs, documents they need, pallet instructions, compliance demands. Not related to a product's Premium/Standard grading elsewhere in the app; \"Quality Requirement\" here just means a quality-related demand this customer has (e.g. an ISO cert), tracked as free text.",
+  },
   { key: 'preview', label: 'Preview' },
 ] as const
 type StepKey = (typeof STEPS)[number]['key']
@@ -321,6 +327,9 @@ export default function CustomerProductMappingFormPage() {
                 role="button"
                 onClick={() => setCurrentStep(step.key)}
                 style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
                   padding: '10px 24px',
                   cursor: 'pointer',
                   color: step.key === currentStep ? '#155eef' : 'inherit',
@@ -328,6 +337,11 @@ export default function CustomerProductMappingFormPage() {
                 }}
               >
                 {step.label}
+                {'tooltip' in step && (
+                  <Tooltip title={step.tooltip}>
+                    <InfoCircleOutlined style={{ color: '#8c8c8c', fontSize: 13 }} />
+                  </Tooltip>
+                )}
               </div>
             ))}
           </div>
@@ -447,14 +461,16 @@ export default function CustomerProductMappingFormPage() {
                     rowKey={(_, i) => String(i)}
                     dataSource={requirementRows}
                     pagination={false}
+                    tableLayout="fixed"
                     locale={{ emptyText: 'No requirements yet.' }}
                     columns={[
                       {
                         title: 'Category',
                         dataIndex: 'category',
+                        width: 160,
                         render: (value, _row, index) => (
                           <Select
-                            style={{ width: 140 }}
+                            style={{ width: '100%' }}
                             disabled={!editable}
                             value={value}
                             options={REQUIREMENT_CATEGORY_OPTIONS}
@@ -465,6 +481,7 @@ export default function CustomerProductMappingFormPage() {
                       {
                         title: 'Requirement',
                         dataIndex: 'key',
+                        width: '30%',
                         render: (value, _row, index) => (
                           <Input
                             disabled={!editable}
@@ -476,6 +493,7 @@ export default function CustomerProductMappingFormPage() {
                       {
                         title: 'Detail',
                         dataIndex: 'value',
+                        width: '35%',
                         render: (value, _row, index) => (
                           <Input
                             disabled={!editable}

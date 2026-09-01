@@ -125,7 +125,12 @@ export default function NamingTemplateFormPage() {
           layout="vertical"
           onFinish={handleSubmit}
           disabled={loading || submitting}
-          initialValues={{ is_active: true }}
+          // `name_pattern`/`code_pattern` are `blank=True` but not
+          // `null=True` on the backend — left untouched they stay
+          // `undefined`, which `jsonBody` turns into an explicit `null`
+          // the DB rejects. Seeding '' keeps them real strings from the
+          // start (see the identical fix on ItemFormPage's `description`).
+          initialValues={{ is_active: true, name_pattern: '', code_pattern: '' }}
         >
           <Form.Item
             label="Item Class"

@@ -13,6 +13,7 @@ import {
   Modal,
   Radio,
   Select,
+  Space,
   Switch,
   Table,
   Tag,
@@ -24,6 +25,8 @@ import { InfoCircleOutlined, PlusOutlined } from '@ant-design/icons'
 import { ApiError } from '../../shared/api/http'
 import { listCustomerProductMappings } from '../customer-mappings/api'
 import type { CustomerProductMapping } from '../customer-mappings/types'
+import { listPackagingProfileMaterialUsage } from '../packaging/api'
+import type { PackagingProfileMaterialUsage } from '../packaging/types'
 import {
   createItem,
   createMaterialType,
@@ -41,6 +44,7 @@ import {
 import { applyTemplate, buildDimensionToken, resolveNamingTemplate } from './namingTemplate'
 import type { NamingTokens } from './namingTemplate'
 import {
+  DIMENSION_UOM_OPTIONS,
   fieldRulesForClass,
   isApplicableToClass,
   ITEM_CLASS_OPTIONS,
@@ -48,6 +52,7 @@ import {
   LOT_TRACKING_OPTIONS,
 } from './types'
 import type {
+  DimensionUOM,
   Item,
   ItemClass,
   ItemFieldRule,
@@ -133,6 +138,21 @@ function Suggestion({ value, onUse }: { value: string | null; onUse: () => void 
   )
 }
 
+/** Length/Breadth/Height each get their own unit — Packaging Material
+ * (cartons/pouches) defaults all three to Millimeters; every other class
+ * defaults Length/Breadth to Inches and Height to Millimeters, matching
+ * this app's existing convention (a plate's diameter reads naturally in
+ * inches, its thickness in mm). Applied on item-class change and as the
+ * form's initial values — the user can still override any of the three
+ * independently afterward. */
+function defaultDimensionUoms(
+  itemClass: ItemClass | undefined,
+): Pick<ItemFormValues, 'length_uom' | 'breadth_uom' | 'height_uom'> {
+  return itemClass === 'PACKAGING_MATERIAL'
+    ? { length_uom: 'MM', breadth_uom: 'MM', height_uom: 'MM' }
+    : { length_uom: 'IN', breadth_uom: 'IN', height_uom: 'MM' }
+}
+
 export default function ItemFormPage() {
   const { id } = useParams<{ id: string }>()
   const isEdit = Boolean(id)
@@ -148,6 +168,7 @@ export default function ItemFormPage() {
   const [namingTemplates, setNamingTemplates] = useState<NamingTemplate[]>([])
   const [fieldRules, setFieldRules] = useState<ItemFieldRule[]>([])
   const [mappings, setMappings] = useState<CustomerProductMapping[]>([])
+  const [packagingUsage, setPackagingUsage] = useState<PackagingProfileMaterialUsage[]>([])
   const [productTypeModalOpen, setProductTypeModalOpen] = useState(false)
   const [materialTypeModalOpen, setMaterialTypeModalOpen] = useState(false)
   const [shapeModalOpen, setShapeModalOpen] = useState(false)
@@ -157,9 +178,12 @@ export default function ItemFormPage() {
   const productType = Form.useWatch('product_type', form) as number | null | undefined
   const materialType = Form.useWatch('material_type', form) as number | null | undefined
   const shape = Form.useWatch('shape', form) as number | null | undefined
-  const lengthIn = Form.useWatch('length_in', form) as number | null | undefined
-  const breadthIn = Form.useWatch('breadth_in', form) as number | null | undefined
-  const heightMm = Form.useWatch('height_mm', form) as number | null | undefined
+  const length = Form.useWatch('length', form) as number | null | undefined
+  const breadth = Form.useWatch('breadth', form) as number | null | undefined
+  const height = Form.useWatch('height', form) as number | null | undefined
+  const lengthUom = Form.useWatch('length_uom', form) as DimensionUOM | null | undefined
+  const breadthUom = Form.useWatch('breadth_uom', form) as DimensionUOM | null | undefined
+  const heightUom = Form.useWatch('height_uom', form) as DimensionUOM | null | undefined
   const inventoryUom = Form.useWatch('inventory_uom', form) as number | null | undefined
 
   const rules = itemClass ? fieldRulesForClass(fieldRules, itemClass) : {}
@@ -192,9 +216,9 @@ export default function ItemFormPage() {
       .then((item: Item) =>
         form.setFieldsValue({
           ...item,
-          length_in: item.length_in != null ? Number(item.length_in) : null,
-          breadth_in: item.breadth_in != null ? Number(item.breadth_in) : null,
-          height_mm: item.height_mm != null ? Number(item.height_mm) : null,
+          length: item.length != null ? Number(item.length) : null,
+          breadth: item.breadth != null ? Number(item.breadth) : null,
+          height: item.height != null ? Number(item.height) : null,
         }),
       )
       .catch(() => setError('Could not load this item.'))
@@ -203,6 +227,13 @@ export default function ItemFormPage() {
       setMappings(response.results),
     )
   }, [id, form])
+
+  useEffect(() => {
+    if (!id || itemClass !== 'PACKAGING_MATERIAL') return
+    listPackagingProfileMaterialUsage(Number(id)).then((response) =>
+      setPackagingUsage(response.results),
+    )
+  }, [id, itemClass])
 
   const handleSubmit = async (values: ItemFormValues) => {
     setError(null)
@@ -269,9 +300,9 @@ export default function ItemFormPage() {
   const selectedUom = uoms.find((u) => u.id === inventoryUom)
 
   const dimension = buildDimensionToken(
-    lengthIn != null ? String(lengthIn) : undefined,
-    breadthIn != null ? String(breadthIn) : undefined,
-    heightMm != null ? String(heightMm) : undefined,
+    length != null ? String(length) : undefined,
+    breadth != null ? String(breadth) : undefined,
+    height != null ? String(height) : undefined,
     selectedShape?.short_code,
   )
 
@@ -284,9 +315,12 @@ export default function ItemFormPage() {
     material_type_short: selectedMaterialType?.short_code,
     shape: selectedShape?.name,
     shape_short: selectedShape?.short_code,
-    length: lengthIn != null ? String(lengthIn) : undefined,
-    breadth: breadthIn != null ? String(breadthIn) : undefined,
-    height: heightMm != null ? String(heightMm) : undefined,
+    length: length != null ? String(length) : undefined,
+    breadth: breadth != null ? String(breadth) : undefined,
+    height: height != null ? String(height) : undefined,
+    length_uom: lengthUom?.toLowerCase(),
+    breadth_uom: breadthUom?.toLowerCase(),
+    height_uom: heightUom?.toLowerCase(),
     uom: selectedUom?.code,
     dimension,
   }
@@ -323,6 +357,12 @@ export default function ItemFormPage() {
             manufacturable: false,
             stockable: false,
             sellable: false,
+            // `description` is `blank=True` but not `null=True` on the
+            // backend — an untouched field stays `undefined`, which
+            // `jsonBody` turns into an explicit `null` the DB rejects.
+            // Seeding '' here keeps it a real string from the start.
+            description: '',
+            ...defaultDimensionUoms('FINISHED_GOOD'),
           }}
         >
           <Form.Item
@@ -331,7 +371,17 @@ export default function ItemFormPage() {
             tooltip="Raw Material = bought from outside; WIP = an in-between stage your own process makes; Finished Good = what you sell. Hover an option below for detail."
             rules={[{ required: true, message: 'Select an item class.' }]}
           >
-            <Radio.Group optionType="button">
+            <Radio.Group
+              optionType="button"
+              onChange={(e) => {
+                // Reset the dimension units to this class's defaults —
+                // switching from, say, Finished Good to Packaging Material
+                // should flip Length/Breadth/Height to mm, not leave a
+                // stale inches pick from the previous class. Still fully
+                // editable afterward.
+                form.setFieldsValue(defaultDimensionUoms(e.target.value as ItemClass))
+              }}
+            >
               {ITEM_CLASS_OPTIONS.map((option) => (
                 <Tooltip key={option.value} title={ITEM_CLASS_HELP[option.value]}>
                   <Radio.Button value={option.value}>{option.label}</Radio.Button>
@@ -452,24 +502,43 @@ export default function ItemFormPage() {
               required={requireDimensions}
               tooltip="Feeds the suggested Name/Code below. Length × Breadth for square/rectangular items, Length alone (as a diameter) for round ones — the diameter form needs a Shape, so it only applies where Shape is also shown. Breadth stays optional either way — a round item genuinely has none."
             >
-              <Flex gap={12}>
-                <Form.Item
-                  name="length_in"
-                  noStyle
-                  rules={requireDimensions ? [{ required: true, message: 'Enter a length.' }] : []}
-                >
-                  <InputNumber min={0} addonAfter="in" placeholder="Length" style={{ width: 130 }} />
-                </Form.Item>
-                <Form.Item name="breadth_in" noStyle>
-                  <InputNumber min={0} addonAfter="in" placeholder="Breadth" style={{ width: 130 }} />
-                </Form.Item>
-                <Form.Item
-                  name="height_mm"
-                  noStyle
-                  rules={requireDimensions ? [{ required: true, message: 'Enter a height.' }] : []}
-                >
-                  <InputNumber min={0} addonAfter="mm" placeholder="Height" style={{ width: 130 }} />
-                </Form.Item>
+              <Flex gap={12} align="flex-start" wrap="wrap">
+                <Space.Compact>
+                  <Form.Item
+                    name="length"
+                    noStyle
+                    rules={
+                      requireDimensions ? [{ required: true, message: 'Enter a length.' }] : []
+                    }
+                  >
+                    <InputNumber min={0} placeholder="Length" style={{ width: 100 }} />
+                  </Form.Item>
+                  <Form.Item name="length_uom" noStyle>
+                    <Select style={{ width: 72 }} options={DIMENSION_UOM_OPTIONS} />
+                  </Form.Item>
+                </Space.Compact>
+                <Space.Compact>
+                  <Form.Item name="breadth" noStyle>
+                    <InputNumber min={0} placeholder="Breadth" style={{ width: 100 }} />
+                  </Form.Item>
+                  <Form.Item name="breadth_uom" noStyle>
+                    <Select style={{ width: 72 }} options={DIMENSION_UOM_OPTIONS} />
+                  </Form.Item>
+                </Space.Compact>
+                <Space.Compact>
+                  <Form.Item
+                    name="height"
+                    noStyle
+                    rules={
+                      requireDimensions ? [{ required: true, message: 'Enter a height.' }] : []
+                    }
+                  >
+                    <InputNumber min={0} placeholder="Height" style={{ width: 100 }} />
+                  </Form.Item>
+                  <Form.Item name="height_uom" noStyle>
+                    <Select style={{ width: 72 }} options={DIMENSION_UOM_OPTIONS} />
+                  </Form.Item>
+                </Space.Compact>
               </Flex>
             </Form.Item>
           )}
@@ -622,6 +691,40 @@ export default function ItemFormPage() {
                   ) : (
                     '—'
                   ),
+              },
+            ]}
+          />
+        </Card>
+      )}
+      {isEdit && itemClass === 'PACKAGING_MATERIAL' && (
+        <Card style={{ maxWidth: 720, margin: '16px auto 0' }}>
+          <Title level={5} style={{ marginTop: 0 }}>
+            Used In Packaging Profiles
+          </Title>
+          <Table<PackagingProfileMaterialUsage>
+            rowKey="id"
+            size="small"
+            dataSource={packagingUsage}
+            pagination={false}
+            locale={{ emptyText: 'Not used in any packaging profile yet.' }}
+            onRow={(record) => ({
+              onClick: () => navigate(`/packaging-profiles/${record.profile_id}/edit`),
+              style: { cursor: 'pointer' },
+            })}
+            columns={[
+              { title: 'Finished Good', dataIndex: 'finished_item_name' },
+              { title: 'Packaging Profile', dataIndex: 'profile_name' },
+              {
+                title: 'Pieces per Box',
+                render: (_, r) => r.pieces_per_selling_unit ?? '—',
+              },
+              {
+                title: 'Status',
+                render: (_, r) => (
+                  <Tag color={r.version_status === 'PUBLISHED' ? 'green' : 'default'}>
+                    v{r.version_number} — {r.version_status}
+                  </Tag>
+                ),
               },
             ]}
           />
