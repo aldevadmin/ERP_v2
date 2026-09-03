@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import {
   Alert,
   Breadcrumb,
@@ -42,6 +42,7 @@ import type {
   PackagingProfile,
   PackagingProfileFormValues,
   PackagingProfileVersion,
+  PackagingProfileVersionFormValues,
 } from './types'
 
 const { Title, Text } = Typography
@@ -68,6 +69,10 @@ export default function PackagingProfileFormPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const isEdit = Boolean(id)
+  const location = useLocation()
+  const duplicateFrom = isEdit
+    ? undefined
+    : (location.state as { duplicateFrom?: PackagingProfile } | null)?.duplicateFrom
   const [basicsForm] = Form.useForm<PackagingProfileFormValues>()
   const [specForm] = Form.useForm()
 
@@ -80,12 +85,27 @@ export default function PackagingProfileFormPage() {
   const [finishedItems, setFinishedItems] = useState<Item[]>([])
   const [packagingItems, setPackagingItems] = useState<Item[]>([])
   const [uoms, setUoms] = useState<UOM[]>([])
-  const [materialRows, setMaterialRows] = useState<PackagingMaterialRow[]>([])
+  // Duplicating seeds these two from the source profile's current version
+  // right at mount (lazy initializer, so it only runs once) — everything
+  // downstream (Suggestion strings, the derived Pouches/Box readout, the
+  // Materials/Specifications steps once reached) then behaves exactly as if
+  // the user had typed these in themselves.
+  const [materialRows, setMaterialRows] = useState<PackagingMaterialRow[]>(() =>
+    duplicateFrom?.current_version
+      ? duplicateFrom.current_version.materials.map((m) => ({
+          item: m.item,
+          level: m.level,
+          quantity: Number(m.quantity),
+          uom: m.uom,
+        }))
+      : [],
+  )
   const [mappings, setMappings] = useState<CustomerProductMapping[]>([])
   // Most profiles target a Finished Good — WIP is the occasional case
   // (packing an intermediate stage before it's fully finished), so it
   // starts hidden to keep the common list short, with this as the easy way
-  // back in rather than a permanent, always-mixed list.
+  // back in rather than a permanent, always-mixed list. Flipped on below if
+  // a duplicated profile's own finished item turns out to be WIP.
   const [includeWip, setIncludeWip] = useState(false)
   // Pieces per Pouch/Box live here on Basics (not Specifications) because
   // they're what actually distinguishes one profile from another for the
@@ -97,8 +117,43 @@ export default function PackagingProfileFormPage() {
   // unchanged — only where they're captured in the wizard has moved, not
   // where the fact lives. Pouches per Box (`pouchesPerBox` below) is
   // derived, not entered directly.
-  const [piecesPerPouch, setPiecesPerPouch] = useState<number | null>(null)
-  const [piecesPerBox, setPiecesPerBox] = useState<number | null>(null)
+  const [piecesPerPouch, setPiecesPerPouch] = useState<number | null>(
+    () => duplicateFrom?.current_version?.pieces_per_pouch ?? null,
+  )
+  const [piecesPerBox, setPiecesPerBox] = useState<number | null>(() => {
+    const v = duplicateFrom?.current_version
+    return v?.pieces_per_pouch && v?.pouches_per_carton ? v.pieces_per_pouch * v.pouches_per_carton : null
+  })
+  // The rest of the source version's Specifications — everything Basics
+  // doesn't already cover — patched onto the new DRAFT version right after
+  // it's created (see `saveBasics`), since the Specifications form itself
+  // can't be touched before a version exists.
+  const duplicateVersionDefaults: Partial<PackagingProfileVersionFormValues> | null = duplicateFrom?.current_version
+    ? {
+        selling_uom: duplicateFrom.current_version.selling_uom,
+        pack_mode: duplicateFrom.current_version.pack_mode,
+        carton_length_mm:
+          duplicateFrom.current_version.carton_length_mm != null
+            ? Number(duplicateFrom.current_version.carton_length_mm)
+            : null,
+        carton_breadth_mm:
+          duplicateFrom.current_version.carton_breadth_mm != null
+            ? Number(duplicateFrom.current_version.carton_breadth_mm)
+            : null,
+        carton_height_mm:
+          duplicateFrom.current_version.carton_height_mm != null
+            ? Number(duplicateFrom.current_version.carton_height_mm)
+            : null,
+        carton_net_weight_kg:
+          duplicateFrom.current_version.carton_net_weight_kg != null
+            ? Number(duplicateFrom.current_version.carton_net_weight_kg)
+            : null,
+        carton_gross_weight_kg:
+          duplicateFrom.current_version.carton_gross_weight_kg != null
+            ? Number(duplicateFrom.current_version.carton_gross_weight_kg)
+            : null,
+      }
+    : null
 
   const editable = !version || version.status === 'DRAFT'
   // Name/Scope/Active are just descriptive metadata on the stable profile
@@ -122,6 +177,33 @@ export default function PackagingProfileFormPage() {
     )
     listUOMs({ isActive: true }).then((response) => setUoms(response.results))
   }, [])
+
+  // Basics fields aren't in a Form.Item-per-field structure we could seed
+  // via `initialValues` alone (Code must come out blank, not copied) — set
+  // them explicitly once, the same pattern as `loadVersion` below for an
+  // existing profile.
+  useEffect(() => {
+    if (!duplicateFrom) return
+    basicsForm.setFieldsValue({
+      finished_item: duplicateFrom.finished_item,
+      code: '',
+      name: duplicateFrom.name,
+      scope: duplicateFrom.scope,
+      is_active: true,
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // A duplicated profile's own finished item might be WIP — reveal it in
+  // the picker rather than leaving Finished Item looking unset because the
+  // default (Finished-Good-only) filter hid the very item it's set to.
+  useEffect(() => {
+    if (!duplicateFrom || finishedItems.length === 0) return
+    if (finishedItems.find((i) => i.id === duplicateFrom.finished_item)?.item_class === 'WIP') {
+      setIncludeWip(true)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [finishedItems])
 
   const loadVersion = useCallback(
     (versionId: number) => {
@@ -148,8 +230,23 @@ export default function PackagingProfileFormPage() {
     [specForm],
   )
 
+  // `saveBasics` navigates here (with `replace`) right after creating a new
+  // profile, which changes the `id` param and would otherwise re-trigger
+  // this fetch — re-fetching data we already have in hand from the create
+  // response, and (for a duplicate) racing it against and wiping out the
+  // materials/requirements/specs `saveBasics` had just carefully staged
+  // locally, since the server's copy of a freshly created version is
+  // always still empty. `saveBasics` sets this ref right before that one
+  // navigation to skip exactly that one redundant refetch.
+  const skipNextLoadRef = useRef(false)
+
   useEffect(() => {
     if (!id) return
+    if (skipNextLoadRef.current) {
+      skipNextLoadRef.current = false
+      setLoading(false)
+      return
+    }
     getPackagingProfile(Number(id))
       .then((data) => {
         setProfile(data)
@@ -183,6 +280,7 @@ export default function PackagingProfileFormPage() {
     setError(null)
     setSubmitting(true)
     try {
+      const isNewProfile = !profile
       let versionId: number | undefined
       if (profile) {
         const updated = await updatePackagingProfile(profile.id, values)
@@ -192,30 +290,44 @@ export default function PackagingProfileFormPage() {
         const created = await createPackagingProfile(values)
         setProfile(created)
         versionId = created.current_version?.id
+        skipNextLoadRef.current = true
         navigate(`/packaging-profiles/${created.id}/edit`, { replace: true })
       }
       // Pack quantities are version-level (see the state comment above) —
       // only worth (re)saving while the version is still a draft, same
-      // rule Materials/Specifications already follow.
-      if (versionId && editable && piecesPerPouch != null && pouchesPerBox != null) {
-        const patched = await updatePackagingProfileVersion(versionId, {
-          pieces_per_pouch: piecesPerPouch,
-          pouches_per_carton: pouchesPerBox,
-          pack_mode: 'CARTON',
-        })
+      // rule Materials/Specifications already follow. `duplicateVersionDefaults`
+      // only has anything in it right after creating from a duplicate.
+      const versionPatch: Partial<PackagingProfileVersionFormValues> = {
+        ...(duplicateVersionDefaults ?? {}),
+        ...(piecesPerPouch != null && pouchesPerBox != null
+          ? { pieces_per_pouch: piecesPerPouch, pouches_per_carton: pouchesPerBox, pack_mode: 'CARTON' as const }
+          : {}),
+      }
+      if (versionId && editable && Object.keys(versionPatch).length > 0) {
+        const patched = await updatePackagingProfileVersion(versionId, versionPatch)
         setVersion(patched)
         specForm.setFieldsValue(patched)
-        setMaterialRows(
-          patched.materials.map((m) => ({
-            id: m.id,
-            item: m.item,
-            level: m.level,
-            quantity: Number(m.quantity),
-            uom: m.uom,
-          })),
-        )
-      } else if (versionId) {
+        // A brand-new version's materials are always empty server-side —
+        // syncing from `patched.materials` here would wipe out the rows
+        // already staged locally (duplicated ones included) before the
+        // Materials step ever got a chance to save them.
+        if (!isNewProfile) {
+          setMaterialRows(
+            patched.materials.map((m) => ({
+              id: m.id,
+              item: m.item,
+              level: m.level,
+              quantity: Number(m.quantity),
+              uom: m.uom,
+            })),
+          )
+        }
+      } else if (versionId && !isNewProfile) {
         loadVersion(versionId)
+      } else if (versionId) {
+        const fetched = await getPackagingProfileVersion(versionId)
+        setVersion(fetched)
+        specForm.setFieldsValue(fetched)
       }
       setCurrentStep('materials')
     } catch (err) {
@@ -387,6 +499,15 @@ export default function PackagingProfileFormPage() {
             ))}
           </div>
           <div style={{ flex: 1, padding: '24px 32px', minWidth: 0 }}>
+            {currentStep === 'basics' && duplicateFrom && (
+              <Alert
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}
+                title="Duplicating a packaging profile"
+                description={`Materials and Specifications are copied from "${duplicateFrom.name}" too — you'll see them already filled in on those steps. Enter a new Profile Code before saving.`}
+              />
+            )}
             {error && <Alert type="error" title={error} showIcon style={{ marginBottom: 16 }} />}
 
             {currentStep === 'basics' && (

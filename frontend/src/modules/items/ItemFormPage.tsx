@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import {
   Alert,
   Breadcrumb,
@@ -157,6 +157,8 @@ export default function ItemFormPage() {
   const { id } = useParams<{ id: string }>()
   const isEdit = Boolean(id)
   const navigate = useNavigate()
+  const location = useLocation()
+  const duplicateFrom = (location.state as { duplicateFrom?: Item } | null)?.duplicateFrom
   const [form] = Form.useForm<ItemFormValues>()
   const [loading, setLoading] = useState(isEdit)
   const [submitting, setSubmitting] = useState(false)
@@ -234,6 +236,23 @@ export default function ItemFormPage() {
       setPackagingUsage(response.results),
     )
   }, [id, itemClass])
+
+  // Duplicating: prefill everything from the source item except its id and
+  // Code — Code is the one field with a hard uniqueness constraint, so
+  // leaving it copied would just fail on save every time. Active resets to
+  // on regardless of the source's state, matching a normal new item.
+  useEffect(() => {
+    if (id || !duplicateFrom) return
+    const { id: _sourceId, code: _sourceCode, ...values } = duplicateFrom
+    form.setFieldsValue({
+      ...values,
+      code: '',
+      is_active: true,
+      length: values.length != null ? Number(values.length) : null,
+      breadth: values.breadth != null ? Number(values.breadth) : null,
+      height: values.height != null ? Number(values.height) : null,
+    })
+  }, [id, duplicateFrom, form])
 
   const handleSubmit = async (values: ItemFormValues) => {
     setError(null)
@@ -343,6 +362,15 @@ export default function ItemFormPage() {
       />
       <Card style={{ maxWidth: 720, margin: '0 auto' }}>
         <Title level={4}>{pageTitle}</Title>
+        {!isEdit && duplicateFrom && (
+          <Alert
+            type="info"
+            showIcon
+            style={{ marginBottom: 16 }}
+            title="Duplicating an item"
+            description={`Every field below is copied from "${duplicateFrom.name}" except Item Code — enter a new one before saving.`}
+          />
+        )}
         {error && <Alert type="error" title={error} showIcon style={{ marginBottom: 16 }} />}
         <Form<ItemFormValues>
           form={form}

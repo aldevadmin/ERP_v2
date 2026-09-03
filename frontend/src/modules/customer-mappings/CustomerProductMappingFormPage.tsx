@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import {
   Alert,
   Breadcrumb,
@@ -47,6 +47,7 @@ import type {
   CustomerProductMapping,
   CustomerProductMappingFormValues,
   CustomerProductMappingVersion,
+  CustomerProductMappingVersionFormValues,
   MappingFile,
   MappingRequirementRow,
 } from './types'
@@ -120,6 +121,10 @@ export default function CustomerProductMappingFormPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const isEdit = Boolean(id)
+  const location = useLocation()
+  const duplicateFrom = isEdit
+    ? undefined
+    : (location.state as { duplicateFrom?: CustomerProductMapping } | null)?.duplicateFrom
   const [basicsForm] = Form.useForm<CustomerProductMappingFormValues>()
   const [commercialForm] = Form.useForm()
 
@@ -134,7 +139,37 @@ export default function CustomerProductMappingFormPage() {
   const [items, setItems] = useState<Item[]>([])
   const [packagingProfiles, setPackagingProfiles] = useState<PackagingProfile[]>([])
   const [uoms, setUoms] = useState<UOM[]>([])
-  const [requirementRows, setRequirementRows] = useState<MappingRequirementRow[]>([])
+  // Duplicating seeds this from the source mapping's current version right
+  // at mount — Files are deliberately not carried over (they're blobs
+  // stored against a specific version id on the backend, not portable data
+  // to clone), only these bespoke-requirement rows.
+  const [requirementRows, setRequirementRows] = useState<MappingRequirementRow[]>(() =>
+    duplicateFrom?.current_version
+      ? duplicateFrom.current_version.requirements.map((r) => ({
+          category: r.category,
+          key: r.key,
+          value: r.value,
+          is_required: r.is_required,
+          sort_order: r.sort_order,
+        }))
+      : [],
+  )
+  // The rest of the source version's Commercial terms, patched onto the new
+  // DRAFT version right after it's created (see `saveBasics`) — the
+  // Commercial form can't be touched before a version exists.
+  const duplicateVersionDefaults: Partial<CustomerProductMappingVersionFormValues> | null = duplicateFrom?.current_version
+    ? {
+        customer_description: duplicateFrom.current_version.customer_description,
+        packaging_profile_version: duplicateFrom.current_version.packaging_profile_version,
+        selling_uom: duplicateFrom.current_version.selling_uom,
+        unit_price:
+          duplicateFrom.current_version.unit_price != null
+            ? Number(duplicateFrom.current_version.unit_price)
+            : null,
+        currency: duplicateFrom.current_version.currency,
+        barcode: duplicateFrom.current_version.barcode,
+      }
+    : null
 
   const editable = !version || version.status === 'DRAFT'
 
@@ -147,6 +182,22 @@ export default function CustomerProductMappingFormPage() {
       setPackagingProfiles(response.results.filter((p) => p.current_version?.status === 'PUBLISHED')),
     )
     listUOMs({ isActive: true }).then((response) => setUoms(response.results))
+  }, [])
+
+  // Basics fields aren't seedable via `initialValues` alone (Customer SKU
+  // must come out blank, not copied) — set them explicitly once, same
+  // pattern as `loadVersion` below for an existing mapping. Customer and
+  // Item stay fully editable here, same as any other Basics field — this
+  // is still just a Create form, pre-filled.
+  useEffect(() => {
+    if (!duplicateFrom) return
+    basicsForm.setFieldsValue({
+      customer: duplicateFrom.customer,
+      item: duplicateFrom.item,
+      customer_sku: '',
+      is_active: true,
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const loadVersion = useCallback(
@@ -169,8 +220,23 @@ export default function CustomerProductMappingFormPage() {
     [commercialForm],
   )
 
+  // `saveBasics` navigates here (with `replace`) right after creating a new
+  // mapping, which changes the `id` param and would otherwise re-trigger
+  // this fetch — re-fetching data we already have in hand from the create
+  // response, and (for a duplicate) racing it against and wiping out the
+  // commercial terms/requirements `saveBasics` had just carefully staged
+  // locally, since the server's copy of a freshly created version is
+  // always still empty. `saveBasics` sets this ref right before that one
+  // navigation to skip exactly that one redundant refetch.
+  const skipNextLoadRef = useRef(false)
+
   useEffect(() => {
     if (!id) return
+    if (skipNextLoadRef.current) {
+      skipNextLoadRef.current = false
+      setLoading(false)
+      return
+    }
     getCustomerProductMapping(Number(id))
       .then((data) => {
         setMapping(data)
@@ -197,7 +263,23 @@ export default function CustomerProductMappingFormPage() {
       } else {
         const created = await createCustomerProductMapping(values)
         setMapping(created)
-        if (created.current_version) loadVersion(created.current_version.id)
+        if (created.current_version) {
+          if (duplicateVersionDefaults) {
+            const patched = await updateCustomerProductMappingVersion(
+              created.current_version.id,
+              duplicateVersionDefaults,
+            )
+            setVersion(patched)
+            commercialForm.setFieldsValue(patched)
+            // A brand-new version's requirements are always empty
+            // server-side — `loadVersion` would wipe the rows already
+            // staged locally (duplicated ones included) before the
+            // Requirements step ever got a chance to save them.
+          } else {
+            loadVersion(created.current_version.id)
+          }
+        }
+        skipNextLoadRef.current = true
         navigate(`/customer-product-mappings/${created.id}/edit`, { replace: true })
       }
       setCurrentStep('commercial')
@@ -346,6 +428,15 @@ export default function CustomerProductMappingFormPage() {
             ))}
           </div>
           <div style={{ flex: 1, padding: '24px 32px', minWidth: 0 }}>
+            {currentStep === 'customer_product' && duplicateFrom && (
+              <Alert
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}
+                title="Duplicating a mapping"
+                description={`Commercial terms and requirements are copied from "${duplicateFrom.mapping_code}" too — you'll see them already filled in on those steps. Enter a new Customer SKU before saving.`}
+              />
+            )}
             {error && <Alert type="error" title={error} showIcon style={{ marginBottom: 16 }} />}
 
             {currentStep === 'customer_product' && (

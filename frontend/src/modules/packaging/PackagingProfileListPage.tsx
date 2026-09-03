@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Button, Card, Flex, Input, Popconfirm, Select, Table, Tag, Typography, message } from 'antd'
-import { DeleteOutlined, EditOutlined } from '@ant-design/icons'
+import { Button, Card, Flex, Input, Popconfirm, Select, Space, Table, Tag, Typography, message } from 'antd'
+import { CopyOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router'
 import { ApiError } from '../../shared/api/http'
 import { deletePackagingProfile, listPackagingProfiles } from './api'
@@ -123,38 +123,38 @@ export default function PackagingProfileListPage() {
             {
               title: '',
               key: 'actions',
-              width: 88,
+              width: 120,
               render: (_, record) => (
-                <Flex gap={8}>
+                <Space onClick={(e) => e.stopPropagation()}>
                   <Button
                     size="small"
                     icon={<EditOutlined />}
                     aria-label={`Edit ${record.name}`}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      navigate(`/packaging-profiles/${record.id}/edit`)
-                    }}
+                    onClick={() => navigate(`/packaging-profiles/${record.id}/edit`)}
+                  />
+                  <Button
+                    size="small"
+                    icon={<CopyOutlined />}
+                    aria-label={`Duplicate ${record.name}`}
+                    onClick={() =>
+                      navigate('/packaging-profiles/new', { state: { duplicateFrom: record } })
+                    }
                   />
                   <Popconfirm
                     title="Delete this profile?"
                     description="This can't be undone."
                     okText="Delete"
                     okButtonProps={{ danger: true }}
-                    onConfirm={(e) => {
-                      e?.stopPropagation()
-                      void handleDelete(record)
-                    }}
-                    onCancel={(e) => e?.stopPropagation()}
+                    onConfirm={() => void handleDelete(record)}
                   >
                     <Button
                       size="small"
                       danger
                       icon={<DeleteOutlined />}
                       aria-label={`Delete ${record.name}`}
-                      onClick={(e) => e.stopPropagation()}
                     />
                   </Popconfirm>
-                </Flex>
+                </Space>
               ),
             },
           ]}

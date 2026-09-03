@@ -13,7 +13,7 @@ import {
   Typography,
   message,
 } from 'antd'
-import { DeleteOutlined, ReadOutlined } from '@ant-design/icons'
+import { CopyOutlined, DeleteOutlined, ReadOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router'
 import { ApiError } from '../../shared/api/http'
 import StatusTag from '../../shared/components/StatusTag'
@@ -196,27 +196,30 @@ export default function ItemListPage() {
             {
               title: '',
               key: 'actions',
-              width: 48,
+              width: 88,
               render: (_, record) => (
-                <Popconfirm
-                  title="Delete this item?"
-                  description="This can't be undone."
-                  okText="Delete"
-                  okButtonProps={{ danger: true }}
-                  onConfirm={(e) => {
-                    e?.stopPropagation()
-                    void handleDelete(record)
-                  }}
-                  onCancel={(e) => e?.stopPropagation()}
-                >
+                <Space onClick={(e) => e.stopPropagation()}>
                   <Button
                     size="small"
-                    danger
-                    icon={<DeleteOutlined />}
-                    aria-label={`Delete ${record.name}`}
-                    onClick={(e) => e.stopPropagation()}
+                    icon={<CopyOutlined />}
+                    aria-label={`Duplicate ${record.name}`}
+                    onClick={() => navigate('/items/new', { state: { duplicateFrom: record } })}
                   />
-                </Popconfirm>
+                  <Popconfirm
+                    title="Delete this item?"
+                    description="This can't be undone."
+                    okText="Delete"
+                    okButtonProps={{ danger: true }}
+                    onConfirm={() => void handleDelete(record)}
+                  >
+                    <Button
+                      size="small"
+                      danger
+                      icon={<DeleteOutlined />}
+                      aria-label={`Delete ${record.name}`}
+                    />
+                  </Popconfirm>
+                </Space>
               ),
             },
           ]}

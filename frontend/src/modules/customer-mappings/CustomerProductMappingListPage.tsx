@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Button, Card, Flex, Input, Popconfirm, Select, Table, Tag, Typography, message } from 'antd'
-import { DeleteOutlined } from '@ant-design/icons'
+import { Button, Card, Flex, Input, Popconfirm, Select, Space, Table, Tag, Typography, message } from 'antd'
+import { CopyOutlined, DeleteOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router'
 import { ApiError } from '../../shared/api/http'
 import { deleteCustomerProductMapping, listCustomerProductMappings } from './api'
@@ -110,27 +110,32 @@ export default function CustomerProductMappingListPage() {
             {
               title: '',
               key: 'actions',
-              width: 48,
+              width: 88,
               render: (_, record) => (
-                <Popconfirm
-                  title="Delete this mapping?"
-                  description="This can't be undone."
-                  okText="Delete"
-                  okButtonProps={{ danger: true }}
-                  onConfirm={(e) => {
-                    e?.stopPropagation()
-                    void handleDelete(record)
-                  }}
-                  onCancel={(e) => e?.stopPropagation()}
-                >
+                <Space onClick={(e) => e.stopPropagation()}>
                   <Button
                     size="small"
-                    danger
-                    icon={<DeleteOutlined />}
-                    aria-label={`Delete ${record.mapping_code}`}
-                    onClick={(e) => e.stopPropagation()}
+                    icon={<CopyOutlined />}
+                    aria-label={`Duplicate ${record.mapping_code}`}
+                    onClick={() =>
+                      navigate('/customer-product-mappings/new', { state: { duplicateFrom: record } })
+                    }
                   />
-                </Popconfirm>
+                  <Popconfirm
+                    title="Delete this mapping?"
+                    description="This can't be undone."
+                    okText="Delete"
+                    okButtonProps={{ danger: true }}
+                    onConfirm={() => void handleDelete(record)}
+                  >
+                    <Button
+                      size="small"
+                      danger
+                      icon={<DeleteOutlined />}
+                      aria-label={`Delete ${record.mapping_code}`}
+                    />
+                  </Popconfirm>
+                </Space>
               ),
             },
           ]}
