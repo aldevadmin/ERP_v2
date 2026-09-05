@@ -5,6 +5,9 @@ from .models import (
     ProcessCategory,
     ProcessDefinition,
     ProcessDefinitionVersion,
+    ProcessExecution,
+    ProcessExecutionInput,
+    ProcessExecutionOutput,
     ProcessInputDefinition,
     ProcessOutputDefinition,
     ProcessParameterDefinition,
@@ -64,3 +67,21 @@ class ProcessDefinitionAdmin(admin.ModelAdmin):
     list_display = ("name", "code", "is_active")
     list_filter = ("is_active",)
     search_fields = ("name", "code")
+
+
+class ProcessExecutionInputInline(admin.TabularInline):
+    model = ProcessExecutionInput
+    extra = 0
+
+
+class ProcessExecutionOutputInline(admin.TabularInline):
+    model = ProcessExecutionOutput
+    extra = 0
+
+
+@admin.register(ProcessExecution)
+class ProcessExecutionAdmin(admin.ModelAdmin):
+    list_display = ("process_version", "work_centre", "date", "batch_lot_number")
+    list_filter = ("process_version__process_definition", "work_centre", "date")
+    filter_horizontal = ("employees",)
+    inlines = [ProcessExecutionInputInline, ProcessExecutionOutputInline]

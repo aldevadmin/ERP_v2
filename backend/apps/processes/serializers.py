@@ -1,7 +1,9 @@
 from typing import Any
 
+from django.db import transaction
 from rest_framework import serializers
 
+from apps.accounts.models import Employee
 from apps.core.models import Organization
 from apps.items.models import Item
 
@@ -10,6 +12,9 @@ from .models import (
     ProcessCategory,
     ProcessDefinition,
     ProcessDefinitionVersion,
+    ProcessExecution,
+    ProcessExecutionInput,
+    ProcessExecutionOutput,
     ProcessInputDefinition,
     ProcessOutputDefinition,
     ProcessParameterDefinition,
@@ -362,4 +367,204 @@ class ProcessDefinitionSerializer(serializers.ModelSerializer):
                 version.description = description
             version.save()
 
+        return instance
+
+
+class ProcessExecutionInputSerializer(serializers.Serializer):
+    """One row of the `inputs` list on a `ProcessExecution` create/update
+    payload. Quantity is whatever the caller supplies — for Packing's
+    Sorting/Cleaning/Packing execution, the caller (`apps.packing`)
+    computes this from Material Issue records rather than letting the
+    operator type it; this serializer itself stays generic and just
+    persists whatever it's given, since a future non-Packing caller may
+    have its own authoritative source instead.
+    """
+
+    id = serializers.IntegerField(required=False, allow_null=True)
+    input_definition = serializers.PrimaryKeyRelatedField(
+        queryset=ProcessInputDefinition.objects.all()
+    )
+    quantity = serializers.IntegerField(min_value=0)
+
+
+class ProcessExecutionOutputSerializer(serializers.Serializer):
+    """One row of the `outputs` list — entered directly by the operator
+    (e.g. Accepted / Second Quality / Rejected counts)."""
+
+    id = serializers.IntegerField(required=False, allow_null=True)
+    output_definition = serializers.PrimaryKeyRelatedField(
+        queryset=ProcessOutputDefinition.objects.all()
+    )
+    position_entry = serializers.IntegerField(required=False, allow_null=True, default=None)
+    quantity = serializers.IntegerField(min_value=0)
+
+
+class ProcessExecutionReadOutputSerializer(serializers.ModelSerializer):
+    item_label = serializers.SerializerMethodField()
+    classification_name = serializers.CharField(
+        source="output_definition.classification.name", read_only=True
+    )
+
+    class Meta:
+        model = ProcessExecutionOutput
+        fields = ["id", "output_definition", "item_label", "classification_name", "quantity"]
+
+    def get_item_label(self, obj: ProcessExecutionOutput) -> str:
+        item = obj.output_definition.item
+        return f"{item.name} ({item.code})" if item else ""
+
+
+class ProcessExecutionReadInputSerializer(serializers.ModelSerializer):
+    item_label = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ProcessExecutionInput
+        fields = ["id", "input_definition", "item_label", "quantity"]
+
+    def get_item_label(self, obj: ProcessExecutionInput) -> str:
+        item = obj.input_definition.item
+        return f"{item.name} ({item.code})" if item else ""
+
+
+class ProcessExecutionSerializer(serializers.ModelSerializer):
+    """Creates/updates a `ProcessExecution` plus its nested `inputs` and
+    `outputs` in one request, transactionally — the same "one nested
+    payload, written atomically" shape as `ProcessDefinitionVersion`'s
+    whole-list-replace actions, just for a create/update instead of a
+    replace. `employees` accepts a plain list of Employee ids.
+    """
+
+    process_definition_name = serializers.CharField(
+        source="process_version.process_definition.name", read_only=True
+    )
+    work_centre_name = serializers.CharField(source="work_centre.name", read_only=True, default=None)
+    employees = serializers.PrimaryKeyRelatedField(
+        queryset=Employee.objects.all(), many=True, required=False
+    )
+    employee_names = serializers.SerializerMethodField()
+    inputs = ProcessExecutionReadInputSerializer(many=True, read_only=True)
+    outputs = ProcessExecutionReadOutputSerializer(many=True, read_only=True)
+    inputs_write = ProcessExecutionInputSerializer(many=True, write_only=True, required=False)
+    outputs_write = ProcessExecutionOutputSerializer(many=True, write_only=True, required=False)
+    total_input_quantity = serializers.IntegerField(read_only=True)
+    total_output_quantity = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = ProcessExecution
+        fields = [
+            "id",
+            "process_version",
+            "process_definition_name",
+            "work_centre",
+            "work_centre_name",
+            "export_order_line",
+            "date",
+            "batch_lot_number",
+            "employees",
+            "employee_names",
+            "remarks",
+            "inputs",
+            "outputs",
+            "inputs_write",
+            "outputs_write",
+            "total_input_quantity",
+            "total_output_quantity",
+            "created_at",
+        ]
+
+    def get_employee_names(self, obj: ProcessExecution) -> list[str]:
+        return [e.full_name for e in obj.employees.all()]
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        process_version = attrs.get(
+            "process_version", getattr(self.instance, "process_version", None)
+        )
+        if process_version is None:
+            return attrs
+
+        work_centre = attrs.get("work_centre", getattr(self.instance, "work_centre", None))
+        if (
+            process_version.work_centre_requirement
+            != ProcessDefinitionVersion.WorkCentreRequirement.NONE
+            and work_centre is None
+        ):
+            raise serializers.ValidationError({"work_centre": "This process requires a work centre."})
+
+        batch_lot_number = attrs.get(
+            "batch_lot_number", getattr(self.instance, "batch_lot_number", "")
+        )
+        if (
+            process_version.batch_lot_mode == ProcessDefinitionVersion.BatchLotMode.REQUIRED
+            and not batch_lot_number
+        ):
+            raise serializers.ValidationError(
+                {"batch_lot_number": "This process requires a batch/lot number."}
+            )
+
+        for row in attrs.get("outputs_write", []):
+            if row["output_definition"].process_version_id != process_version.id:
+                raise serializers.ValidationError(
+                    {"outputs_write": "Output does not belong to this process version."}
+                )
+        for row in attrs.get("inputs_write", []):
+            if row["input_definition"].process_version_id != process_version.id:
+                raise serializers.ValidationError(
+                    {"inputs_write": "Input does not belong to this process version."}
+                )
+        return attrs
+
+    def create(self, validated_data: dict[str, Any]) -> ProcessExecution:
+        inputs = validated_data.pop("inputs_write", [])
+        outputs = validated_data.pop("outputs_write", [])
+        employees = validated_data.pop("employees", [])
+        organization = Organization.get_default()
+
+        with transaction.atomic():
+            execution = ProcessExecution.objects.create(organization=organization, **validated_data)
+            execution.employees.set(employees)
+            for row in inputs:
+                ProcessExecutionInput.objects.create(
+                    execution=execution,
+                    input_definition=row["input_definition"],
+                    quantity=row["quantity"],
+                    organization=organization,
+                )
+            for row in outputs:
+                ProcessExecutionOutput.objects.create(
+                    execution=execution,
+                    output_definition=row["output_definition"],
+                    quantity=row["quantity"],
+                    organization=organization,
+                )
+        return execution
+
+    def update(
+        self, instance: ProcessExecution, validated_data: dict[str, Any]
+    ) -> ProcessExecution:
+        inputs = validated_data.pop("inputs_write", None)
+        outputs = validated_data.pop("outputs_write", None)
+        employees = validated_data.pop("employees", None)
+
+        with transaction.atomic():
+            instance = super().update(instance, validated_data)
+            if employees is not None:
+                instance.employees.set(employees)
+            if outputs is not None:
+                instance.outputs.all().delete()
+                for row in outputs:
+                    ProcessExecutionOutput.objects.create(
+                        execution=instance,
+                        output_definition=row["output_definition"],
+                        quantity=row["quantity"],
+                        organization=instance.organization,
+                    )
+            if inputs is not None:
+                instance.inputs.all().delete()
+                for row in inputs:
+                    ProcessExecutionInput.objects.create(
+                        execution=instance,
+                        input_definition=row["input_definition"],
+                        quantity=row["quantity"],
+                        organization=instance.organization,
+                    )
         return instance

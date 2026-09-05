@@ -19,6 +19,7 @@ urlpatterns: list[Any] = [
     path("api/v1/", include("apps.packaging.urls")),
     path("api/v1/", include("apps.customer_mappings.urls")),
     path("api/v1/", include("apps.export_orders.urls")),
+    path("api/v1/", include("apps.packing.urls")),
 ]
 
 if settings.DEBUG:

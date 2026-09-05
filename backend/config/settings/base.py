@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     "apps.packaging",
     "apps.customer_mappings",
     "apps.export_orders",
+    "apps.packing",
 ]
 
 MIDDLEWARE = [

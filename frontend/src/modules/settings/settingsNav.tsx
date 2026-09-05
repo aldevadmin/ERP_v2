@@ -127,6 +127,18 @@ export const SETTINGS_GROUPS: SettingsGroupConfig[] = [
         path: '/storage-locations',
       },
       {
+        key: 'bays',
+        label: 'Bays',
+        icon: <ClusterOutlined />,
+        path: '/bays',
+      },
+      {
+        key: 'shifts',
+        label: 'Shifts',
+        icon: <ClusterOutlined />,
+        path: '/shifts',
+      },
+      {
         key: 'work-centres',
         label: 'Work Centres',
         icon: <ClusterOutlined />,

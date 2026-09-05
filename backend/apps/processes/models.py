@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Sum
 
 from apps.core.models import BaseModel
 
@@ -364,3 +365,127 @@ class ProcessParameterDefinition(BaseModel):
 
     def __str__(self) -> str:
         return f"{self.label} ({self.code})"
+
+
+class ProcessExecution(BaseModel):
+    """One actual recorded run of a `ProcessDefinitionVersion` — the
+    generic execution engine that fills the gap `ProcessDefinitionVersion`
+    itself only configures (see that model's docstring: "a future
+    `ProcessExecution` will pin to a specific version"). This is that
+    model. It's deliberately generic — the Packing module's Sorting,
+    Cleaning, and Packing steps are the first real caller, but a future
+    Production module records against the exact same tables, never a
+    separate SortingTransaction/CleaningTransaction/PackingTransaction
+    domain engine.
+
+    Always pins to a specific `process_version` (never the live
+    `ProcessDefinition`), same reasoning as `ProcessRouteNode` — a later
+    re-version of the process must never reinterpret an already-recorded
+    execution. `work_centre` is required only when
+    `process_version.work_centre_requirement != NONE`, and
+    `batch_lot_number` only when `process_version.batch_lot_mode ==
+    REQUIRED` — both enforced in the serializer, not here, matching this
+    codebase's convention of keeping conditional-required validation in
+    the serializer layer.
+
+    No delete — corrections happen via PATCH, the same no-destructive-edit
+    rule already followed by `ProductionTransaction`/`PackingTransaction`
+    elsewhere in this codebase (see `ProcessDefinitionVersion.
+    allow_correction_with_audit_trail`, which this model doesn't yet
+    enforce at the field level but is designed to support later).
+    """
+
+    process_version = models.ForeignKey(
+        ProcessDefinitionVersion, on_delete=models.PROTECT, related_name="executions"
+    )
+    work_centre = models.ForeignKey(
+        "work_centres.WorkCentre", null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    export_order_line = models.ForeignKey(
+        "export_orders.ExportOrderLine",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="process_executions",
+    )
+    date = models.DateField()
+    batch_lot_number = models.CharField(max_length=64, blank=True)
+    # Who worked this execution — decided fresh every time, never a fixed
+    # roster (see the Packing module's Material Issue design, same
+    # principle). Blank when `process_version.operator_required` is False.
+    employees = models.ManyToManyField("accounts.Employee", blank=True, related_name="+")
+    remarks = models.TextField(blank=True)
+    organization = models.ForeignKey(
+        "core.Organization", on_delete=models.PROTECT, related_name="process_executions"
+    )
+
+    class Meta:
+        ordering = ["-date", "-id"]
+
+    def __str__(self) -> str:
+        return f"{self.process_version.process_definition.name} — {self.date}"
+
+    @property
+    def total_input_quantity(self) -> int:
+        return self.inputs.aggregate(total=Sum("quantity"))["total"] or 0
+
+    @property
+    def total_output_quantity(self) -> int:
+        """The generic "how much did this execution process in total"
+        figure — e.g. the Packing module's "Sorted" readout is exactly
+        this, derived rather than separately entered so it can never
+        disagree with the classification breakdown it's the sum of.
+        """
+        return self.outputs.aggregate(total=Sum("quantity"))["total"] or 0
+
+    def output_quantity_for_classification(self, classification_name: str) -> int:
+        return (
+            self.outputs.filter(output_definition__classification__name=classification_name)
+            .aggregate(total=Sum("quantity"))["total"]
+            or 0
+        )
+
+
+class ProcessExecutionInput(BaseModel):
+    """One input row actually consumed by a `ProcessExecution` — the
+    execution-time counterpart to `ProcessInputDefinition`'s configuration.
+    `quantity` is populated server-side (see
+    `apps.packing.services.picked_up_quantity_for`), not typed in by the
+    operator, whenever the calling module already has an authoritative
+    source (e.g. Packing's Material Issue ledger) — this row still exists
+    so the figure is snapshotted permanently against the execution, not
+    left to drift if the upstream source changes later.
+    """
+
+    execution = models.ForeignKey(ProcessExecution, on_delete=models.CASCADE, related_name="inputs")
+    input_definition = models.ForeignKey(
+        ProcessInputDefinition, on_delete=models.PROTECT, related_name="execution_inputs"
+    )
+    quantity = models.PositiveIntegerField()
+    organization = models.ForeignKey(
+        "core.Organization", on_delete=models.PROTECT, related_name="process_execution_inputs"
+    )
+
+    def __str__(self) -> str:
+        return f"{self.execution} — {self.input_definition.item} x{self.quantity}"
+
+
+class ProcessExecutionOutput(BaseModel):
+    """One output row actually produced by a `ProcessExecution` — the
+    execution-time counterpart to `ProcessOutputDefinition`'s
+    configuration. `output_definition` carries the item/classification/uom
+    semantics; this row never duplicates them, same reasoning as
+    `ProcessRouteEdge.source_output_definition` upstream.
+    """
+
+    execution = models.ForeignKey(ProcessExecution, on_delete=models.CASCADE, related_name="outputs")
+    output_definition = models.ForeignKey(
+        ProcessOutputDefinition, on_delete=models.PROTECT, related_name="execution_outputs"
+    )
+    quantity = models.PositiveIntegerField()
+    organization = models.ForeignKey(
+        "core.Organization", on_delete=models.PROTECT, related_name="process_execution_outputs"
+    )
+
+    def __str__(self) -> str:
+        return f"{self.execution} — {self.output_definition.item} x{self.quantity}"

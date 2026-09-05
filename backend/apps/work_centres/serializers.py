@@ -6,7 +6,7 @@ from apps.core.models import Organization
 from apps.processes.models import ProcessDefinition
 from apps.tooling.serializers import WorkCentrePositionSerializer
 
-from .models import WorkCentre, WorkCentreProcessCapability, WorkCentreType
+from .models import Bay, WorkCentre, WorkCentreProcessCapability, WorkCentreType
 
 
 class WorkCentreTypeSerializer(serializers.ModelSerializer):
@@ -18,6 +18,15 @@ class WorkCentreTypeSerializer(serializers.ModelSerializer):
         return WorkCentreType.objects.create(
             organization=Organization.get_default(), **validated_data
         )
+
+
+class BaySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Bay
+        fields = ["id", "name", "code", "is_active"]
+
+    def create(self, validated_data: dict[str, Any]) -> Bay:
+        return Bay.objects.create(organization=Organization.get_default(), **validated_data)
 
 
 class WorkCentreCapabilitySerializer(serializers.ModelSerializer):
@@ -52,6 +61,7 @@ class WorkCentreSerializer(serializers.ModelSerializer):
     positions = WorkCentrePositionSerializer(many=True, read_only=True)
     positions_count = serializers.SerializerMethodField()
     type_name = serializers.CharField(source="type.name", read_only=True)
+    bay_name = serializers.CharField(source="bay.name", read_only=True, default=None)
 
     class Meta:
         model = WorkCentre
@@ -61,6 +71,8 @@ class WorkCentreSerializer(serializers.ModelSerializer):
             "code",
             "type",
             "type_name",
+            "bay",
+            "bay_name",
             "is_active",
             "capabilities",
             "capabilities_count",

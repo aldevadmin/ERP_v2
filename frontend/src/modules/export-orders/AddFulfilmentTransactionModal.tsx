@@ -145,6 +145,11 @@ export default function AddFulfilmentTransactionModal({
             placeholder="Select or enter party / team"
             options={partyTeamOptions}
             showSearch
+            notFoundContent={
+              <Text type="secondary" style={{ fontSize: 13 }}>
+                No matching vendor — type a name and press Enter to use it anyway.
+              </Text>
+            }
           />
         </Form.Item>
         <Form.Item

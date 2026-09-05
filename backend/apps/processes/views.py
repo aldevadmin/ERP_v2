@@ -16,16 +16,18 @@ from .models import (
     ProcessCategory,
     ProcessDefinition,
     ProcessDefinitionVersion,
+    ProcessExecution,
     ProcessInputDefinition,
     ProcessOutputDefinition,
     ProcessParameterDefinition,
 )
-from .permissions import CanManageProcesses, IsInternalStaff
+from .permissions import CanManageProcesses, CanRecordProcessExecutions, IsInternalStaff
 from .serializers import (
     OutputClassificationSerializer,
     ProcessCategorySerializer,
     ProcessDefinitionSerializer,
     ProcessDefinitionVersionSerializer,
+    ProcessExecutionSerializer,
     ProcessInputWriteSerializer,
     ProcessOutputWriteSerializer,
     ProcessParameterWriteSerializer,
@@ -474,3 +476,54 @@ class ProcessDefinitionVersionViewSet(
         data = dict(self.get_serializer(version).data)
         data["warnings"] = warnings
         return Response(data)
+
+
+class ProcessExecutionViewSet(
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.UpdateModelMixin,
+    viewsets.GenericViewSet,
+):
+    """No delete — a recorded execution is a fact; corrections happen via
+    PATCH (`update`), same no-destructive-edit rule as
+    `ProductionTransaction`/`PackingTransaction` elsewhere in this
+    codebase.
+    """
+
+    queryset = ProcessExecution.objects.select_related(
+        "process_version__process_definition", "work_centre"
+    ).prefetch_related("employees", "inputs__input_definition", "outputs__output_definition")
+    serializer_class = ProcessExecutionSerializer
+
+    def get_permissions(self) -> list[BasePermission]:
+        return [CanRecordProcessExecutions()]
+
+    def perform_create(self, serializer: serializers.BaseSerializer) -> None:
+        serializer.save(created_by=self.request.user, updated_by=self.request.user)
+
+    def perform_update(self, serializer: serializers.BaseSerializer) -> None:
+        serializer.save(updated_by=self.request.user)
+
+    def get_queryset(self) -> QuerySet[ProcessExecution]:
+        queryset = super().get_queryset()
+
+        process_definition = self.request.query_params.get("process_definition")
+        if process_definition is not None:
+            queryset = queryset.filter(
+                process_version__process_definition_id=process_definition
+            )
+
+        work_centre = self.request.query_params.get("work_centre")
+        if work_centre is not None:
+            queryset = queryset.filter(work_centre_id=work_centre)
+
+        export_order_line = self.request.query_params.get("export_order_line")
+        if export_order_line is not None:
+            queryset = queryset.filter(export_order_line_id=export_order_line)
+
+        date_ = self.request.query_params.get("date")
+        if date_ is not None:
+            queryset = queryset.filter(date=date_)
+
+        return queryset

@@ -24,6 +24,8 @@ const response: WorkCentreListResponse = {
       name: 'Press 01',
       type: 1,
       type_name: 'Machine',
+      bay: null,
+      bay_name: null,
       is_active: true,
       capabilities: [],
       capabilities_count: 2,

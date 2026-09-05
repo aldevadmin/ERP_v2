@@ -1,6 +1,9 @@
 import { apiFetch } from '../../shared/api/http'
 import type { WorkCentrePositionFormValues } from '../tooling/types'
 import type {
+  Bay,
+  BayFormValues,
+  BayListResponse,
   WorkCentre,
   WorkCentreCapabilityFormValues,
   WorkCentreFormValues,
@@ -9,6 +12,35 @@ import type {
   WorkCentreTypeFormValues,
   WorkCentreTypeListResponse,
 } from './types'
+
+export interface ListBaysParams {
+  search?: string
+  isActive?: boolean
+}
+
+export function listBays(params: ListBaysParams = {}): Promise<BayListResponse> {
+  const query = new URLSearchParams()
+  if (params.search) query.set('search', params.search)
+  if (params.isActive !== undefined) query.set('is_active', String(params.isActive))
+  const queryString = query.toString()
+  return apiFetch<BayListResponse>(`/bays/${queryString ? `?${queryString}` : ''}`)
+}
+
+export function getBay(id: number): Promise<Bay> {
+  return apiFetch<Bay>(`/bays/${id}/`)
+}
+
+export function createBay(values: BayFormValues): Promise<Bay> {
+  return apiFetch<Bay>('/bays/', { method: 'POST', body: JSON.stringify(values) })
+}
+
+export function updateBay(id: number, values: Partial<BayFormValues>): Promise<Bay> {
+  return apiFetch<Bay>(`/bays/${id}/`, { method: 'PATCH', body: JSON.stringify(values) })
+}
+
+export function deleteBay(id: number): Promise<void> {
+  return apiFetch<void>(`/bays/${id}/`, { method: 'DELETE' })
+}
 
 export interface ListWorkCentresParams {
   search?: string

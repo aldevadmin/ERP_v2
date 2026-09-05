@@ -25,6 +25,30 @@ class WorkCentreType(BaseModel):
         return self.name
 
 
+class Bay(BaseModel):
+    """A planning/location grouping of Work Centres (e.g. "Bay 1") — used
+    by the Packing module's weekly planner to plan at Bay level without
+    micromanaging individual Work Centres. Deliberately a bare lookup, not
+    itself an execution resource: nothing is ever produced "at a Bay,"
+    only at the `WorkCentre`s it groups (see `WorkCentre.bay` below). Lives
+    here rather than in `apps.packing` so `WorkCentre` can reference it
+    without that app depending back on packing.
+    """
+
+    name = models.CharField(max_length=100, unique=True)
+    code = models.CharField(max_length=32, unique=True)
+    organization = models.ForeignKey(
+        "core.Organization", on_delete=models.PROTECT, related_name="bays"
+    )
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self) -> str:
+        return f"{self.name} ({self.code})"
+
+
 class WorkCentre(BaseModel):
     """A Machine or Station master record — the physical resource a
     Process's Step 4 (Work Centre) declares a requirement for. A process
@@ -38,6 +62,12 @@ class WorkCentre(BaseModel):
     name = models.CharField(max_length=255)
     code = models.CharField(max_length=32, unique=True)
     type = models.ForeignKey(WorkCentreType, on_delete=models.PROTECT, related_name="work_centres")
+    # Nullable — a Work Centre can exist and run processes (e.g. Machines
+    # used outside the Packing floor) without ever belonging to a Packing
+    # Bay. Only Station-type work centres used by Packing need one set.
+    bay = models.ForeignKey(
+        Bay, null=True, blank=True, on_delete=models.PROTECT, related_name="work_centres"
+    )
     organization = models.ForeignKey(
         "core.Organization", on_delete=models.PROTECT, related_name="work_centres"
     )

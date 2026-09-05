@@ -29,6 +29,8 @@ import OutputClassificationFormPage from '../modules/processes/OutputClassificat
 import OutputClassificationListPage from '../modules/processes/OutputClassificationListPage'
 import ProcessFormPage from '../modules/processes/ProcessFormPage'
 import ProcessListPage from '../modules/processes/ProcessListPage'
+import BayFormPage from '../modules/work-centres/BayFormPage'
+import BayListPage from '../modules/work-centres/BayListPage'
 import WorkCentreFormPage from '../modules/work-centres/WorkCentreFormPage'
 import WorkCentreListPage from '../modules/work-centres/WorkCentreListPage'
 import WorkCentreTypeFormPage from '../modules/work-centres/WorkCentreTypeFormPage'
@@ -44,7 +46,14 @@ import ToolingTypeListPage from '../modules/tooling/ToolingTypeListPage'
 import SettingsLayout from '../modules/settings/SettingsLayout'
 import SettingsRedirect from '../modules/settings/SettingsRedirect'
 import ProductionPage from '../modules/production/ProductionPage'
-import PackingPage from '../modules/packing/PackingPage'
+import PackingLayout from '../modules/packing/PackingLayout'
+import PackingOrdersPage from '../modules/packing/PackingOrdersPage'
+import WeeklyPackingPlannerPage from '../modules/packing/WeeklyPackingPlannerPage'
+import TodaysWorkPage from '../modules/packing/TodaysWorkPage'
+import PackingJobPage from '../modules/packing/PackingJobPage'
+import PackingWorkSessionPage from '../modules/packing/PackingWorkSessionPage'
+import ShiftListPage from '../modules/packing/ShiftListPage'
+import ShiftFormPage from '../modules/packing/ShiftFormPage'
 import InventoryPage from '../modules/inventory/InventoryPage'
 import ExportOrderDetailPage from '../modules/export-orders/ExportOrderDetailPage'
 import ExportOrderEditPage from '../modules/export-orders/ExportOrderEditPage'
@@ -426,6 +435,30 @@ function AuthenticatedShell() {
                 }
               />
               <Route
+                path="/bays"
+                element={
+                  <SettingsLayout>
+                    <BayListPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/bays/new"
+                element={
+                  <SettingsLayout>
+                    <BayFormPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/bays/:id/edit"
+                element={
+                  <SettingsLayout>
+                    <BayFormPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
                 path="/product-routes"
                 element={
                   <SettingsLayout>
@@ -522,7 +555,67 @@ function AuthenticatedShell() {
                 }
               />
               <Route path="/production" element={<ProductionPage />} />
-              <Route path="/packing" element={<PackingPage />} />
+              <Route
+                path="/packing"
+                element={
+                  <PackingLayout>
+                    <PackingOrdersPage />
+                  </PackingLayout>
+                }
+              />
+              <Route
+                path="/packing/orders"
+                element={
+                  <PackingLayout>
+                    <PackingOrdersPage />
+                  </PackingLayout>
+                }
+              />
+              <Route
+                path="/packing/planner"
+                element={
+                  <PackingLayout>
+                    <WeeklyPackingPlannerPage />
+                  </PackingLayout>
+                }
+              />
+              <Route
+                path="/packing/today"
+                element={
+                  <PackingLayout>
+                    <TodaysWorkPage />
+                  </PackingLayout>
+                }
+              />
+              <Route path="/packing/jobs/:jobId" element={<PackingJobPage />} />
+              <Route
+                path="/packing/work-sessions/:sessionId"
+                element={<PackingWorkSessionPage />}
+              />
+              <Route
+                path="/shifts"
+                element={
+                  <SettingsLayout>
+                    <ShiftListPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/shifts/new"
+                element={
+                  <SettingsLayout>
+                    <ShiftFormPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/shifts/:id/edit"
+                element={
+                  <SettingsLayout>
+                    <ShiftFormPage />
+                  </SettingsLayout>
+                }
+              />
               <Route path="/inventory" element={<InventoryPage />} />
               <Route path="/settings" element={<SettingsRedirect />} />
               <Route path="/export-orders" element={<ExportOrderListPage />} />

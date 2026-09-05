@@ -13,13 +13,48 @@ from apps.core.mixins import ProtectedDestroyMixin
 from apps.tooling.models import WorkCentrePosition
 from apps.tooling.serializers import WorkCentrePositionWriteSerializer
 
-from .models import WorkCentre, WorkCentreProcessCapability, WorkCentreType
+from .models import Bay, WorkCentre, WorkCentreProcessCapability, WorkCentreType
 from .permissions import CanManageWorkCentres, IsInternalStaff
 from .serializers import (
+    BaySerializer,
     WorkCentreCapabilityWriteSerializer,
     WorkCentreSerializer,
     WorkCentreTypeSerializer,
 )
+
+
+class BayViewSet(
+    ProtectedDestroyMixin,
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.UpdateModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet,
+):
+    """Same shape as `WorkCentreTypeViewSet` — `is_active` is the usual
+    deactivation mechanism; `destroy` is blocked with a friendly error if
+    any Work Centre still belongs to this Bay.
+    """
+
+    queryset = Bay.objects.all()
+    serializer_class = BaySerializer
+    filter_backends = [SearchFilter]
+    search_fields = ["name", "code"]
+
+    def get_permissions(self) -> list[BasePermission]:
+        if self.action in ("create", "update", "partial_update", "destroy"):
+            return [CanManageWorkCentres()]
+        return [IsInternalStaff()]
+
+    def get_queryset(self) -> QuerySet[Bay]:
+        queryset = super().get_queryset()
+
+        is_active = self.request.query_params.get("is_active")
+        if is_active is not None:
+            queryset = queryset.filter(is_active=is_active.lower() in ("true", "1"))
+
+        return queryset
 
 
 class WorkCentreTypeViewSet(
@@ -104,6 +139,10 @@ class WorkCentreViewSet(
         type_ = self.request.query_params.get("type")
         if type_ is not None:
             queryset = queryset.filter(type=type_)
+
+        bay = self.request.query_params.get("bay")
+        if bay is not None:
+            queryset = queryset.filter(bay=bay)
 
         return queryset
 

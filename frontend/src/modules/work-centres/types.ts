@@ -38,12 +38,37 @@ export interface WorkCentreCapabilityFormValues {
   standard_rate: number | null
 }
 
+/** A planning/location grouping of Work Centres (e.g. "Bay 1") — used by
+ * the Packing module's weekly planner. Not itself an execution resource;
+ * see `WorkCentre.bay`. */
+export interface Bay {
+  id: number
+  name: string
+  code: string
+  is_active: boolean
+}
+
+export interface BayListResponse {
+  count: number
+  next: string | null
+  previous: string | null
+  results: Bay[]
+}
+
+export interface BayFormValues {
+  name: string
+  code: string
+  is_active: boolean
+}
+
 export interface WorkCentre {
   id: number
   name: string
   code: string
   type: number
   type_name: string
+  bay: number | null
+  bay_name: string | null
   is_active: boolean
   capabilities: WorkCentreCapability[]
   capabilities_count: number
@@ -62,5 +87,6 @@ export interface WorkCentreFormValues {
   name: string
   code: string
   type: number
+  bay: number | null
   is_active: boolean
 }

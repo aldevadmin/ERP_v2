@@ -6,6 +6,7 @@ from .views import (
     ProcessCategoryViewSet,
     ProcessDefinitionVersionViewSet,
     ProcessDefinitionViewSet,
+    ProcessExecutionViewSet,
 )
 
 router = DefaultRouter()
@@ -19,6 +20,7 @@ router.register(
     ProcessDefinitionVersionViewSet,
     basename="process-definition-version",
 )
+router.register("process-executions", ProcessExecutionViewSet, basename="process-execution")
 
 urlpatterns = [
     path("", include(router.urls)),

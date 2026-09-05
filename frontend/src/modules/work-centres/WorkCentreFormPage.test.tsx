@@ -79,6 +79,7 @@ beforeEach(() => {
   }
   mockedProcessesApi.listProcesses.mockResolvedValue(processResponse)
   mockedApi.listWorkCentreTypes.mockResolvedValue(workCentreTypes)
+  mockedApi.listBays.mockResolvedValue({ count: 0, next: null, previous: null, results: [] })
   mockedItemsApi.listItems.mockResolvedValue({ count: 0, next: null, previous: null, results: [] })
 })
 
@@ -94,6 +95,8 @@ describe('WorkCentreFormPage — create', () => {
       name: 'Press 01',
       type: 1,
       type_name: 'Machine',
+      bay: null,
+      bay_name: null,
       is_active: true,
       capabilities: [],
       capabilities_count: 0,
@@ -132,6 +135,8 @@ describe('WorkCentreFormPage — edit', () => {
     name: 'Press 02',
     type: 1,
     type_name: 'Machine',
+    bay: null,
+    bay_name: null,
     is_active: true,
     capabilities: [
       {

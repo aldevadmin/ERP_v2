@@ -23,12 +23,14 @@ import CapabilityEditorModal from './CapabilityEditorModal'
 import {
   createWorkCentre,
   getWorkCentre,
+  listBays,
   listWorkCentreTypes,
   saveWorkCentreCapabilities,
   saveWorkCentrePositions,
   updateWorkCentre,
 } from './api'
 import type {
+  Bay,
   WorkCentre,
   WorkCentreCapability,
   WorkCentreCapabilityFormValues,
@@ -62,9 +64,11 @@ export default function WorkCentreFormPage() {
   const [changingToolingFor, setChangingToolingFor] = useState<WorkCentrePosition | null>(null)
   const [historyFor, setHistoryFor] = useState<WorkCentrePosition | null>(null)
   const [types, setTypes] = useState<WorkCentreType[]>([])
+  const [bays, setBays] = useState<Bay[]>([])
 
   useEffect(() => {
     listWorkCentreTypes({ isActive: true }).then((response) => setTypes(response.results))
+    listBays({ isActive: true }).then((response) => setBays(response.results))
   }, [])
 
   useEffect(() => {
@@ -212,6 +216,19 @@ export default function WorkCentreFormPage() {
             size="large"
             style={{ maxWidth: 240 }}
             options={types.map((t) => ({ value: t.id, label: t.name }))}
+          />
+        </Form.Item>
+        <Form.Item
+          label="Bay (optional)"
+          name="bay"
+          tooltip="Which Packing Bay this Work Centre belongs to — only Station-type work centres used by Packing need one set. Weekly planning happens at Bay level, not this Work Centre directly."
+        >
+          <Select
+            allowClear
+            size="large"
+            style={{ maxWidth: 240 }}
+            placeholder="No bay"
+            options={bays.map((b) => ({ value: b.id, label: b.name }))}
           />
         </Form.Item>
         <Form.Item label="Active" name="is_active" valuePropName="checked">

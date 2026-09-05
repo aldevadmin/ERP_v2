@@ -187,15 +187,28 @@ export default function ProcessFormPage() {
                   name="category"
                   rules={[{ required: true, message: 'Select where this process is used.' }]}
                 >
-                  <Radio.Group>
-                    <Flex vertical gap={8}>
-                      {categories.map((category) => (
-                        <Radio key={category.id} value={category.id}>
-                          {category.name}
-                        </Radio>
-                      ))}
-                    </Flex>
-                  </Radio.Group>
+                  {categories.length > 0 ? (
+                    <Radio.Group>
+                      <Flex vertical gap={8}>
+                        {categories.map((category) => (
+                          <Radio key={category.id} value={category.id}>
+                            {category.name}
+                          </Radio>
+                        ))}
+                      </Flex>
+                    </Radio.Group>
+                  ) : (
+                    <Empty
+                      description={
+                        <Text type="secondary">
+                          No process categories yet — <Link to="/process-categories/new">create one</Link> first
+                          (e.g. Production, Packing, Quality), then come back to this step.
+                        </Text>
+                      }
+                      image={Empty.PRESENTED_IMAGE_SIMPLE}
+                      style={{ margin: '8px 0' }}
+                    />
+                  )}
                 </Form.Item>
                 <Form.Item label="Description (optional)" name="description">
                   <Input.TextArea rows={3} />
