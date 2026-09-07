@@ -164,28 +164,8 @@ class PackingJob(BaseModel):
         )
 
     @property
-    def processed_qty(self) -> int:
-        """Total output recorded against this job across every
-        classification (Good + Standard + Reject/Scrap combined) — how much
-        of the assigned raw material has actually been worked, regardless
-        of how it was graded. This is what `balance_qty`/job-completion is
-        based on: a job is done once its material has been fully processed,
-        not once it has yielded `target_qty` worth of Good output (yield is
-        never 100%, so gating completion on Good-only would leave a
-        permanent phantom balance).
-        """
-        from apps.processes.models import ProcessExecutionOutput
-
-        return (
-            ProcessExecutionOutput.objects.filter(
-                execution__packing_work_session__allocation__job=self,
-            ).aggregate(total=Sum("quantity"))["total"]
-            or 0
-        )
-
-    @property
     def balance_qty(self) -> int:
-        return max(self.target_qty - self.processed_qty, 0)
+        return max(self.target_qty - self.packed_qty, 0)
 
     @property
     def allocated_qty(self) -> int:
@@ -390,23 +370,8 @@ class PackingWorkCentreAllocation(BaseModel):
         )
 
     @property
-    def processed_qty(self) -> int:
-        """Total output recorded for this allocation across every
-        classification — see `PackingJob.processed_qty` for why completion
-        is based on total throughput rather than Good-only output.
-        """
-        from apps.processes.models import ProcessExecutionOutput
-
-        return (
-            ProcessExecutionOutput.objects.filter(
-                execution__packing_work_session__allocation=self,
-            ).aggregate(total=Sum("quantity"))["total"]
-            or 0
-        )
-
-    @property
     def balance_qty(self) -> int:
-        return max(self.assigned_qty - self.processed_qty, 0)
+        return max(self.assigned_qty - self.packed_qty, 0)
 
 
 class PackingAllocationOperator(BaseModel):

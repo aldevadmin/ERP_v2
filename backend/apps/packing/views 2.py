@@ -555,7 +555,6 @@ class TodaysWorkView(APIView):
                     "sequence": allocation.sequence,
                     "assigned_qty": allocation.assigned_qty,
                     "packed_qty": allocation.packed_qty,
-                    "balance_qty": allocation.balance_qty,
                     "status": allocation.status,
                 }
             )

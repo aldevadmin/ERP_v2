@@ -49,7 +49,6 @@ export interface PackingPlanLine {
   status: PackingPlanLineStatus
   remarks: string
   has_job: boolean
-  job_id: number | null
 }
 
 export interface PackingPlanLineFormValues {
@@ -265,7 +264,6 @@ export interface TodaysWorkRow {
   sequence: number
   assigned_qty: number
   packed_qty: number
-  balance_qty: number
   status: AllocationStatus
 }
 

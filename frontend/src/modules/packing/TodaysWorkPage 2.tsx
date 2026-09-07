@@ -83,7 +83,6 @@ export default function TodaysWorkPage() {
                 const first = jobRows[0]
                 const target = jobRows.reduce((sum, r) => sum + r.assigned_qty, 0)
                 const packed = jobRows.reduce((sum, r) => sum + r.packed_qty, 0)
-                const balance = jobRows.reduce((sum, r) => sum + r.balance_qty, 0)
                 const active = jobRows.filter((r) => r.status === 'RUNNING').length
                 return (
                   <Card key={first.job_id} size="small" style={{ width: 260 }}>
@@ -97,22 +96,12 @@ export default function TodaysWorkPage() {
                       <Text>Target {target.toLocaleString()}</Text>
                       <Text>Packed {packed.toLocaleString()}</Text>
                     </Flex>
-                    <Progress
-                      percent={Math.round(((target - balance) / (target || 1)) * 100)}
-                      size="small"
-                    />
+                    <Progress percent={Math.round((packed / (target || 1)) * 100)} size="small" />
                     <Flex justify="space-between" align="center" style={{ marginTop: 8 }}>
                       <Tag>
                         {active} Active / {jobRows.length} Allocated
                       </Tag>
-                      <Button
-                        size="small"
-                        onClick={() =>
-                          navigate(`/packing/jobs/${first.job_id}`, {
-                            state: { from: { label: "Today's Packing", path: '/packing/today' } },
-                          })
-                        }
-                      >
+                      <Button size="small" onClick={() => navigate(`/packing/jobs/${first.job_id}`)}>
                         Open Job
                       </Button>
                     </Flex>

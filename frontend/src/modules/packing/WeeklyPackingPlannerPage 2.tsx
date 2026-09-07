@@ -56,9 +56,7 @@ export default function WeeklyPackingPlannerPage() {
     try {
       const job = await releasePackingPlanLine(line.id)
       message.success(`Released as ${job.job_number}.`)
-      navigate(`/packing/jobs/${job.id}`, {
-        state: { from: { label: 'Weekly Planner', path: '/packing/planner' } },
-      })
+      navigate(`/packing/jobs/${job.id}`)
     } catch (err) {
       message.error(err instanceof ApiError ? err.message : 'Could not release this plan.')
     }
@@ -154,26 +152,15 @@ export default function WeeklyPackingPlannerPage() {
                           borderRadius: 6,
                           padding: '4px 6px',
                           fontSize: 12,
-                          cursor:
-                            line.has_job || (line.status === 'PLANNED' && !line.has_job)
-                              ? 'pointer'
-                              : 'default',
+                          cursor: line.status === 'PLANNED' && !line.has_job ? 'pointer' : 'default',
                         }}
                         onClick={() => {
-                          if (line.has_job && line.job_id) {
-                            navigate(`/packing/jobs/${line.job_id}`, {
-                              state: { from: { label: 'Weekly Planner', path: '/packing/planner' } },
-                            })
-                          } else if (line.status === 'PLANNED' && !line.has_job) {
-                            void handleRelease(line)
-                          }
+                          if (line.status === 'PLANNED' && !line.has_job) void handleRelease(line)
                         }}
                         title={
-                          line.has_job
-                            ? 'Click to open this Packing Job'
-                            : line.status === 'PLANNED'
-                              ? 'Click to release as a Packing Job'
-                              : undefined
+                          line.status === 'PLANNED' && !line.has_job
+                            ? 'Click to release as a Packing Job'
+                            : undefined
                         }
                       >
                         <div>{line.order_no}</div>

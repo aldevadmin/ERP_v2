@@ -97,7 +97,6 @@ class PackingPlanLineSerializer(serializers.ModelSerializer):
     shift_name = serializers.CharField(source="shift.name", read_only=True)
     bay_name = serializers.CharField(source="bay.name", read_only=True)
     has_job = serializers.SerializerMethodField()
-    job_id = serializers.SerializerMethodField()
 
     class Meta:
         model = PackingPlanLine
@@ -115,15 +114,10 @@ class PackingPlanLineSerializer(serializers.ModelSerializer):
             "status",
             "remarks",
             "has_job",
-            "job_id",
         ]
 
     def get_has_job(self, obj: PackingPlanLine) -> bool:
         return getattr(obj, "packing_job", None) is not None
-
-    def get_job_id(self, obj: PackingPlanLine) -> int | None:
-        job = getattr(obj, "packing_job", None)
-        return job.id if job is not None else None
 
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
         from .services import packing_demand_row
@@ -428,5 +422,4 @@ class TodaysWorkAllocationSerializer(serializers.Serializer):
     sequence = serializers.IntegerField()
     assigned_qty = serializers.IntegerField()
     packed_qty = serializers.IntegerField()
-    balance_qty = serializers.IntegerField()
     status = serializers.CharField()

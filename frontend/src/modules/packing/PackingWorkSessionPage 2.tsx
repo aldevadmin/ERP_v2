@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useLocation, useNavigate, useParams } from 'react-router'
+import { Link, useNavigate, useParams } from 'react-router'
 import {
   Alert,
   Breadcrumb,
@@ -22,7 +22,6 @@ import { getProcess } from '../processes/api'
 import type { Process } from '../processes/types'
 import { getWorkCentre } from '../work-centres/api'
 import { completeWorkSession, getAllocation, getPackingJob, getWorkSession } from './api'
-import { packingBreadcrumbFrom } from './breadcrumbFrom'
 import type { PackingJob, PackingWorkCentreAllocation, PackingWorkSession } from './types'
 
 const { Title, Text } = Typography
@@ -30,8 +29,6 @@ const { Title, Text } = Typography
 export default function PackingWorkSessionPage() {
   const { sessionId } = useParams<{ sessionId: string }>()
   const navigate = useNavigate()
-  const location = useLocation()
-  const from = packingBreadcrumbFrom(location.state)
   const [session, setSession] = useState<PackingWorkSession | null>(null)
   const [allocation, setAllocation] = useState<PackingWorkCentreAllocation | null>(null)
   const [job, setJob] = useState<PackingJob | null>(null)
@@ -57,10 +54,7 @@ export default function PackingWorkSessionPage() {
         setSession(loadedSession)
         const loadedAllocation = await getAllocation(loadedSession.allocation)
         setAllocation(loadedAllocation)
-        // Defaults to what's left on this allocation, not its original
-        // total — a second session against the same allocation (started
-        // after an earlier one left a balance) is only for the remainder.
-        setInputQty(loadedAllocation.balance_qty)
+        setInputQty(loadedAllocation.assigned_qty)
         setSelectedEmployees(loadedAllocation.operators.map((o) => o.employee))
 
         const [loadedJob, workCentre] = await Promise.all([
@@ -124,7 +118,7 @@ export default function PackingWorkSessionPage() {
       setSession(updated)
       if (complete) {
         message.success('Work recorded.')
-        navigate(`/packing/jobs/${allocation.job}`, { state: { from } })
+        navigate(`/packing/jobs/${allocation.job}`)
       } else {
         message.success('Draft saved.')
       }
@@ -159,18 +153,8 @@ export default function PackingWorkSessionPage() {
       <Breadcrumb
         style={{ marginBottom: 12 }}
         items={[
-          { title: <Link to={from.path}>{from.label}</Link> },
-          ...(job
-            ? [
-                {
-                  title: (
-                    <Link to={`/packing/jobs/${job.id}`} state={{ from }}>
-                      {job.job_number}
-                    </Link>
-                  ),
-                },
-              ]
-            : []),
+          { title: <Link to="/packing/orders">Packing Orders</Link> },
+          ...(job ? [{ title: <Link to={`/packing/jobs/${job.id}`}>{job.job_number}</Link> }] : []),
           { title: `${allocation.work_centre_code} — Packing Entry` },
         ]}
       />
@@ -194,12 +178,8 @@ export default function PackingWorkSessionPage() {
         {error && <Alert type="error" title={error} showIcon style={{ marginBottom: 16 }} />}
 
         <Flex justify="space-between" style={{ marginBottom: 16 }}>
-          <Text strong>
-            {allocation.balance_qty === allocation.assigned_qty
-              ? 'Assigned Quantity'
-              : 'Quantity for This Session'}
-          </Text>
-          <Text strong>{allocation.balance_qty.toLocaleString()} pcs</Text>
+          <Text strong>Assigned Quantity</Text>
+          <Text strong>{allocation.assigned_qty.toLocaleString()} pcs</Text>
         </Flex>
 
         {processOptions.length > 1 && (

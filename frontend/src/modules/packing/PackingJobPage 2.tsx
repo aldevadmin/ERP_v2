@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link, useLocation, useNavigate, useParams } from 'react-router'
+import { Link, useNavigate, useParams } from 'react-router'
 import {
   Alert,
   Breadcrumb,
@@ -24,7 +24,6 @@ import {
   startWorkSession,
 } from './api'
 import AutoAllocateModal from './AutoAllocateModal'
-import { packingBreadcrumbFrom } from './breadcrumbFrom'
 import WarehouseRequestModal from './WarehouseRequestModal'
 import type {
   PackingJob,
@@ -48,8 +47,6 @@ const STATUS_COLORS: Record<PackingJobStatus, string> = {
 export default function PackingJobPage() {
   const { jobId } = useParams<{ jobId: string }>()
   const navigate = useNavigate()
-  const location = useLocation()
-  const from = packingBreadcrumbFrom(location.state)
   const [job, setJob] = useState<PackingJob | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -94,7 +91,7 @@ export default function PackingJobPage() {
   const handleStartSession = async (allocation: PackingWorkCentreAllocation) => {
     try {
       const session = await startWorkSession(allocation.id)
-      navigate(`/packing/work-sessions/${session.id}`, { state: { from } })
+      navigate(`/packing/work-sessions/${session.id}`)
     } catch (err) {
       message.error(err instanceof ApiError ? err.message : 'Could not start this session.')
     }
@@ -129,7 +126,10 @@ export default function PackingJobPage() {
     <div>
       <Breadcrumb
         style={{ marginBottom: 12 }}
-        items={[{ title: <Link to={from.path}>{from.label}</Link> }, { title: job.job_number }]}
+        items={[
+          { title: <Link to="/packing/orders">Packing Orders</Link> },
+          { title: job.job_number },
+        ]}
       />
       <Card>
         <div style={{ marginBottom: 16 }}>
@@ -159,11 +159,7 @@ export default function PackingJobPage() {
               label: 'Overview',
               children: (
                 <div>
-                  <Progress
-                    percent={Math.round(
-                      ((job.target_qty - job.balance_qty) / (job.target_qty || 1)) * 100,
-                    )}
-                  />
+                  <Progress percent={Math.round((job.packed_qty / (job.target_qty || 1)) * 100)} />
                   <Descriptions column={1} bordered size="small" style={{ marginTop: 16 }}>
                     <Descriptions.Item label="Material Received">
                       Awaiting/received — see Material tab
@@ -291,9 +287,7 @@ export default function PackingJobPage() {
                         key: 'progress',
                         render: (_, a) => (
                           <Progress
-                            percent={Math.round(
-                              ((a.assigned_qty - a.balance_qty) / (a.assigned_qty || 1)) * 100,
-                            )}
+                            percent={Math.round((a.packed_qty / (a.assigned_qty || 1)) * 100)}
                             size="small"
                           />
                         ),
@@ -302,30 +296,22 @@ export default function PackingJobPage() {
                       {
                         title: '',
                         key: 'actions',
-                        render: (_, a) => {
-                          if (a.status === 'COMPLETED' || a.status === 'CANCELLED') return null
-                          const running = a.sessions.find((s) => s.status === 'RUNNING')
-                          if (running) {
-                            return (
-                              <Button
-                                size="small"
-                                onClick={() =>
-                                  navigate(`/packing/work-sessions/${running.id}`, { state: { from } })
-                                }
-                              >
-                                Resume
-                              </Button>
-                            )
-                          }
-                          // RUNNING with no active session happens after a
-                          // partial Complete Work leaves balance on this
-                          // allocation — a fresh session picks up the rest.
-                          return (
+                        render: (_, a) =>
+                          a.status === 'PLANNED' || a.status === 'READY' ? (
                             <Button size="small" type="primary" onClick={() => void handleStartSession(a)}>
                               Start
                             </Button>
-                          )
-                        },
+                          ) : a.status === 'RUNNING' ? (
+                            <Button
+                              size="small"
+                              onClick={() => {
+                                const running = a.sessions.find((s) => s.status === 'RUNNING')
+                                if (running) navigate(`/packing/work-sessions/${running.id}`)
+                              }}
+                            >
+                              Resume
+                            </Button>
+                          ) : null,
                       },
                     ]}
                   />
