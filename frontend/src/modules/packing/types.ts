@@ -37,8 +37,10 @@ export type PackingPlanLineStatus = 'DRAFT' | 'PLANNED' | 'RELEASED' | 'CANCELLE
 
 export interface PackingPlanLine {
   id: number
+  plan_code: string
   export_order_line: number
   order_no: string
+  customer_name: string
   item_name: string
   date: string
   shift: number
@@ -50,6 +52,10 @@ export interface PackingPlanLine {
   remarks: string
   has_job: boolean
   job_id: number | null
+  job_number: string | null
+  job_status: PackingJobStatus | null
+  job_target_qty: number | null
+  job_packed_qty: number | null
 }
 
 export interface PackingPlanLineFormValues {
@@ -73,10 +79,12 @@ export interface PackingJob {
   id: number
   job_number: string
   plan_line: number
+  plan_code: string
   order_no: string
   customer_name: string
   item_name: string
   date: string
+  shift: number
   shift_name: string
   bay: number
   bay_name: string
@@ -157,125 +165,150 @@ export interface ReceiveMaterialLine {
   remarks?: string
 }
 
-export type AllocationStatus = 'PLANNED' | 'READY' | 'RUNNING' | 'COMPLETED' | 'ON_HOLD' | 'CANCELLED'
+// --- v2 execution model: PackingShift -> WorkCentreSession -> SKU
+// Allocation -> PackingIntervalRecord. Replaces v1's job-anchored
+// allocation + one-shot PackingWorkSession.
 
-export interface PackingAllocationOperator {
+export type AllocationStatus = 'PLANNED' | 'READY' | 'RUNNING' | 'COMPLETED' | 'ON_HOLD' | 'CANCELLED'
+export type PackingShiftStatus = 'NOT_STARTED' | 'RUNNING' | 'STOPPED'
+export type WorkCentreSessionStatus = 'RUNNING' | 'IDLE' | 'ISSUE' | 'STOPPED'
+export type IntervalRecordStatus = 'EXPECTED' | 'ENTERED' | 'MISSING' | 'LATE_ENTRY' | 'CORRECTED'
+export type IssueType = 'MACHINE' | 'MATERIAL' | 'QUALITY' | 'OTHER'
+
+export interface PackingExecutionConfig {
+  id: number
+  recording_mode: 'INTERVAL_BASED' | 'SHIFT_TOTAL' | 'MANUAL_EVENT' | 'MACHINE_GENERATED'
+  default_interval_minutes: number
+  auto_create_expected_intervals: boolean
+  allow_late_entry: boolean
+  missing_record_warning_minutes: number
+  plan_calculation: 'STANDARD_RATE' | 'MANUAL'
+  allow_partial_interval_on_sku_change: boolean
+}
+
+export interface PackingWorkCentreAllocation {
+  id: number
+  session: number
+  job: number
+  job_number: string
+  order_no: string
+  item_name: string
+  work_centre_code: string
+  process_version: number | null
+  sequence: number
+  assigned_qty: number
+  status: AllocationStatus
+  started_at: string | null
+  completed_at: string | null
+  packed_qty: number
+  processed_qty: number
+  balance_qty: number
+}
+
+export interface PackingWorkCentreSessionOperator {
   id: number
   employee: number
   employee_name: string
 }
 
-export type WorkSessionStatus = 'DRAFT' | 'RUNNING' | 'COMPLETED'
-
-export interface ProcessExecutionOutputRow {
+export interface OpenIssueSummary {
   id: number
-  output_definition: number
-  item_label: string
-  classification_name: string
-  quantity: number
+  issue_type: IssueType
+  description: string
+  started_at: string
 }
 
-export interface ProcessExecutionInputRow {
+export interface PackingWorkCentreSession {
   id: number
-  input_definition: number
-  item_label: string
-  quantity: number
-}
-
-export interface ProcessExecutionDetail {
-  id: number
-  process_version: number
-  process_definition_name: string
-  work_centre: number | null
-  work_centre_name: string | null
-  export_order_line: number | null
-  date: string
-  batch_lot_number: string
-  employees: number[]
-  employee_names: string[]
-  remarks: string
-  inputs: ProcessExecutionInputRow[]
-  outputs: ProcessExecutionOutputRow[]
-  total_input_quantity: number
-  total_output_quantity: number
-  created_at: string
-}
-
-export interface PackingWorkSession {
-  id: number
-  allocation: number
-  execution: number | null
-  execution_detail: ProcessExecutionDetail | null
-  status: WorkSessionStatus
-  started_at: string | null
-  completed_at: string | null
-  remarks: string
-}
-
-export interface PackingWorkCentreAllocation {
-  id: number
-  job: number
+  packing_shift: number
   work_centre: number
-  work_centre_name: string
   work_centre_code: string
+  work_centre_name: string
+  bay: number
+  bay_name: string
+  date: string
+  shift_id: number
+  shift_name: string
+  status: WorkCentreSessionStatus
+  started_at: string | null
+  stopped_at: string | null
+  stop_reason: string
+  operators: PackingWorkCentreSessionOperator[]
+  allocations: PackingWorkCentreAllocation[]
+  current_allocation_id: number | null
+  open_issue: OpenIssueSummary | null
+}
+
+export interface PackingShift {
+  id: number
   date: string
   shift: number
   shift_name: string
-  sequence: number
-  assigned_qty: number
-  status: AllocationStatus
-  operators: PackingAllocationOperator[]
-  packed_qty: number
-  balance_qty: number
-  sessions: PackingWorkSession[]
+  status: PackingShiftStatus
+  started_at: string | null
+  stopped_at: string | null
+  work_centre_sessions: PackingWorkCentreSession[]
 }
 
-export interface PackingAllocationFormValues {
-  job: number
+export interface StartShiftWorkCentreEntry {
   work_centre: number
-  // date/shift/sequence are derived server-side from the job's plan line
-  // and existing allocations when creating via
-  // `POST /packing-jobs/{id}/allocations/` — only required for a direct
-  // PATCH against `/packing-allocations/{id}/`.
-  date?: string
-  shift?: number
-  sequence?: number
-  assigned_qty: number
-  operator_ids?: number[]
+  operator_ids: number[]
 }
 
-export interface AutoAllocationRow {
-  work_centre: number
-  date: string
-  shift: number
-  sequence: number
-  assigned_qty: number
+export interface PackingIntervalRecord {
+  id: number
+  allocation: number
+  from_time: string
+  to_time: string
+  scheduled_minutes: number
+  downtime_minutes: number
+  available_minutes: number
+  standard_rate_snapshot: string | null
+  planned_output: number
+  premium_qty: number
+  standard_qty: number
+  reject_qty: number
+  cleaned_qty: number
+  pouches_packed: number
+  loose_pieces_packed: number
+  pieces_packed: number
+  cartons_completed: number
+  status: IntervalRecordStatus
+  entered_by: number | null
+  entered_at: string | null
+  is_late_entry: boolean
+  remarks: string
+  quality_total: number
+  yield_percent: number | null
+  reject_percent: number | null
+  actual_rate: number | null
+  packing_rate: number | null
+  efficiency_percent: number | null
 }
 
-export interface TodaysWorkRow {
-  allocation_id: number
-  job_id: number
-  job_number: string
-  order_no: string
-  item_name: string
-  bay_id: number
-  bay_name: string
-  work_centre_id: number
-  work_centre_name: string
-  sequence: number
-  assigned_qty: number
-  packed_qty: number
-  balance_qty: number
-  status: AllocationStatus
+export interface RecordIntervalPayload {
+  from_time?: string
+  to_time?: string
+  premium_qty: number
+  standard_qty: number
+  reject_qty: number
+  cleaned_qty: number
+  pouches_packed: number
+  loose_pieces_packed: number
+  cartons_completed: number
+  remarks?: string
 }
 
-// Rendered output-classification quantities keyed by the
-// ProcessOutputDefinition id — the Packing Entry screen builds this
-// dynamically from whatever the active process version's outputs are,
-// rather than hardcoding Good/Standard/Reject fields.
-export interface ExecutionOutputInput {
-  output_definition: number
-  classification_name: string
-  item_label: string
-  quantity: number | null
+export interface WorkCentreIssueEvent {
+  id: number
+  session: number
+  allocation: number | null
+  issue_type: IssueType
+  description: string
+  stops_productive_time: boolean
+  started_at: string
+  resolved_at: string | null
+  reported_by: number | null
+  resolved_by: number | null
+  is_open: boolean
 }

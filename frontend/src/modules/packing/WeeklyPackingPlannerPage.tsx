@@ -1,5 +1,5 @@
 import { Fragment, useCallback, useEffect, useState } from 'react'
-import { Button, Card, Flex, Select, Tag, Typography, message } from 'antd'
+import { Button, Card, Flex, Progress, Select, Tag, Typography, message } from 'antd'
 import { LeftOutlined, RightOutlined } from '@ant-design/icons'
 import dayjs, { type Dayjs } from 'dayjs'
 import { useNavigate } from 'react-router'
@@ -7,9 +7,18 @@ import { ApiError } from '../../shared/api/http'
 import { listBays } from '../work-centres/api'
 import type { Bay } from '../work-centres/types'
 import { listPackingPlanLines, listShifts, releasePackingPlanLine } from './api'
-import type { PackingPlanLine, Shift } from './types'
+import type { PackingJobStatus, PackingPlanLine, Shift } from './types'
 
 const { Title, Text } = Typography
+
+const JOB_STATUS_COLORS: Record<PackingJobStatus, string> = {
+  AWAITING_MATERIAL: 'default',
+  READY: 'blue',
+  IN_PROGRESS: 'processing',
+  COMPLETED: 'green',
+  ON_HOLD: 'orange',
+  CANCELLED: 'red',
+}
 
 function startOfWeek(d: Dayjs): Dayjs {
   const day = d.day()
@@ -154,35 +163,64 @@ export default function WeeklyPackingPlannerPage() {
                           borderRadius: 6,
                           padding: '4px 6px',
                           fontSize: 12,
-                          cursor:
-                            line.has_job || (line.status === 'PLANNED' && !line.has_job)
-                              ? 'pointer'
-                              : 'default',
+                          cursor: line.has_job ? 'pointer' : 'default',
                         }}
                         onClick={() => {
                           if (line.has_job && line.job_id) {
                             navigate(`/packing/jobs/${line.job_id}`, {
                               state: { from: { label: 'Weekly Planner', path: '/packing/planner' } },
                             })
-                          } else if (line.status === 'PLANNED' && !line.has_job) {
-                            void handleRelease(line)
                           }
                         }}
-                        title={
-                          line.has_job
-                            ? 'Click to open this Packing Job'
-                            : line.status === 'PLANNED'
-                              ? 'Click to release as a Packing Job'
-                              : undefined
-                        }
+                        title={line.has_job ? 'Click to open this Packing Job' : undefined}
                       >
-                        <div>{line.order_no}</div>
+                        <div style={{ color: '#8c8c8c' }}>
+                          {line.order_no} • {line.customer_name}
+                        </div>
+                        <div style={{ fontWeight: 500 }}>{line.plan_code}</div>
                         <div style={{ color: '#8c8c8c' }}>{line.item_name}</div>
-                        <div>{line.planned_qty.toLocaleString()} pcs</div>
-                        {line.has_job && (
-                          <Tag color="green" style={{ marginTop: 2 }}>
-                            Released
-                          </Tag>
+                        {line.has_job ? (
+                          <>
+                            <Flex justify="space-between" align="center" style={{ marginTop: 2 }}>
+                              <Text strong style={{ fontSize: 12 }}>
+                                {line.job_number}
+                              </Text>
+                              {line.job_status && (
+                                <Tag color={JOB_STATUS_COLORS[line.job_status]} style={{ marginRight: 0 }}>
+                                  {line.job_status.replace('_', ' ')}
+                                </Tag>
+                              )}
+                            </Flex>
+                            <div>
+                              {(line.job_packed_qty ?? 0).toLocaleString()} /{' '}
+                              {(line.job_target_qty ?? line.planned_qty).toLocaleString()} pcs
+                            </div>
+                            <Progress
+                              percent={Math.round(
+                                ((line.job_packed_qty ?? 0) / (line.job_target_qty || 1)) * 100,
+                              )}
+                              size="small"
+                              showInfo={false}
+                            />
+                          </>
+                        ) : (
+                          <>
+                            <div>{line.planned_qty.toLocaleString()} pcs</div>
+                            {line.status === 'PLANNED' && (
+                              <Button
+                                size="small"
+                                type="primary"
+                                block
+                                style={{ marginTop: 4 }}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  void handleRelease(line)
+                                }}
+                              >
+                                Create Packing Job
+                              </Button>
+                            )}
+                          </>
                         )}
                       </div>
                     ))}

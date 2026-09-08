@@ -1,15 +1,19 @@
 from django.contrib import admin
 
 from .models import (
-    PackingAllocationOperator,
+    PackingExecutionConfig,
+    PackingIntervalRecord,
     PackingJob,
     PackingMaterialMovement,
     PackingMaterialRequest,
     PackingMaterialRequestLine,
     PackingPlanLine,
+    PackingShift,
     PackingWorkCentreAllocation,
-    PackingWorkSession,
+    PackingWorkCentreSession,
+    PackingWorkCentreSessionOperator,
     Shift,
+    WorkCentreIssueEvent,
 )
 
 
@@ -48,19 +52,42 @@ class PackingMaterialMovementAdmin(admin.ModelAdmin):
     list_display = ("request_line", "date", "quantity_issued", "quantity_received")
 
 
-class PackingAllocationOperatorInline(admin.TabularInline):
-    model = PackingAllocationOperator
+@admin.register(PackingExecutionConfig)
+class PackingExecutionConfigAdmin(admin.ModelAdmin):
+    list_display = ("organization", "recording_mode", "default_interval_minutes", "plan_calculation")
+
+
+@admin.register(PackingShift)
+class PackingShiftAdmin(admin.ModelAdmin):
+    list_display = ("date", "shift", "status", "started_at", "stopped_at")
+    list_filter = ("status", "shift")
+
+
+class PackingWorkCentreSessionOperatorInline(admin.TabularInline):
+    model = PackingWorkCentreSessionOperator
     extra = 0
+
+
+@admin.register(PackingWorkCentreSession)
+class PackingWorkCentreSessionAdmin(admin.ModelAdmin):
+    list_display = ("packing_shift", "work_centre", "bay", "status", "started_at", "stopped_at")
+    list_filter = ("status", "bay")
+    inlines = [PackingWorkCentreSessionOperatorInline]
 
 
 @admin.register(PackingWorkCentreAllocation)
 class PackingWorkCentreAllocationAdmin(admin.ModelAdmin):
-    list_display = ("job", "work_centre", "date", "shift", "sequence", "assigned_qty", "status")
-    list_filter = ("status", "shift", "work_centre")
-    inlines = [PackingAllocationOperatorInline]
+    list_display = ("job", "session", "sequence", "assigned_qty", "status")
+    list_filter = ("status",)
 
 
-@admin.register(PackingWorkSession)
-class PackingWorkSessionAdmin(admin.ModelAdmin):
-    list_display = ("allocation", "status", "started_at", "completed_at")
+@admin.register(WorkCentreIssueEvent)
+class WorkCentreIssueEventAdmin(admin.ModelAdmin):
+    list_display = ("session", "issue_type", "stops_productive_time", "started_at", "resolved_at")
+    list_filter = ("issue_type", "stops_productive_time")
+
+
+@admin.register(PackingIntervalRecord)
+class PackingIntervalRecordAdmin(admin.ModelAdmin):
+    list_display = ("allocation", "from_time", "to_time", "status", "premium_qty", "standard_qty", "reject_qty")
     list_filter = ("status",)

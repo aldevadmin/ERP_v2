@@ -1,4 +1,5 @@
 from datetime import date as date_cls
+from datetime import datetime
 from typing import Any, cast
 
 from django.db.models import Q, QuerySet
@@ -10,37 +11,68 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.core.mixins import ProtectedDestroyMixin
+from apps.accounts.models import Employee
+from apps.core.models import Organization
 from apps.export_orders.models import ExportOrder, ExportOrderLine
 from apps.processes.serializers import ProcessExecutionSerializer
+from apps.work_centres.models import WorkCentre
 
 from .models import (
+    PackingExecutionConfig,
+    PackingIntervalRecord,
     PackingJob,
     PackingMaterialMovement,
     PackingMaterialRequest,
     PackingMaterialRequestLine,
     PackingPlanLine,
+    PackingShift,
     PackingWorkCentreAllocation,
-    PackingWorkSession,
+    PackingWorkCentreSession,
+    PackingWorkCentreSessionOperator,
     Shift,
+    WorkCentreIssueEvent,
 )
 from .permissions import CanManagePacking, IsInternalStaff
 from .serializers import (
     PackingDemandSerializer,
+    PackingExecutionConfigSerializer,
+    PackingIntervalRecordSerializer,
     PackingJobSerializer,
     PackingMaterialRequestSerializer,
     PackingMaterialRequirementSerializer,
     PackingPlanLineSerializer,
+    PackingShiftSerializer,
     PackingWorkCentreAllocationSerializer,
-    PackingWorkSessionSerializer,
+    PackingWorkCentreSessionSerializer,
     ShiftSerializer,
-    TodaysWorkAllocationSerializer,
+    WorkCentreIssueEventSerializer,
 )
-from .services import auto_allocate_equal, get_or_create_job_for_plan_line, material_requirements_for_job, packing_demand_row
+from .services import (
+    build_interval_execution_data,
+    compute_interval_minutes,
+    compute_planned_output,
+    get_execution_config,
+    get_or_create_job_for_plan_line,
+    material_requirements_for_job,
+    next_expected_interval,
+    packing_demand_row,
+    resolve_process_version_for_work_centre,
+    start_packing_shift,
+    stop_packing_shift,
+)
+
+
+def _parse_aware(value: str) -> datetime:
+    """Parses a caller-supplied ISO datetime, localizing it to the current
+    timezone if it arrived naive — defensive, since a naive datetime
+    compared against `timezone.now()` (used throughout interval/late-entry
+    logic) raises rather than just warns.
+    """
+    parsed = datetime.fromisoformat(value)
+    return timezone.make_aware(parsed) if timezone.is_naive(parsed) else parsed
 
 
 class ShiftViewSet(
-    ProtectedDestroyMixin,
     mixins.ListModelMixin,
     mixins.CreateModelMixin,
     mixins.RetrieveModelMixin,
@@ -67,7 +99,7 @@ class ShiftViewSet(
 class PackingOrdersView(APIView):
     """GET /packing-orders/ — Phase 1's Packing Demand read model. One row
     per `ExportOrderLine` with an `item` set, computed live, never a
-    stored `PackingDemand` row (see spec §Phase 1 rule 4).
+    stored `PackingDemand` row. Unchanged by the v2 execution revision.
     """
 
     permission_classes = [IsInternalStaff]
@@ -122,13 +154,18 @@ class PackingPlanLineViewSet(
     mixins.DestroyModelMixin,
     viewsets.GenericViewSet,
 ):
-    """DELETE only allowed while DRAFT/PLANNED (spec §4.2) — enforced in
+    """DELETE only allowed while DRAFT/PLANNED — enforced in
     `perform_destroy`, not the mixin, since `PackingPlanLine` isn't
     PROTECT'd against deletion at the DB level (a `PackingJob` release is
-    what should make it immutable from here on)."""
+    what should make it immutable from here on). Unchanged by v2.
+    """
 
     queryset = PackingPlanLine.objects.select_related(
-        "export_order_line__export_order", "export_order_line__item", "shift", "bay"
+        "export_order_line__export_order",
+        "export_order_line__export_order__customer",
+        "export_order_line__item",
+        "shift",
+        "bay",
     ).prefetch_related("packing_job")
     serializer_class = PackingPlanLineSerializer
 
@@ -239,85 +276,24 @@ class PackingJobViewSet(
             serializer = PackingMaterialRequestSerializer(data=data)
             serializer.is_valid(raise_exception=True)
             serializer.save(created_by=request.user, updated_by=request.user)
-            if job.status == PackingJob.Status.AWAITING_MATERIAL:
-                pass  # stays AWAITING_MATERIAL until material is actually received
             return Response(serializer.data, status=201)
         requests_qs = job.material_requests.prefetch_related("lines__movements", "lines__item")
         return Response(PackingMaterialRequestSerializer(requests_qs, many=True).data)
 
-    @action(detail=True, methods=["get", "post"])
+    @action(detail=True, methods=["get"])
     def allocations(self, request: Request, pk: str | None = None) -> Response:
-        """POST derives `date`/`shift` from the job's own plan line and
-        `sequence` from how many allocations this Work Centre already has
-        for that date+shift — the caller (the Allocate Work Centre modal)
-        only ever needs to supply `work_centre`, `operator_ids`, and
-        `assigned_qty`. This is what lets the same Work Centre take a
-        second, later-sequenced SKU without the frontend having to track
-        sequencing itself.
+        """Read-only rollup of every Work Centre Session allocation ever
+        assigned against this Job — v2 moves *creating* allocations onto
+        Today's Work's "Assign Work" action (a Job now has no Bay/date of
+        its own to allocate against; a Work Centre Session does), so this
+        tab exists purely to show progress across whichever sessions have
+        picked up this job's SKU.
         """
         job = self.get_object()
-        if request.method == "POST":
-            data = cast(dict[str, Any], request.data)
-            work_centre_id = data.get("work_centre")
-            plan_line = job.plan_line
-            next_sequence = (
-                PackingWorkCentreAllocation.objects.filter(
-                    work_centre_id=work_centre_id, date=plan_line.date, shift_id=plan_line.shift_id
-                ).count()
-                + 1
-            )
-            data = {
-                **data,
-                "job": job.id,
-                "date": plan_line.date,
-                "shift": plan_line.shift_id,
-                "sequence": next_sequence,
-            }
-            serializer = PackingWorkCentreAllocationSerializer(data=data)
-            serializer.is_valid(raise_exception=True)
-            serializer.save(created_by=request.user, updated_by=request.user)
-            self._maybe_mark_ready(job)
-            return Response(serializer.data, status=201)
-        allocations = job.allocations.select_related("work_centre", "shift").prefetch_related(
-            "operators__employee", "sessions"
+        allocations = job.allocations.select_related(
+            "session__work_centre", "session__packing_shift__shift", "job"
         )
         return Response(PackingWorkCentreAllocationSerializer(allocations, many=True).data)
-
-    def _maybe_mark_ready(self, job: PackingJob) -> None:
-        if job.status == PackingJob.Status.AWAITING_MATERIAL and job.allocated_qty > 0:
-            job.status = PackingJob.Status.READY
-            job.save(update_fields=["status"])
-
-    @action(detail=True, methods=["post"], url_path="auto-allocation-preview")
-    def auto_allocation_preview(self, request: Request, pk: str | None = None) -> Response:
-        job = self.get_object()
-        data = cast(dict[str, Any], request.data)
-        work_centre_ids = data.get("work_centre_ids", [])
-        shift_id = data.get("shift_id") or job.plan_line.shift_id
-        date_ = data.get("date") or job.plan_line.date
-        rows = auto_allocate_equal(job, work_centre_ids, date_, shift_id)
-        return Response({"allocations": rows})
-
-    @action(detail=True, methods=["post"], url_path="auto-allocate")
-    def auto_allocate(self, request: Request, pk: str | None = None) -> Response:
-        job = self.get_object()
-        data = cast(dict[str, Any], request.data)
-        work_centre_ids = data.get("work_centre_ids", [])
-        shift_id = data.get("shift_id") or job.plan_line.shift_id
-        date_ = data.get("date") or job.plan_line.date
-        rows = auto_allocate_equal(job, work_centre_ids, date_, shift_id)
-
-        created = []
-        for index, row in enumerate(rows, start=1):
-            existing_max = job.allocations.filter(work_centre_id=row["work_centre"]).count()
-            serializer = PackingWorkCentreAllocationSerializer(
-                data={**row, "job": job.id, "sequence": existing_max + 1}
-            )
-            serializer.is_valid(raise_exception=True)
-            serializer.save(created_by=request.user, updated_by=request.user)
-            created.append(serializer.data)
-        self._maybe_mark_ready(job)
-        return Response({"allocations": created}, status=201)
 
 
 class PackingMaterialRequestViewSet(
@@ -332,10 +308,10 @@ class PackingMaterialRequestViewSet(
     @action(detail=True, methods=["post"])
     def receive(self, request: Request, pk: str | None = None) -> Response:
         """One warehouse hand-off against one or more lines of this
-        request — spec §4.4 `POST /material-requests/{id}/receive`.
-        Payload: `{"lines": [{"request_line": id, "date": "...",
+        request. Payload: `{"lines": [{"request_line": id, "date": "...",
         "quantity_issued": n, "quantity_received": n, "remarks": "..."}]}`.
         Supports partial issue/receipt — call again for the remainder.
+        Unchanged by v2.
         """
         material_request = self.get_object()
         data = cast(dict[str, Any], request.data)
@@ -369,10 +345,199 @@ class PackingMaterialRequestViewSet(
         return Response(self.get_serializer(material_request).data)
 
 
+class PackingExecutionConfigView(APIView):
+    """GET/PATCH the one recording-configuration row for the org — spec v2
+    §2.5. Auto-created with documented defaults on first read.
+    """
+
+    permission_classes = [CanManagePacking]
+
+    def get(self, request: Request) -> Response:
+        config = get_execution_config(Organization.get_default())
+        return Response(PackingExecutionConfigSerializer(config).data)
+
+    def patch(self, request: Request) -> Response:
+        config = get_execution_config(Organization.get_default())
+        serializer = PackingExecutionConfigSerializer(
+            config, data=cast(dict[str, Any], request.data), partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save(updated_by=request.user)
+        return Response(serializer.data)
+
+
+class PackingShiftViewSet(
+    mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet
+):
+    queryset = PackingShift.objects.select_related("shift").prefetch_related(
+        "work_centre_sessions__work_centre",
+        "work_centre_sessions__bay",
+        "work_centre_sessions__operators__employee",
+        "work_centre_sessions__allocations__job__plan_line__export_order_line__export_order",
+        "work_centre_sessions__allocations__job__plan_line__export_order_line__item",
+        "work_centre_sessions__issue_events",
+    )
+    serializer_class = PackingShiftSerializer
+
+    def get_permissions(self) -> list[BasePermission]:
+        return [IsInternalStaff()]
+
+    def get_queryset(self) -> QuerySet[PackingShift]:
+        queryset = super().get_queryset()
+        date_ = self.request.query_params.get("date")
+        if date_:
+            queryset = queryset.filter(date=date_)
+        shift_id = self.request.query_params.get("shift_id")
+        if shift_id:
+            queryset = queryset.filter(shift_id=shift_id)
+        return queryset
+
+    @action(detail=False, methods=["post"], permission_classes=[CanManagePacking])
+    def start(self, request: Request) -> Response:
+        """Start (or re-confirm) today's shift — spec v2 §2.1. Payload:
+        `{"date": "...", "shift": id, "work_centres": [{"work_centre": id,
+        "operator_ids": [id, id]}, ...]}`.
+        """
+        data = cast(dict[str, Any], request.data)
+        date_ = data.get("date")
+        shift_id = data.get("shift")
+        if not date_ or not shift_id:
+            raise serializers.ValidationError({"detail": "date and shift are required."})
+        shift = Shift.objects.get(id=shift_id)
+
+        entries = []
+        seen_employees: set[int] = set()
+        for row in data.get("work_centres", []):
+            work_centre = WorkCentre.objects.get(id=row["work_centre"])
+            operator_ids = row.get("operator_ids", [])
+            for employee_id in operator_ids:
+                if employee_id in seen_employees:
+                    raise serializers.ValidationError(
+                        {"detail": "An operator cannot be assigned to two Work Centres in the same shift."}
+                    )
+                seen_employees.add(employee_id)
+            entries.append(
+                {
+                    "work_centre": work_centre,
+                    "operators": Employee.objects.filter(id__in=operator_ids),
+                }
+            )
+
+        packing_shift = start_packing_shift(
+            date_=date_,
+            shift=shift,
+            organization=Organization.get_default(),
+            work_centres=entries,
+            user=request.user,
+        )
+        return Response(PackingShiftSerializer(packing_shift).data, status=201)
+
+    @action(detail=True, methods=["post"], permission_classes=[CanManagePacking])
+    def stop(self, request: Request, pk: str | None = None) -> Response:
+        packing_shift = self.get_object()
+        stop_packing_shift(packing_shift, request.user)
+        # `stop_packing_shift` bulk-updates sessions via a queryset
+        # `.update()`, which doesn't touch this instance's already-fetched
+        # `work_centre_sessions` prefetch cache — re-fetch so the response
+        # reflects the real post-stop state rather than a stale one.
+        fresh = self.get_queryset().get(pk=packing_shift.pk)
+        return Response(self.get_serializer(fresh).data)
+
+
+class PackingWorkCentreSessionViewSet(
+    mixins.RetrieveModelMixin, viewsets.GenericViewSet
+):
+    queryset = PackingWorkCentreSession.objects.select_related(
+        "work_centre", "bay", "packing_shift__shift"
+    ).prefetch_related("operators__employee", "allocations__job", "issue_events")
+    serializer_class = PackingWorkCentreSessionSerializer
+
+    def get_permissions(self) -> list[BasePermission]:
+        return [CanManagePacking()]
+
+    @action(detail=True, methods=["post"])
+    def stop(self, request: Request, pk: str | None = None) -> Response:
+        session = self.get_object()
+        data = cast(dict[str, Any], request.data)
+        session.status = PackingWorkCentreSession.Status.STOPPED
+        session.stopped_at = timezone.now()
+        session.stop_reason = data.get("reason", "")
+        session.save(update_fields=["status", "stopped_at", "stop_reason", "updated_at"])
+        return Response(self.get_serializer(session).data)
+
+    @action(detail=True, methods=["post"])
+    def resume(self, request: Request, pk: str | None = None) -> Response:
+        """Closes any open issue event and returns the session to RUNNING
+        (if it has a current allocation) or IDLE (if not) — spec v2 §2.8.
+        """
+        session = self.get_object()
+        open_issue = session.issue_events.filter(resolved_at__isnull=True).first()
+        if open_issue is not None:
+            open_issue.resolved_at = timezone.now()
+            open_issue.resolved_by = request.user
+            open_issue.save(update_fields=["resolved_at", "resolved_by", "updated_at"])
+        session.status = (
+            PackingWorkCentreSession.Status.RUNNING
+            if session.current_allocation
+            else PackingWorkCentreSession.Status.IDLE
+        )
+        session.save(update_fields=["status", "updated_at"])
+        return Response(self.get_serializer(session).data)
+
+    @action(detail=True, methods=["get", "post"])
+    def allocations(self, request: Request, pk: str | None = None) -> Response:
+        """"Assign Work" (spec v2 §2.2) — queues a Job/SKU onto this
+        session. `sequence` is derived server-side from how many
+        allocations this session already has.
+        """
+        session = self.get_object()
+        if request.method == "POST":
+            data = cast(dict[str, Any], request.data)
+            serializer = PackingWorkCentreAllocationSerializer(
+                data={**data, "session": session.id}
+            )
+            serializer.is_valid(raise_exception=True)
+            allocation = serializer.save(created_by=request.user, updated_by=request.user)
+            job = allocation.job
+            if job.status == PackingJob.Status.AWAITING_MATERIAL and job.allocated_qty > 0:
+                job.status = PackingJob.Status.READY
+                job.save(update_fields=["status"])
+            return Response(serializer.data, status=201)
+        return Response(
+            PackingWorkCentreAllocationSerializer(session.allocations.all(), many=True).data
+        )
+
+    @action(detail=True, methods=["get"], url_path="assignable-jobs")
+    def assignable_jobs(self, request: Request, pk: str | None = None) -> Response:
+        """Candidate Jobs for this session's "Assign Work" modal — scoped
+        to this session's own Bay *and* its Date/Shift (a Work Centre
+        Session only ever runs one Date/Shift, so a Job planned for a
+        different day has nothing to do with what's on the floor right
+        now — offering it here just confuses the operator), excluding
+        cancelled/completed jobs, with balance still to allocate.
+        """
+        session = self.get_object()
+        candidates = (
+            PackingJob.objects.filter(
+                plan_line__bay=session.bay,
+                plan_line__date=session.packing_shift.date,
+                plan_line__shift=session.packing_shift.shift,
+            )
+            .exclude(status__in=[PackingJob.Status.CANCELLED, PackingJob.Status.COMPLETED])
+            .select_related(
+                "plan_line__export_order_line__export_order", "plan_line__export_order_line__item"
+            )
+        )
+        jobs = [job for job in candidates if job.target_qty - job.allocated_qty > 0]
+        return Response(PackingJobSerializer(jobs, many=True).data)
+
+
 class PackingWorkCentreAllocationViewSet(
     mixins.RetrieveModelMixin, mixins.UpdateModelMixin, viewsets.GenericViewSet
 ):
-    queryset = PackingWorkCentreAllocation.objects.select_related("work_centre", "shift", "job")
+    queryset = PackingWorkCentreAllocation.objects.select_related(
+        "session__work_centre", "session__packing_shift__shift", "job"
+    )
     serializer_class = PackingWorkCentreAllocationSerializer
 
     def get_permissions(self) -> list[BasePermission]:
@@ -381,124 +546,57 @@ class PackingWorkCentreAllocationViewSet(
     def perform_update(self, serializer: serializers.BaseSerializer) -> None:
         serializer.save(updated_by=self.request.user)
 
-    @action(detail=True, methods=["post"], url_path="start-session")
-    def start_session(self, request: Request, pk: str | None = None) -> Response:
+    @action(detail=True, methods=["post"])
+    def start(self, request: Request, pk: str | None = None) -> Response:
+        """Starts this queued SKU on its session — spec v2 §1.3: only one
+        allocation may be RUNNING per session at a time. Resolves and
+        pins the process the first time an allocation on this Work Centre
+        starts.
+        """
         allocation = self.get_object()
-        if allocation.sessions.filter(status=PackingWorkSession.Status.RUNNING).exists():
-            raise serializers.ValidationError({"detail": "This allocation already has a running session."})
-        active_conflict = (
-            PackingWorkCentreAllocation.objects.filter(
-                work_centre=allocation.work_centre, status=PackingWorkCentreAllocation.Status.RUNNING
-            )
-            .exclude(pk=allocation.pk)
-            .exists()
-        )
-        if active_conflict:
+        if allocation.status not in (
+            PackingWorkCentreAllocation.Status.PLANNED,
+            PackingWorkCentreAllocation.Status.READY,
+        ):
+            raise serializers.ValidationError({"detail": "This allocation cannot be started."})
+        session = allocation.session
+        if session.current_allocation is not None:
             raise serializers.ValidationError(
-                {"detail": "This Work Centre already has a different running allocation."}
+                {"detail": "This Work Centre already has a running allocation."}
             )
-        session = PackingWorkSession.objects.create(
-            allocation=allocation,
-            status=PackingWorkSession.Status.RUNNING,
-            started_at=timezone.now(),
-            organization=allocation.organization,
-            created_by=cast(Any, request.user),
-            updated_by=cast(Any, request.user),
-        )
+        if allocation.process_version is None:
+            process_version = resolve_process_version_for_work_centre(session.work_centre)
+            if process_version is None:
+                raise serializers.ValidationError(
+                    {"detail": "No process is mapped to this Work Centre's capabilities."}
+                )
+            allocation.process_version = process_version
         allocation.status = PackingWorkCentreAllocation.Status.RUNNING
-        allocation.save(update_fields=["status"])
-        return Response(PackingWorkSessionSerializer(session).data, status=201)
+        allocation.started_at = timezone.now()
+        allocation.save(update_fields=["process_version", "status", "started_at", "updated_at"])
 
-    @action(detail=False, methods=["get"])
-    def queue(self, request: Request) -> Response:
-        """GET /packing-allocations/queue/?work_centre=&date=&shift_id= —
-        spec §4.5's `/work-centres/{id}/queue`, exposed here since this
-        ViewSet already owns allocation querying. Ordered by sequence;
-        only one may be current/running at a time (spec §3.11)."""
-        work_centre_id = request.query_params.get("work_centre")
-        date_ = request.query_params.get("date")
-        shift_id = request.query_params.get("shift_id")
-        if not (work_centre_id and date_ and shift_id):
-            raise serializers.ValidationError(
-                {"detail": "work_centre, date, and shift_id are all required."}
-            )
-        allocations = PackingWorkCentreAllocation.objects.filter(
-            work_centre_id=int(work_centre_id), date=date_, shift_id=int(shift_id)
-        ).exclude(status=PackingWorkCentreAllocation.Status.CANCELLED).select_related(
-            "job__plan_line__export_order_line__item", "job__plan_line__export_order_line__export_order"
-        ).order_by("sequence")
-        return Response(PackingWorkCentreAllocationSerializer(allocations, many=True).data)
-
-
-class PackingWorkSessionViewSet(
-    mixins.RetrieveModelMixin, mixins.UpdateModelMixin, viewsets.GenericViewSet
-):
-    queryset = PackingWorkSession.objects.select_related("allocation", "execution")
-    serializer_class = PackingWorkSessionSerializer
-
-    def get_permissions(self) -> list[BasePermission]:
-        return [CanManagePacking()]
-
-    def perform_update(self, serializer: serializers.BaseSerializer) -> None:
-        serializer.save(updated_by=self.request.user)
+        if session.status != PackingWorkCentreSession.Status.ISSUE:
+            session.status = PackingWorkCentreSession.Status.RUNNING
+            session.save(update_fields=["status", "updated_at"])
+        return Response(self.get_serializer(allocation).data)
 
     @action(detail=True, methods=["post"])
     def complete(self, request: Request, pk: str | None = None) -> Response:
-        """Atomically: persist the `ProcessExecution` (Sorting/Cleaning/
-        Packing quantities), close the session, and update the
-        allocation's/job's progress — spec §Phase 8 rule 5. The nested
-        `ProcessExecutionSerializer` payload's `inputs_write` is expected
-        to already carry the "Picked up" quantity computed by the caller
-        (see spec's "Picked up is auto-filled" decision) — this view does
-        not compute it itself so the generic engine stays untouched.
+        """"Complete Current SKU" — spec v2 §2.7. Does NOT stop the Work
+        Centre session; it returns to IDLE (unless already in ISSUE) until
+        the next allocation is explicitly started.
         """
-        session = self.get_object()
-        if session.status == PackingWorkSession.Status.COMPLETED:
-            raise serializers.ValidationError({"detail": "This session is already completed."})
+        allocation = self.get_object()
+        if allocation.status != PackingWorkCentreAllocation.Status.RUNNING:
+            raise serializers.ValidationError({"detail": "Only a running allocation can be completed."})
+        allocation.status = PackingWorkCentreAllocation.Status.COMPLETED
+        allocation.completed_at = timezone.now()
+        allocation.save(update_fields=["status", "completed_at", "updated_at"])
 
-        data = cast(dict[str, Any], request.data)
-        execution_data = dict(data.get("execution", {}))
-        execution_data.setdefault("work_centre", session.allocation.work_centre_id)
-        execution_data.setdefault("date", session.allocation.date)
-        execution_data.setdefault(
-            "export_order_line",
-            session.allocation.job.plan_line.export_order_line_id,
-        )
-
-        if session.execution_id:
-            exec_serializer = ProcessExecutionSerializer(
-                session.execution, data=execution_data, partial=True
-            )
-        else:
-            exec_serializer = ProcessExecutionSerializer(data=execution_data)
-        exec_serializer.is_valid(raise_exception=True)
-        execution = exec_serializer.save(
-            created_by=request.user, updated_by=request.user
-        )
-
-        session.execution = execution
-        session.status = PackingWorkSession.Status.COMPLETED
-        session.completed_at = timezone.now()
-        session.remarks = data.get("remarks", session.remarks)
-        session.save(update_fields=["execution", "status", "completed_at", "remarks", "updated_at"])
-
-        allocation = session.allocation
-        if allocation.balance_qty <= 0:
-            allocation.status = PackingWorkCentreAllocation.Status.COMPLETED
-            allocation.save(update_fields=["status"])
-            next_allocation = (
-                PackingWorkCentreAllocation.objects.filter(
-                    work_centre=allocation.work_centre,
-                    date=allocation.date,
-                    shift=allocation.shift,
-                    sequence=allocation.sequence + 1,
-                )
-                .exclude(status=PackingWorkCentreAllocation.Status.CANCELLED)
-                .first()
-            )
-            if next_allocation and next_allocation.status == PackingWorkCentreAllocation.Status.PLANNED:
-                next_allocation.status = PackingWorkCentreAllocation.Status.READY
-                next_allocation.save(update_fields=["status"])
+        session = allocation.session
+        if session.status != PackingWorkCentreSession.Status.ISSUE:
+            session.status = PackingWorkCentreSession.Status.IDLE
+            session.save(update_fields=["status", "updated_at"])
 
         job = allocation.job
         if job.balance_qty <= 0:
@@ -507,14 +605,195 @@ class PackingWorkSessionViewSet(
         elif job.status == PackingJob.Status.READY:
             job.status = PackingJob.Status.IN_PROGRESS
             job.save(update_fields=["status"])
+        return Response(self.get_serializer(allocation).data)
 
-        return Response(PackingWorkSessionSerializer(session).data)
+    @action(detail=True, methods=["get"], url_path="next-interval")
+    def next_interval(self, request: Request, pk: str | None = None) -> Response:
+        """The interval window Record Hour should open with — spec v2
+        §2.4: "auto-select the expected open interval.\""""
+        allocation = self.get_object()
+        config = get_execution_config(allocation.organization)
+        start, end = next_expected_interval(allocation, config)
+        return Response({"from_time": start, "to_time": end, "default_interval_minutes": config.default_interval_minutes})
+
+    @action(detail=True, methods=["get", "post"], url_path="interval-records")
+    def interval_records(self, request: Request, pk: str | None = None) -> Response:
+        """Record Hour — spec v2 §2.4. `from_time`/`to_time` may be
+        omitted to use the auto-selected expected interval. Missing
+        intervals are allowed (never blocking); a record entered after the
+        configured grace period is flagged `is_late_entry`.
+        """
+        allocation = self.get_object()
+        if request.method == "GET":
+            records = allocation.interval_records.all()
+            return Response(PackingIntervalRecordSerializer(records, many=True).data)
+
+        data = cast(dict[str, Any], request.data)
+        config = get_execution_config(allocation.organization)
+
+        if data.get("from_time") and data.get("to_time"):
+            from_time = _parse_aware(data["from_time"])
+            to_time = _parse_aware(data["to_time"])
+        else:
+            from_time, to_time = next_expected_interval(allocation, config)
+
+        session = allocation.session
+        scheduled, downtime, available = compute_interval_minutes(session, from_time, to_time)
+
+        capability = session.work_centre.capabilities.filter(
+            process_definition=allocation.process_version.process_definition
+        ).first() if allocation.process_version else None
+        standard_rate = capability.standard_rate if capability else None
+        planned_output = compute_planned_output(config, standard_rate, available)
+
+        premium_qty = int(data.get("premium_qty", 0))
+        standard_qty = int(data.get("standard_qty", 0))
+        reject_qty = int(data.get("reject_qty", 0))
+        pouches_packed = int(data.get("pouches_packed", 0))
+        loose_pieces_packed = int(data.get("loose_pieces_packed", 0))
+        pieces_per_pouch = allocation.job.pieces_per_pouch or 0
+        pieces_packed = pouches_packed * pieces_per_pouch + loose_pieces_packed
+
+        is_late = False
+        if config.allow_late_entry:
+            grace = config.missing_record_warning_minutes
+            is_late = (timezone.now() - to_time).total_seconds() / 60 > grace
+        elif (timezone.now() - to_time).total_seconds() < 0:
+            raise serializers.ValidationError({"detail": "Late entry is not allowed for this organization."})
+
+        execution_data = build_interval_execution_data(
+            allocation,
+            from_time=from_time,
+            premium_qty=premium_qty,
+            standard_qty=standard_qty,
+            reject_qty=reject_qty,
+        )
+        exec_serializer = ProcessExecutionSerializer(data=execution_data)
+        exec_serializer.is_valid(raise_exception=True)
+        execution = exec_serializer.save(created_by=request.user, updated_by=request.user)
+
+        record = PackingIntervalRecord.objects.create(
+            allocation=allocation,
+            from_time=from_time,
+            to_time=to_time,
+            scheduled_minutes=scheduled,
+            downtime_minutes=downtime,
+            available_minutes=available,
+            standard_rate_snapshot=standard_rate,
+            planned_output=planned_output,
+            premium_qty=premium_qty,
+            standard_qty=standard_qty,
+            reject_qty=reject_qty,
+            cleaned_qty=int(data.get("cleaned_qty", 0)),
+            pouches_packed=pouches_packed,
+            loose_pieces_packed=loose_pieces_packed,
+            pieces_packed=pieces_packed,
+            cartons_completed=int(data.get("cartons_completed", 0)),
+            status=PackingIntervalRecord.Status.LATE_ENTRY if is_late else PackingIntervalRecord.Status.ENTERED,
+            entered_by=cast(Any, request.user),
+            entered_at=timezone.now(),
+            is_late_entry=is_late,
+            remarks=data.get("remarks", ""),
+            execution=execution,
+            organization=allocation.organization,
+            created_by=cast(Any, request.user),
+            updated_by=cast(Any, request.user),
+        )
+        return Response(PackingIntervalRecordSerializer(record).data, status=201)
 
 
-class TodaysWorkView(APIView):
-    """GET /packing/today/?date=&shift_id= — spec §3.10/Phase 7. An
-    operational list, not a dashboard: only the running/ready allocations
-    for the given date+shift, grouped implicitly by Bay via `bay_name`.
+class PackingIntervalRecordViewSet(
+    mixins.RetrieveModelMixin, viewsets.GenericViewSet
+):
+    """Retrieve-only here — corrections go through `correct`, keeping the
+    audit trail explicit rather than allowing a silent PATCH over an
+    entered record (spec v2 §4.1: "Completed/final interval records are
+    immutable except through correction with audit trail.").
+    """
+
+    queryset = PackingIntervalRecord.objects.select_related("allocation")
+    serializer_class = PackingIntervalRecordSerializer
+
+    def get_permissions(self) -> list[BasePermission]:
+        return [CanManagePacking()]
+
+    @action(detail=True, methods=["post"])
+    def correct(self, request: Request, pk: str | None = None) -> Response:
+        record = self.get_object()
+        data = cast(dict[str, Any], request.data)
+        for field in (
+            "premium_qty",
+            "standard_qty",
+            "reject_qty",
+            "cleaned_qty",
+            "pouches_packed",
+            "loose_pieces_packed",
+            "cartons_completed",
+            "remarks",
+        ):
+            if field in data:
+                setattr(record, field, data[field])
+        record.pieces_packed = record.pouches_packed * (record.allocation.job.pieces_per_pouch or 0) + record.loose_pieces_packed
+        record.status = PackingIntervalRecord.Status.CORRECTED
+        record.save()
+
+        if record.execution_id:
+            exec_serializer = ProcessExecutionSerializer(
+                record.execution,
+                data=build_interval_execution_data(
+                    record.allocation,
+                    from_time=record.from_time,
+                    premium_qty=record.premium_qty,
+                    standard_qty=record.standard_qty,
+                    reject_qty=record.reject_qty,
+                ),
+                partial=True,
+            )
+            exec_serializer.is_valid(raise_exception=True)
+            exec_serializer.save(updated_by=request.user)
+        return Response(self.get_serializer(record).data)
+
+
+class WorkCentreIssueEventViewSet(
+    mixins.CreateModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet
+):
+    queryset = WorkCentreIssueEvent.objects.select_related("session")
+    serializer_class = WorkCentreIssueEventSerializer
+
+    def get_permissions(self) -> list[BasePermission]:
+        return [CanManagePacking()]
+
+    def perform_create(self, serializer: serializers.BaseSerializer) -> None:
+        issue = serializer.save()
+        if issue.stops_productive_time:
+            session = issue.session
+            session.status = PackingWorkCentreSession.Status.ISSUE
+            session.save(update_fields=["status", "updated_at"])
+
+    @action(detail=True, methods=["post"])
+    def resolve(self, request: Request, pk: str | None = None) -> Response:
+        issue = self.get_object()
+        issue.resolved_at = timezone.now()
+        issue.resolved_by = request.user
+        issue.save(update_fields=["resolved_at", "resolved_by", "updated_at"])
+
+        session = issue.session
+        if not session.issue_events.filter(resolved_at__isnull=True).exists():
+            session.status = (
+                PackingWorkCentreSession.Status.RUNNING
+                if session.current_allocation
+                else PackingWorkCentreSession.Status.IDLE
+            )
+            session.save(update_fields=["status", "updated_at"])
+        return Response(self.get_serializer(issue).data)
+
+
+class TodaysShiftView(APIView):
+    """GET /packing-today/?date=&shift_id= — spec v2 §2.2, the Live Shift
+    Control Board's data source. Returns the `PackingShift` for that
+    date+shift with its Work Centre Sessions nested (or `null` if the
+    shift hasn't been set up/started yet, in which case the frontend shows
+    the Shift Setup screen instead).
     """
 
     permission_classes = [IsInternalStaff]
@@ -522,42 +801,22 @@ class TodaysWorkView(APIView):
     def get(self, request: Request) -> Response:
         date_ = request.query_params.get("date") or date_cls.today().isoformat()
         shift_id = request.query_params.get("shift_id")
+        if not shift_id:
+            raise serializers.ValidationError({"detail": "shift_id is required."})
 
-        allocations = (
-            PackingWorkCentreAllocation.objects.filter(date=date_)
-            .exclude(status=PackingWorkCentreAllocation.Status.CANCELLED)
-            .select_related(
-                "work_centre",
-                "job__plan_line__bay",
-                "job__plan_line__export_order_line__export_order",
-                "job__plan_line__export_order_line__item",
+        packing_shift = (
+            PackingShift.objects.filter(date=date_, shift_id=shift_id)
+            .select_related("shift")
+            .prefetch_related(
+                "work_centre_sessions__work_centre",
+                "work_centre_sessions__bay",
+                "work_centre_sessions__operators__employee",
+                "work_centre_sessions__allocations__job__plan_line__export_order_line__export_order",
+                "work_centre_sessions__allocations__job__plan_line__export_order_line__item",
+                "work_centre_sessions__issue_events",
             )
-            .order_by("job__plan_line__bay__name", "work_centre__name", "sequence")
+            .first()
         )
-        if shift_id:
-            allocations = allocations.filter(shift_id=shift_id)
-
-        rows = []
-        for allocation in allocations:
-            job = allocation.job
-            line = job.plan_line.export_order_line
-            rows.append(
-                {
-                    "allocation_id": allocation.id,
-                    "job_id": job.id,
-                    "job_number": job.job_number,
-                    "order_no": line.export_order.order_number,
-                    "item_name": line.item.name if line.item else "",
-                    "bay_id": job.plan_line.bay_id,
-                    "bay_name": job.plan_line.bay.name,
-                    "work_centre_id": allocation.work_centre_id,
-                    "work_centre_name": allocation.work_centre.name,
-                    "sequence": allocation.sequence,
-                    "assigned_qty": allocation.assigned_qty,
-                    "packed_qty": allocation.packed_qty,
-                    "balance_qty": allocation.balance_qty,
-                    "status": allocation.status,
-                }
-            )
-        serializer = TodaysWorkAllocationSerializer(rows, many=True)
-        return Response({"results": serializer.data})
+        if packing_shift is None:
+            return Response({"shift": None})
+        return Response({"shift": PackingShiftSerializer(packing_shift).data})

@@ -5,7 +5,7 @@ import { useLocation, useNavigate } from 'react-router'
 const TABS = [
   { key: 'orders', label: 'Packing Orders', path: '/packing/orders' },
   { key: 'planner', label: 'Weekly Planner', path: '/packing/planner' },
-  { key: 'today', label: "Today's Work", path: '/packing/today' },
+  { key: 'today', label: 'Packing Floor', path: '/packing/today' },
 ] as const
 
 /** Shared shell for the Packing module's three top-level pages — per the

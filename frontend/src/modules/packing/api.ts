@@ -1,19 +1,22 @@
 import { apiFetch } from '../../shared/api/http'
 import type {
-  AutoAllocationRow,
-  PackingAllocationFormValues,
   PackingDemandListResponse,
+  PackingExecutionConfig,
+  PackingIntervalRecord,
   PackingJob,
   PackingMaterialRequest,
   PackingMaterialRequestFormValues,
   PackingMaterialRequirementRow,
   PackingPlanLine,
   PackingPlanLineFormValues,
+  PackingShift,
   PackingWorkCentreAllocation,
-  PackingWorkSession,
+  PackingWorkCentreSession,
+  RecordIntervalPayload,
   ReceiveMaterialLine,
   Shift,
-  TodaysWorkRow,
+  StartShiftWorkCentreEntry,
+  WorkCentreIssueEvent,
 } from './types'
 
 export interface ListPackingOrdersParams {
@@ -175,87 +178,132 @@ export function receiveMaterialRequest(
   })
 }
 
+// Read-only rollup on the Job page — v2 moved allocation creation onto
+// Today's Work's "Assign Work" (a Work Centre Session action), so this Job
+// page endpoint is retrieve-only now.
 export function listJobAllocations(jobId: number): Promise<PackingWorkCentreAllocation[]> {
   return apiFetch<PackingWorkCentreAllocation[]>(`/packing-jobs/${jobId}/allocations/`)
 }
 
-export function createJobAllocation(
-  jobId: number,
-  values: Omit<PackingAllocationFormValues, 'job'>,
-): Promise<PackingWorkCentreAllocation> {
-  return apiFetch<PackingWorkCentreAllocation>(`/packing-jobs/${jobId}/allocations/`, {
-    method: 'POST',
-    body: JSON.stringify(values),
-  })
+export function getExecutionConfig(): Promise<PackingExecutionConfig> {
+  return apiFetch<PackingExecutionConfig>('/packing-execution-config/')
 }
 
-export function getAllocation(id: number): Promise<PackingWorkCentreAllocation> {
-  return apiFetch<PackingWorkCentreAllocation>(`/packing-allocations/${id}/`)
-}
-
-export function updateAllocation(
-  id: number,
-  values: Partial<PackingAllocationFormValues>,
-): Promise<PackingWorkCentreAllocation> {
-  return apiFetch<PackingWorkCentreAllocation>(`/packing-allocations/${id}/`, {
+export function updateExecutionConfig(
+  values: Partial<Omit<PackingExecutionConfig, 'id'>>,
+): Promise<PackingExecutionConfig> {
+  return apiFetch<PackingExecutionConfig>('/packing-execution-config/', {
     method: 'PATCH',
     body: JSON.stringify(values),
   })
 }
 
-export function autoAllocationPreview(
-  jobId: number,
-  workCentreIds: number[],
+export function getTodaysShift(date: string, shiftId: number): Promise<{ shift: PackingShift | null }> {
+  const query = new URLSearchParams({ date, shift_id: String(shiftId) })
+  return apiFetch<{ shift: PackingShift | null }>(`/packing-today/?${query.toString()}`)
+}
+
+export function startPackingShift(
   date: string,
-): Promise<{ allocations: AutoAllocationRow[] }> {
-  return apiFetch(`/packing-jobs/${jobId}/auto-allocation-preview/`, {
+  shiftId: number,
+  workCentres: StartShiftWorkCentreEntry[],
+): Promise<PackingShift> {
+  return apiFetch<PackingShift>('/packing-shifts/start/', {
     method: 'POST',
-    body: JSON.stringify({ work_centre_ids: workCentreIds, date }),
+    body: JSON.stringify({ date, shift: shiftId, work_centres: workCentres }),
   })
 }
 
-export function autoAllocate(
-  jobId: number,
-  workCentreIds: number[],
-  date: string,
-): Promise<{ allocations: PackingWorkCentreAllocation[] }> {
-  return apiFetch(`/packing-jobs/${jobId}/auto-allocate/`, {
+export function stopPackingShift(id: number): Promise<PackingShift> {
+  return apiFetch<PackingShift>(`/packing-shifts/${id}/stop/`, { method: 'POST' })
+}
+
+export function getWorkCentreSession(id: number): Promise<PackingWorkCentreSession> {
+  return apiFetch<PackingWorkCentreSession>(`/packing-work-centre-sessions/${id}/`)
+}
+
+export function stopWorkCentreSession(id: number, reason: string): Promise<PackingWorkCentreSession> {
+  return apiFetch<PackingWorkCentreSession>(`/packing-work-centre-sessions/${id}/stop/`, {
     method: 'POST',
-    body: JSON.stringify({ work_centre_ids: workCentreIds, date }),
+    body: JSON.stringify({ reason }),
   })
 }
 
-export function startWorkSession(allocationId: number): Promise<PackingWorkSession> {
-  return apiFetch<PackingWorkSession>(`/packing-allocations/${allocationId}/start-session/`, {
+export function resumeWorkCentreSession(id: number): Promise<PackingWorkCentreSession> {
+  return apiFetch<PackingWorkCentreSession>(`/packing-work-centre-sessions/${id}/resume/`, {
     method: 'POST',
   })
 }
 
-export function getWorkSession(id: number): Promise<PackingWorkSession> {
-  return apiFetch<PackingWorkSession>(`/packing-work-sessions/${id}/`)
+export function listAssignableJobs(sessionId: number): Promise<PackingJob[]> {
+  return apiFetch<PackingJob[]>(`/packing-work-centre-sessions/${sessionId}/assignable-jobs/`)
 }
 
-export interface CompleteSessionPayload {
-  process_version: number
-  batch_lot_number: string
-  employees: number[]
-  inputs_write: { input_definition: number; quantity: number }[]
-  outputs_write: { output_definition: number; quantity: number }[]
-  remarks?: string
+export function assignWork(
+  sessionId: number,
+  values: { job: number; assigned_qty: number },
+): Promise<PackingWorkCentreAllocation> {
+  return apiFetch<PackingWorkCentreAllocation>(
+    `/packing-work-centre-sessions/${sessionId}/allocations/`,
+    { method: 'POST', body: JSON.stringify(values) },
+  )
 }
 
-export function completeWorkSession(
+export function startAllocation(id: number): Promise<PackingWorkCentreAllocation> {
+  return apiFetch<PackingWorkCentreAllocation>(`/packing-allocations/${id}/start/`, {
+    method: 'POST',
+  })
+}
+
+export function completeAllocation(id: number): Promise<PackingWorkCentreAllocation> {
+  return apiFetch<PackingWorkCentreAllocation>(`/packing-allocations/${id}/complete/`, {
+    method: 'POST',
+  })
+}
+
+export function getNextInterval(
+  allocationId: number,
+): Promise<{ from_time: string; to_time: string; default_interval_minutes: number }> {
+  return apiFetch(`/packing-allocations/${allocationId}/next-interval/`)
+}
+
+export function listIntervalRecords(allocationId: number): Promise<PackingIntervalRecord[]> {
+  return apiFetch<PackingIntervalRecord[]>(`/packing-allocations/${allocationId}/interval-records/`)
+}
+
+export function recordInterval(
+  allocationId: number,
+  payload: RecordIntervalPayload,
+): Promise<PackingIntervalRecord> {
+  return apiFetch<PackingIntervalRecord>(`/packing-allocations/${allocationId}/interval-records/`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export function correctIntervalRecord(
   id: number,
-  payload: CompleteSessionPayload,
-): Promise<PackingWorkSession> {
-  return apiFetch<PackingWorkSession>(`/packing-work-sessions/${id}/complete/`, {
+  payload: Partial<RecordIntervalPayload>,
+): Promise<PackingIntervalRecord> {
+  return apiFetch<PackingIntervalRecord>(`/packing-interval-records/${id}/correct/`, {
     method: 'POST',
-    body: JSON.stringify({ execution: payload }),
+    body: JSON.stringify(payload),
   })
 }
 
-export function listTodaysWork(date: string, shiftId?: number): Promise<{ results: TodaysWorkRow[] }> {
-  const query = new URLSearchParams({ date })
-  if (shiftId) query.set('shift_id', String(shiftId))
-  return apiFetch<{ results: TodaysWorkRow[] }>(`/packing-today/?${query.toString()}`)
+export function reportIssue(values: {
+  session: number
+  allocation?: number | null
+  issue_type: string
+  description: string
+  stops_productive_time: boolean
+}): Promise<WorkCentreIssueEvent> {
+  return apiFetch<WorkCentreIssueEvent>('/packing-issue-events/', {
+    method: 'POST',
+    body: JSON.stringify(values),
+  })
+}
+
+export function resolveIssue(id: number): Promise<WorkCentreIssueEvent> {
+  return apiFetch<WorkCentreIssueEvent>(`/packing-issue-events/${id}/resolve/`, { method: 'POST' })
 }

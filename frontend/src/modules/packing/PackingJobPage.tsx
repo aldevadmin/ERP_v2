@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link, useLocation, useNavigate, useParams } from 'react-router'
+import { Link, useLocation, useParams } from 'react-router'
 import {
   Alert,
   Breadcrumb,
@@ -14,16 +14,13 @@ import {
   message,
 } from 'antd'
 import { ApiError } from '../../shared/api/http'
-import AllocateWorkCentreModal from './AllocateWorkCentreModal'
 import {
   getPackingJob,
   listJobAllocations,
   listJobMaterialRequests,
   listJobMaterialRequirements,
   receiveMaterialRequest,
-  startWorkSession,
 } from './api'
-import AutoAllocateModal from './AutoAllocateModal'
 import { packingBreadcrumbFrom } from './breadcrumbFrom'
 import WarehouseRequestModal from './WarehouseRequestModal'
 import type {
@@ -47,7 +44,6 @@ const STATUS_COLORS: Record<PackingJobStatus, string> = {
 
 export default function PackingJobPage() {
   const { jobId } = useParams<{ jobId: string }>()
-  const navigate = useNavigate()
   const location = useLocation()
   const from = packingBreadcrumbFrom(location.state)
   const [job, setJob] = useState<PackingJob | null>(null)
@@ -59,8 +55,6 @@ export default function PackingJobPage() {
   const [requests, setRequests] = useState<PackingMaterialRequest[]>([])
   const [allocations, setAllocations] = useState<PackingWorkCentreAllocation[]>([])
   const [requestingFor, setRequestingFor] = useState<PackingMaterialRequirementRow | null>(null)
-  const [allocating, setAllocating] = useState(false)
-  const [autoAllocating, setAutoAllocating] = useState(false)
 
   const load = useCallback(() => {
     if (!jobId) return
@@ -90,15 +84,6 @@ export default function PackingJobPage() {
     if (activeTab === 'material') loadMaterial()
     if (activeTab === 'work-centres' || activeTab === 'transactions') loadAllocations()
   }, [activeTab, loadMaterial, loadAllocations])
-
-  const handleStartSession = async (allocation: PackingWorkCentreAllocation) => {
-    try {
-      const session = await startWorkSession(allocation.id)
-      navigate(`/packing/work-sessions/${session.id}`, { state: { from } })
-    } catch (err) {
-      message.error(err instanceof ApiError ? err.message : 'Could not start this session.')
-    }
-  }
 
   const handleReceive = async (requestId: number, lineId: number, requiredQty: number) => {
     try {
@@ -132,14 +117,19 @@ export default function PackingJobPage() {
         items={[{ title: <Link to={from.path}>{from.label}</Link> }, { title: job.job_number }]}
       />
       <Card>
-        <div style={{ marginBottom: 16 }}>
-          <Title level={4} style={{ margin: 0 }}>
-            {job.job_number} — {job.item_name}{' '}
-            <Tag color={STATUS_COLORS[job.status]}>{job.status.replace('_', ' ')}</Tag>
-          </Title>
-          <Text type="secondary">
-            {job.order_no} • {job.customer_name}
-          </Text>
+        <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <Title level={4} style={{ margin: 0 }}>
+              {job.job_number} — {job.item_name}{' '}
+              <Tag color={STATUS_COLORS[job.status]}>{job.status.replace('_', ' ')}</Tag>
+            </Title>
+            <Text type="secondary">
+              {job.order_no} • {job.customer_name} • {job.plan_code}
+            </Text>
+          </div>
+          <Link to={`/packing/today?date=${job.date}&shift=${job.shift}&bay=${job.bay}`}>
+            <Button>View on Packing Floor</Button>
+          </Link>
         </div>
         <Descriptions column={4} size="small" style={{ marginBottom: 16 }}>
           <Descriptions.Item label="Date">{job.date}</Descriptions.Item>
@@ -262,27 +252,26 @@ export default function PackingJobPage() {
               label: 'Work Centres',
               children: (
                 <div>
-                  <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between' }}>
-                    <Text>
-                      Target: {job.target_qty.toLocaleString()} &nbsp; Allocated:{' '}
-                      {job.allocated_qty.toLocaleString()} &nbsp; Unallocated:{' '}
-                      {Math.max(job.target_qty - job.allocated_qty, 0).toLocaleString()}
-                    </Text>
-                    <Button onClick={() => setAutoAllocating(true)}>Auto Allocate</Button>
-                  </div>
+                  <Alert
+                    type="info"
+                    showIcon
+                    style={{ marginBottom: 12 }}
+                    message="Work is now assigned to Work Centres from Today's Packing, once a shift is started."
+                    description="This tab is a read-only rollup of every Work Centre Session that has picked up this job's SKU."
+                  />
+                  <Text style={{ display: 'block', marginBottom: 12 }}>
+                    Target: {job.target_qty.toLocaleString()} &nbsp; Allocated:{' '}
+                    {job.allocated_qty.toLocaleString()} &nbsp; Unallocated:{' '}
+                    {Math.max(job.target_qty - job.allocated_qty, 0).toLocaleString()}
+                  </Text>
                   <Table
                     rowKey="id"
                     size="small"
                     pagination={false}
                     dataSource={allocations}
+                    locale={{ emptyText: 'Not yet assigned to a Work Centre.' }}
                     columns={[
-                      { title: 'Seq', dataIndex: 'sequence', width: 60 },
                       { title: 'Work Centre', dataIndex: 'work_centre_code' },
-                      {
-                        title: 'Operators',
-                        key: 'operators',
-                        render: (_, a) => a.operators.map((o) => o.employee_name).join(' + '),
-                      },
                       { title: 'Assigned', dataIndex: 'assigned_qty' },
                       { title: 'Packed', dataIndex: 'packed_qty' },
                       { title: 'Balance', dataIndex: 'balance_qty' },
@@ -299,39 +288,8 @@ export default function PackingJobPage() {
                         ),
                       },
                       { title: 'Status', dataIndex: 'status', render: (v: string) => <Tag>{v}</Tag> },
-                      {
-                        title: '',
-                        key: 'actions',
-                        render: (_, a) => {
-                          if (a.status === 'COMPLETED' || a.status === 'CANCELLED') return null
-                          const running = a.sessions.find((s) => s.status === 'RUNNING')
-                          if (running) {
-                            return (
-                              <Button
-                                size="small"
-                                onClick={() =>
-                                  navigate(`/packing/work-sessions/${running.id}`, { state: { from } })
-                                }
-                              >
-                                Resume
-                              </Button>
-                            )
-                          }
-                          // RUNNING with no active session happens after a
-                          // partial Complete Work leaves balance on this
-                          // allocation — a fresh session picks up the rest.
-                          return (
-                            <Button size="small" type="primary" onClick={() => void handleStartSession(a)}>
-                              Start
-                            </Button>
-                          )
-                        },
-                      },
                     ]}
                   />
-                  <Button style={{ marginTop: 12 }} onClick={() => setAllocating(true)}>
-                    + Add Work Centre Allocation
-                  </Button>
                 </div>
               ),
             },
@@ -346,18 +304,13 @@ export default function PackingJobPage() {
                   dataSource={allocations}
                   columns={[
                     { title: 'Work Centre', dataIndex: 'work_centre_code' },
-                    {
-                      title: 'Operators',
-                      key: 'operators',
-                      render: (_, a) => a.operators.map((o) => o.employee_name).join('/'),
-                    },
                     { title: 'Assigned', dataIndex: 'assigned_qty' },
                     { title: 'Packed', dataIndex: 'packed_qty' },
                     { title: 'Status', dataIndex: 'status', render: (v: string) => <Tag>{v}</Tag> },
                   ]}
                   summary={() => (
                     <Table.Summary.Row>
-                      <Table.Summary.Cell index={0} colSpan={2}>
+                      <Table.Summary.Cell index={0}>
                         <Text strong>Totals</Text>
                       </Table.Summary.Cell>
                       <Table.Summary.Cell index={1}>
@@ -387,26 +340,6 @@ export default function PackingJobPage() {
         onCreated={() => {
           setRequestingFor(null)
           loadMaterial()
-        }}
-      />
-      <AllocateWorkCentreModal
-        open={allocating}
-        job={job}
-        onClose={() => setAllocating(false)}
-        onCreated={() => {
-          setAllocating(false)
-          loadAllocations()
-          load()
-        }}
-      />
-      <AutoAllocateModal
-        open={autoAllocating}
-        job={job}
-        onClose={() => setAutoAllocating(false)}
-        onAllocated={() => {
-          setAutoAllocating(false)
-          loadAllocations()
-          load()
         }}
       />
     </div>

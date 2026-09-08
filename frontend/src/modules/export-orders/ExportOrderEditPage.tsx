@@ -43,7 +43,7 @@ export default function ExportOrderEditPage() {
 
   useEffect(() => {
     if (!id) return
-    listEmployees({ role: 'Export Coordinator' }).then((response) =>
+    listEmployees({ role: 'Export Coordinator', isActive: true }).then((response) =>
       setCoordinators(response.results),
     )
     getExportOrder(Number(id))

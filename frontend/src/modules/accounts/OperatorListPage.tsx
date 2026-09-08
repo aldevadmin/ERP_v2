@@ -15,27 +15,22 @@ import { DeleteOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router'
 import { ApiError } from '../../shared/api/http'
 import StatusTag from '../../shared/components/StatusTag'
-import { deleteShift, listShifts } from './api'
-import type { Shift } from './types'
+import { deleteEmployee, listEmployees } from './api'
+import type { Employee } from './types'
 
 const { Title } = Typography
 
-export default function ShiftListPage() {
+export default function OperatorListPage() {
   const navigate = useNavigate()
-  const [shifts, setShifts] = useState<Shift[]>([])
+  const [operators, setOperators] = useState<Employee[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [activeOnly, setActiveOnly] = useState(true)
 
   const load = useCallback(() => {
     setLoading(true)
-    listShifts({ isActive: activeOnly ? true : undefined })
-      .then((response) => {
-        const results = search
-          ? response.results.filter((s) => s.name.toLowerCase().includes(search.toLowerCase()))
-          : response.results
-        setShifts(results)
-      })
+    listEmployees({ search: search || undefined, isActive: activeOnly ? true : undefined })
+      .then((response) => setOperators(response.results))
       .finally(() => setLoading(false))
   }, [search, activeOnly])
 
@@ -43,13 +38,13 @@ export default function ShiftListPage() {
     load()
   }, [load])
 
-  const handleDelete = async (shift: Shift) => {
+  const handleDelete = async (operator: Employee) => {
     try {
-      await deleteShift(shift.id)
-      message.success('Shift deleted.')
+      await deleteEmployee(operator.id)
+      message.success('Operator deleted.')
       load()
     } catch (err) {
-      message.error(err instanceof ApiError ? err.message : 'Could not delete this shift.')
+      message.error(err instanceof ApiError ? err.message : 'Could not delete this operator.')
     }
   }
 
@@ -58,22 +53,23 @@ export default function ShiftListPage() {
       <Card
         title={
           <Title level={4} style={{ margin: 0 }}>
-            Shifts
+            Operators
           </Title>
         }
         extra={
-          <Button type="primary" onClick={() => navigate('/shifts/new')}>
-            New Shift
+          <Button type="primary" onClick={() => navigate('/operators/new')}>
+            New Operator
           </Button>
         }
       >
         <Typography.Paragraph type="secondary">
-          The packing floor's shifts (e.g. Shift 1, Shift 2) — used by weekly planning and
-          work-centre allocation.
+          The floor staff selectable as Work Centre operators — in Shift Setup, packing entries,
+          and elsewhere a person needs to be picked. Operators don't need a login of their own;
+          add a User separately only for someone who needs to sign into the system directly.
         </Typography.Paragraph>
         <Flex justify="space-between" style={{ marginBottom: 16 }} wrap="wrap" gap={12}>
           <Input.Search
-            placeholder="Search by name"
+            placeholder="Search by name or code"
             allowClear
             style={{ maxWidth: 320 }}
             onSearch={setSearch}
@@ -83,19 +79,23 @@ export default function ShiftListPage() {
             <Switch checked={activeOnly} onChange={setActiveOnly} />
           </Space>
         </Flex>
-        <Table<Shift>
+        <Table<Employee>
           rowKey="id"
           loading={loading}
-          dataSource={shifts}
+          dataSource={operators}
           onRow={(record) => ({
-            onClick: () => navigate(`/shifts/${record.id}/edit`),
+            onClick: () => navigate(`/operators/${record.id}/edit`),
             style: { cursor: 'pointer' },
           })}
           columns={[
-            { title: 'Code', dataIndex: 'code', width: 120 },
-            { title: 'Name', dataIndex: 'name' },
-            { title: 'Start', dataIndex: 'start_time', width: 100, render: (v: string) => v || '—' },
-            { title: 'End', dataIndex: 'end_time', width: 100, render: (v: string) => v || '—' },
+            { title: 'Code', dataIndex: 'employee_code', width: 140 },
+            { title: 'Name', dataIndex: 'full_name' },
+            { title: 'Team', dataIndex: 'team_name', render: (v: string | null) => v || '—' },
+            {
+              title: 'Designation',
+              dataIndex: 'designation',
+              render: (v: string) => v || '—',
+            },
             {
               title: 'Status',
               dataIndex: 'is_active',
@@ -108,7 +108,7 @@ export default function ShiftListPage() {
               width: 48,
               render: (_, record) => (
                 <Popconfirm
-                  title="Delete this shift?"
+                  title="Delete this operator?"
                   description="This can't be undone."
                   okText="Delete"
                   okButtonProps={{ danger: true }}
@@ -122,7 +122,7 @@ export default function ShiftListPage() {
                     size="small"
                     danger
                     icon={<DeleteOutlined />}
-                    aria-label={`Delete ${record.name}`}
+                    aria-label={`Delete ${record.full_name}`}
                     onClick={(e) => e.stopPropagation()}
                   />
                 </Popconfirm>

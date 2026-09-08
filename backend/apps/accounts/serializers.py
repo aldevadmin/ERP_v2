@@ -34,11 +34,31 @@ class EmployeeSerializer(serializers.ModelSerializer):
 
 
 class EmployeeListSerializer(serializers.ModelSerializer):
-    """Slimmer shape for populating pickers (responsible person, etc.)."""
+    """Slimmer shape for populating pickers (responsible person, etc.) —
+    also doubles as the Operators Settings screen's row shape, hence the
+    extra `team_name`/`designation`/`is_active` fields beyond what a picker
+    strictly needs.
+    """
+
+    team_name = serializers.CharField(source="team.name", read_only=True, default=None)
 
     class Meta:
         model = Employee
-        fields = ["id", "employee_code", "full_name", "team"]
+        fields = [
+            "id",
+            "employee_code",
+            "full_name",
+            "team",
+            "team_name",
+            "designation",
+            "is_active",
+        ]
+
+
+class EmployeeWriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Employee
+        fields = ["id", "employee_code", "full_name", "team", "designation", "is_active"]
 
 
 def serialize_current_user(user: User) -> dict:

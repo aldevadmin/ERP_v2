@@ -44,7 +44,7 @@ const order: ExportOrder = {
   customer_po_number: 'PO-100',
   customer_po_date: '2026-01-15',
   export_coordinator: 1,
-  export_coordinator_detail: { id: 1, employee_code: 'EMP1', full_name: 'Jane Doe', team: null },
+  export_coordinator_detail: { id: 1, employee_code: 'EMP1', full_name: 'Jane Doe', team: null, team_name: null, designation: '', is_active: true },
   country: 'USA',
   destination_port: 'Chennai',
   requested_shipment_date: '2026-02-01',

@@ -31,6 +31,8 @@ import ProcessFormPage from '../modules/processes/ProcessFormPage'
 import ProcessListPage from '../modules/processes/ProcessListPage'
 import BayFormPage from '../modules/work-centres/BayFormPage'
 import BayListPage from '../modules/work-centres/BayListPage'
+import OperatorFormPage from '../modules/accounts/OperatorFormPage'
+import OperatorListPage from '../modules/accounts/OperatorListPage'
 import WorkCentreFormPage from '../modules/work-centres/WorkCentreFormPage'
 import WorkCentreListPage from '../modules/work-centres/WorkCentreListPage'
 import WorkCentreTypeFormPage from '../modules/work-centres/WorkCentreTypeFormPage'
@@ -51,7 +53,7 @@ import PackingOrdersPage from '../modules/packing/PackingOrdersPage'
 import WeeklyPackingPlannerPage from '../modules/packing/WeeklyPackingPlannerPage'
 import TodaysWorkPage from '../modules/packing/TodaysWorkPage'
 import PackingJobPage from '../modules/packing/PackingJobPage'
-import PackingWorkSessionPage from '../modules/packing/PackingWorkSessionPage'
+import PackingExecutionConfigPage from '../modules/packing/PackingExecutionConfigPage'
 import ShiftListPage from '../modules/packing/ShiftListPage'
 import ShiftFormPage from '../modules/packing/ShiftFormPage'
 import InventoryPage from '../modules/inventory/InventoryPage'
@@ -459,6 +461,30 @@ function AuthenticatedShell() {
                 }
               />
               <Route
+                path="/operators"
+                element={
+                  <SettingsLayout>
+                    <OperatorListPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/operators/new"
+                element={
+                  <SettingsLayout>
+                    <OperatorFormPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/operators/:id/edit"
+                element={
+                  <SettingsLayout>
+                    <OperatorFormPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
                 path="/product-routes"
                 element={
                   <SettingsLayout>
@@ -589,8 +615,12 @@ function AuthenticatedShell() {
               />
               <Route path="/packing/jobs/:jobId" element={<PackingJobPage />} />
               <Route
-                path="/packing/work-sessions/:sessionId"
-                element={<PackingWorkSessionPage />}
+                path="/packing-execution-config"
+                element={
+                  <SettingsLayout>
+                    <PackingExecutionConfigPage />
+                  </SettingsLayout>
+                }
               />
               <Route
                 path="/shifts"

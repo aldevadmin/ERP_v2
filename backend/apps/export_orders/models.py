@@ -243,6 +243,26 @@ class ExportOrderLine(BaseModel):
         return f"{self.export_order.order_number} — line {self.line_number}"
 
     @property
+    def line_code(self) -> str:
+        """The business-meaningful way to refer to one order line — the
+        customer's own PO# plus their SKU code — rather than our internal
+        `order_number`/`line_number`. Other modules that anchor a record to
+        one line (Packing's plan-line "Part" numbering, and any future
+        Production/Procurement equivalent) should build their own
+        human-readable codes from this, not invent their own composite.
+        Never stored: derives from `customer_po_number`/`customer_sku_code`,
+        which can't drift since this is computed live from them. Each
+        field is bracketed individually rather than joined with a plain
+        separator (`-`/`_`) — several customers' own SKU codes contain
+        hyphens or underscores, which would make a flat-joined code
+        visually ambiguous about where the PO# ends and the SKU begins.
+        Brackets fully resolve that regardless of what either field
+        contains, since neither a PO# nor a SKU code is ever going to
+        contain `[`/`]` itself.
+        """
+        return f"[{self.export_order.customer_po_number}][{self.customer_sku_code}]"
+
+    @property
     def pieces_per_carton(self) -> int | None:
         if self.pieces_per_pouch is None or self.pouches_per_carton is None:
             return None

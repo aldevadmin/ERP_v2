@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 from django.db.models import Sum
 
@@ -33,7 +34,7 @@ class PackingPlanLine(BaseModel):
     Bay + Planned Quantity. The same `export_order_line` may have several
     plan lines across different dates/shifts/bays — a full SKU quantity is
     routinely split (see spec §3.2/§3.3), so this is deliberately not
-    unique per line.
+    unique per line. Unchanged by the v2 execution-model revision.
     """
 
     class Status(models.TextChoices):
@@ -45,6 +46,7 @@ class PackingPlanLine(BaseModel):
     export_order_line = models.ForeignKey(
         "export_orders.ExportOrderLine", on_delete=models.CASCADE, related_name="packing_plan_lines"
     )
+    plan_code = models.CharField(max_length=80, editable=False, blank=True)
     date = models.DateField()
     shift = models.ForeignKey(Shift, on_delete=models.PROTECT, related_name="packing_plan_lines")
     bay = models.ForeignKey(
@@ -61,7 +63,7 @@ class PackingPlanLine(BaseModel):
         ordering = ["date", "bay__name"]
 
     def __str__(self) -> str:
-        return f"{self.export_order_line} — {self.date} {self.shift.code} {self.bay.code}"
+        return self.plan_code or f"{self.export_order_line} — {self.date} {self.shift.code} {self.bay.code}"
 
     @property
     def job(self) -> "PackingJob | None":
@@ -76,7 +78,9 @@ class PackingJob(BaseModel):
     a snapshot resolved at creation time, same reasoning as
     `ExportOrderLine`'s own packing-config snapshot fields: a later edit to
     the master Packaging Profile must never reinterpret an already-running
-    job's material/output calculations.
+    job's material/output calculations. Unchanged by the v2 execution-model
+    revision — a Job still anchors material requirements and target
+    quantity; only *how* Work Centres execute against it (§ below) changed.
     """
 
     class Status(models.TextChoices):
@@ -123,8 +127,8 @@ class PackingJob(BaseModel):
 
     @property
     def packed_qty(self) -> int:
-        """Good-classified output from every completed/running execution
-        wrapped by this job's work sessions — see
+        """Good-classified output from every interval record recorded
+        against this job's allocations — see
         `ProcessExecutionOutput`/`OutputClassification` in `apps.processes`.
         Never stored: always a live aggregate over the execution ledger,
         same "derive, don't duplicate" rule as `ExportOrderLine.packed_pieces`.
@@ -133,7 +137,7 @@ class PackingJob(BaseModel):
 
         return (
             ProcessExecutionOutput.objects.filter(
-                execution__packing_work_session__allocation__job=self,
+                execution__packing_interval_record__allocation__job=self,
                 output_definition__classification__name="Good",
             ).aggregate(total=Sum("quantity"))["total"]
             or 0
@@ -145,7 +149,7 @@ class PackingJob(BaseModel):
 
         return (
             ProcessExecutionOutput.objects.filter(
-                execution__packing_work_session__allocation__job=self,
+                execution__packing_interval_record__allocation__job=self,
                 output_definition__classification__name="Standard",
             ).aggregate(total=Sum("quantity"))["total"]
             or 0
@@ -157,7 +161,7 @@ class PackingJob(BaseModel):
 
         return (
             ProcessExecutionOutput.objects.filter(
-                execution__packing_work_session__allocation__job=self,
+                execution__packing_interval_record__allocation__job=self,
                 output_definition__classification__name__in=["Reject", "Scrap"],
             ).aggregate(total=Sum("quantity"))["total"]
             or 0
@@ -178,7 +182,7 @@ class PackingJob(BaseModel):
 
         return (
             ProcessExecutionOutput.objects.filter(
-                execution__packing_work_session__allocation__job=self,
+                execution__packing_interval_record__allocation__job=self,
             ).aggregate(total=Sum("quantity"))["total"]
             or 0
         )
@@ -334,12 +338,177 @@ class PackingMaterialMovement(BaseModel):
         return f"{self.request_line.item} — issued {self.quantity_issued} / received {self.quantity_received}"
 
 
+class PackingExecutionConfig(BaseModel):
+    """Singleton-per-organization recording configuration — spec v2 §2.5.
+    Governs how the shift-floor execution screens behave (interval length,
+    late-entry/grace rules, how "planned output" is calculated). Read via
+    `apps.packing.services.get_execution_config`, which gets-or-creates the
+    one row with these defaults rather than requiring seed data.
+    """
+
+    class RecordingMode(models.TextChoices):
+        INTERVAL_BASED = "INTERVAL_BASED", "Interval Based"
+        SHIFT_TOTAL = "SHIFT_TOTAL", "Shift Total"
+        MANUAL_EVENT = "MANUAL_EVENT", "Manual Event Based"
+        MACHINE_GENERATED = "MACHINE_GENERATED", "Machine Generated"
+
+    class PlanCalculation(models.TextChoices):
+        STANDARD_RATE = "STANDARD_RATE", "Standard Rate × Available Minutes"
+        MANUAL = "MANUAL", "Manual"
+
+    organization = models.OneToOneField(
+        "core.Organization", on_delete=models.PROTECT, related_name="packing_execution_config"
+    )
+    recording_mode = models.CharField(
+        max_length=20, choices=RecordingMode.choices, default=RecordingMode.INTERVAL_BASED
+    )
+    default_interval_minutes = models.PositiveIntegerField(default=60)
+    auto_create_expected_intervals = models.BooleanField(default=True)
+    allow_late_entry = models.BooleanField(default=True)
+    missing_record_warning_minutes = models.PositiveIntegerField(default=15)
+    plan_calculation = models.CharField(
+        max_length=20, choices=PlanCalculation.choices, default=PlanCalculation.STANDARD_RATE
+    )
+    allow_partial_interval_on_sku_change = models.BooleanField(default=True)
+
+    def __str__(self) -> str:
+        return f"Packing execution config — {self.organization}"
+
+
+class PackingShift(BaseModel):
+    """One Date + Shift's floor session — the top of the v2 execution
+    hierarchy (spec v2 §1.1/§1.4). Created and started together by the
+    Packing Head's "Start Shift" action (`apps.packing.services
+    .start_packing_shift`); every `PackingWorkCentreSession` for that
+    date/shift hangs off this row.
+    """
+
+    class Status(models.TextChoices):
+        NOT_STARTED = "NOT_STARTED", "Not Started"
+        RUNNING = "RUNNING", "Running"
+        STOPPED = "STOPPED", "Stopped"
+
+    date = models.DateField()
+    shift = models.ForeignKey(Shift, on_delete=models.PROTECT, related_name="packing_shifts")
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.NOT_STARTED)
+    started_at = models.DateTimeField(null=True, blank=True)
+    started_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, related_name="+", on_delete=models.SET_NULL
+    )
+    stopped_at = models.DateTimeField(null=True, blank=True)
+    stopped_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, related_name="+", on_delete=models.SET_NULL
+    )
+    organization = models.ForeignKey(
+        "core.Organization", on_delete=models.PROTECT, related_name="packing_shifts"
+    )
+
+    class Meta:
+        ordering = ["-date"]
+        constraints = [
+            models.UniqueConstraint(fields=["date", "shift"], name="unique_packing_shift_per_date_shift")
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.date} — {self.shift.name}"
+
+
+class PackingWorkCentreSession(BaseModel):
+    """A Work Centre's running state for one `PackingShift` — the v2
+    execution anchor (spec v2 §1.3): "the Work Centre Session represents
+    the physical Work Centre being active during the shift." SKU work
+    (`PackingWorkCentreAllocation`) queues and changes underneath this
+    without stopping it. `bay` is a snapshot of the Work Centre's Bay at
+    session-start time so a later WC→Bay re-assignment in master data
+    never reinterprets a historical shift's grouping.
+    """
+
+    class Status(models.TextChoices):
+        RUNNING = "RUNNING", "Running"
+        IDLE = "IDLE", "Idle"
+        ISSUE = "ISSUE", "Issue"
+        STOPPED = "STOPPED", "Stopped"
+
+    packing_shift = models.ForeignKey(
+        PackingShift, on_delete=models.CASCADE, related_name="work_centre_sessions"
+    )
+    work_centre = models.ForeignKey(
+        "work_centres.WorkCentre", on_delete=models.PROTECT, related_name="packing_sessions"
+    )
+    bay = models.ForeignKey(
+        "work_centres.Bay", on_delete=models.PROTECT, related_name="+"
+    )
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.IDLE)
+    started_at = models.DateTimeField(null=True, blank=True)
+    stopped_at = models.DateTimeField(null=True, blank=True)
+    stop_reason = models.CharField(max_length=30, blank=True)
+    organization = models.ForeignKey(
+        "core.Organization", on_delete=models.PROTECT, related_name="packing_work_centre_sessions"
+    )
+
+    class Meta:
+        ordering = ["work_centre__name"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["packing_shift", "work_centre"], name="unique_session_per_shift_work_centre"
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.work_centre.code} — {self.packing_shift}"
+
+    @property
+    def current_allocation(self) -> "PackingWorkCentreAllocation | None":
+        return self.allocations.filter(status=PackingWorkCentreAllocation.Status.RUNNING).first()
+
+    @property
+    def packed_qty(self) -> int:
+        from apps.processes.models import ProcessExecutionOutput
+
+        return (
+            ProcessExecutionOutput.objects.filter(
+                execution__packing_interval_record__allocation__session=self,
+                output_definition__classification__name="Good",
+            ).aggregate(total=Sum("quantity"))["total"]
+            or 0
+        )
+
+
+class PackingWorkCentreSessionOperator(BaseModel):
+    """One operator on a `PackingWorkCentreSession` — snapshotted for the
+    whole shift at Start Shift time (spec v2: "Operators assigned to Work
+    Centre daily/shift-wise before shift start"), not per SKU allocation.
+    Kept as a plain 1..N table even though the business rule expects
+    exactly two, matching the same reasoning as the v1
+    `PackingAllocationOperator` it replaces.
+    """
+
+    session = models.ForeignKey(
+        PackingWorkCentreSession, on_delete=models.CASCADE, related_name="operators"
+    )
+    employee = models.ForeignKey("accounts.Employee", on_delete=models.PROTECT, related_name="+")
+    organization = models.ForeignKey(
+        "core.Organization", on_delete=models.PROTECT, related_name="packing_session_operators"
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["session", "employee"], name="unique_operator_per_session")
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.session} — {self.employee.full_name}"
+
+
 class PackingWorkCentreAllocation(BaseModel):
-    """One Work Centre's assigned slice of a `PackingJob`, for a given
-    date/shift, in `sequence` order. A Work Centre can hold several
-    allocations across different jobs in the same shift (processing SKUs
-    sequentially), but only one may be RUNNING at a time — enforced in the
-    serializer, not here.
+    """One SKU's queued/current slice of work inside a
+    `PackingWorkCentreSession` — the v2 refactor moves this off Work
+    Centre + Date + Shift directly (those now live on the session) and
+    onto the session itself, in `sequence` order. A session can hold
+    several allocations across different jobs during the same shift
+    (processing SKUs sequentially), but only one may be RUNNING at a
+    time — enforced in the serializer, not here. Completing/changing the
+    current allocation does NOT stop the session (spec v2 §1.3/§2.7).
     """
 
     class Status(models.TextChoices):
@@ -350,32 +519,36 @@ class PackingWorkCentreAllocation(BaseModel):
         ON_HOLD = "ON_HOLD", "On Hold"
         CANCELLED = "CANCELLED", "Cancelled"
 
-    job = models.ForeignKey(PackingJob, on_delete=models.CASCADE, related_name="allocations")
-    work_centre = models.ForeignKey(
-        "work_centres.WorkCentre", on_delete=models.PROTECT, related_name="packing_allocations"
+    session = models.ForeignKey(
+        PackingWorkCentreSession, on_delete=models.CASCADE, related_name="allocations"
     )
-    date = models.DateField()
-    shift = models.ForeignKey(
-        Shift, on_delete=models.PROTECT, related_name="packing_allocations"
+    job = models.ForeignKey(PackingJob, on_delete=models.CASCADE, related_name="allocations")
+    process_version = models.ForeignKey(
+        "processes.ProcessDefinitionVersion",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="+",
     )
     sequence = models.PositiveIntegerField()
     assigned_qty = models.PositiveIntegerField()
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.PLANNED)
+    started_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
     organization = models.ForeignKey(
         "core.Organization", on_delete=models.PROTECT, related_name="packing_allocations"
     )
 
     class Meta:
-        ordering = ["work_centre__name", "sequence"]
+        ordering = ["session__work_centre__name", "sequence"]
         constraints = [
             models.UniqueConstraint(
-                fields=["work_centre", "date", "shift", "sequence"],
-                name="unique_allocation_sequence_per_work_centre_shift",
+                fields=["session", "sequence"], name="unique_allocation_sequence_per_session"
             )
         ]
 
     def __str__(self) -> str:
-        return f"{self.job.job_number} — {self.work_centre.code} #{self.sequence}"
+        return f"{self.job.job_number} — {self.session.work_centre.code} #{self.sequence}"
 
     @property
     def packed_qty(self) -> int:
@@ -383,7 +556,7 @@ class PackingWorkCentreAllocation(BaseModel):
 
         return (
             ProcessExecutionOutput.objects.filter(
-                execution__packing_work_session__allocation=self,
+                execution__packing_interval_record__allocation=self,
                 output_definition__classification__name="Good",
             ).aggregate(total=Sum("quantity"))["total"]
             or 0
@@ -399,7 +572,7 @@ class PackingWorkCentreAllocation(BaseModel):
 
         return (
             ProcessExecutionOutput.objects.filter(
-                execution__packing_work_session__allocation=self,
+                execution__packing_interval_record__allocation=self,
             ).aggregate(total=Sum("quantity"))["total"]
             or 0
         )
@@ -409,72 +582,145 @@ class PackingWorkCentreAllocation(BaseModel):
         return max(self.assigned_qty - self.processed_qty, 0)
 
 
-class PackingAllocationOperator(BaseModel):
-    """One operator on a `PackingWorkCentreAllocation` — kept as a plain
-    1..N table (not a fixed pair of FKs) even though the business rule
-    today expects exactly two, per spec §1.5: "keep model 1..N."
-    Individual operator ids are retained for future analytics, but V1
-    reports team/session performance only, never per-operator output.
+class WorkCentreIssueEvent(BaseModel):
+    """A reported problem at a Work Centre Session — spec v2 §2.8.
+    `started_at`/`resolved_at` are the source of truth for downtime;
+    `apps.packing.services.downtime_minutes_for_interval` derives minutes
+    from the overlap between this window and an interval's from/to rather
+    than having anyone re-type a duration by hand.
     """
 
-    allocation = models.ForeignKey(
-        PackingWorkCentreAllocation, on_delete=models.CASCADE, related_name="operators"
+    class IssueType(models.TextChoices):
+        MACHINE = "MACHINE", "Machine"
+        MATERIAL = "MATERIAL", "Material"
+        QUALITY = "QUALITY", "Quality"
+        OTHER = "OTHER", "Other"
+
+    session = models.ForeignKey(
+        PackingWorkCentreSession, on_delete=models.CASCADE, related_name="issue_events"
     )
-    employee = models.ForeignKey("accounts.Employee", on_delete=models.PROTECT, related_name="+")
+    allocation = models.ForeignKey(
+        PackingWorkCentreAllocation, null=True, blank=True, on_delete=models.SET_NULL, related_name="issue_events"
+    )
+    issue_type = models.CharField(max_length=10, choices=IssueType.choices)
+    description = models.TextField(blank=True)
+    stops_productive_time = models.BooleanField(default=True)
+    started_at = models.DateTimeField()
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    reported_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, related_name="+", on_delete=models.SET_NULL
+    )
+    resolved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, related_name="+", on_delete=models.SET_NULL
+    )
     organization = models.ForeignKey(
-        "core.Organization", on_delete=models.PROTECT, related_name="packing_allocation_operators"
+        "core.Organization", on_delete=models.PROTECT, related_name="packing_issue_events"
     )
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["allocation", "employee"], name="unique_operator_per_allocation"
-            )
-        ]
+        ordering = ["-started_at"]
 
     def __str__(self) -> str:
-        return f"{self.allocation} — {self.employee.full_name}"
+        return f"{self.get_issue_type_display()} — {self.session}"
+
+    @property
+    def is_open(self) -> bool:
+        return self.resolved_at is None
 
 
-class PackingWorkSession(BaseModel):
-    """A user-friendly wrapper around exactly one `ProcessExecution` — per
-    spec §1.4/§8, the actual transaction backbone is the generic
-    `ProcessExecution` engine; this model exists only to give the floor a
-    single simple "start this allocation's work" / "complete this session"
-    orchestration point. Today's configured Packing process
-    (`Sorting_Cleaning_Packing`) is a single combined `ProcessDefinition`,
-    so one session wraps one execution; if a future org splits Sorting/
-    Cleaning/Packing into separate chained processes instead, this
-    would need to become a one-to-many wrapper — deliberately not built
-    that way yet, since no current configuration needs it (see the Phase 8
-    assumption note in the implementation report).
+class PackingIntervalRecord(BaseModel):
+    """One hourly (or configured-interval) capture of Sorting + Cleaning +
+    Packing at a Work Centre — spec v2 §2.4/§3.1, the module's new
+    execution-of-record. `execution` links to exactly one generic
+    `ProcessExecution` created/reconciled when this record is saved (one
+    interval = one execution, per the confirmed mapping) — the interval
+    record itself is the supervisor-facing shape; `ProcessExecution`
+    remains the actual transaction backbone (spec v2 §1.4/§8).
     """
 
     class Status(models.TextChoices):
-        DRAFT = "DRAFT", "Draft"
-        RUNNING = "RUNNING", "Running"
-        COMPLETED = "COMPLETED", "Completed"
+        EXPECTED = "EXPECTED", "Expected"
+        ENTERED = "ENTERED", "Entered"
+        MISSING = "MISSING", "Missing"
+        LATE_ENTRY = "LATE_ENTRY", "Late Entry"
+        CORRECTED = "CORRECTED", "Corrected"
 
     allocation = models.ForeignKey(
-        PackingWorkCentreAllocation, on_delete=models.CASCADE, related_name="sessions"
+        PackingWorkCentreAllocation, on_delete=models.CASCADE, related_name="interval_records"
     )
+    from_time = models.DateTimeField()
+    to_time = models.DateTimeField()
+    scheduled_minutes = models.PositiveIntegerField()
+    downtime_minutes = models.PositiveIntegerField(default=0)
+    available_minutes = models.PositiveIntegerField()
+    standard_rate_snapshot = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    planned_output = models.PositiveIntegerField(default=0)
+    premium_qty = models.PositiveIntegerField(default=0)
+    standard_qty = models.PositiveIntegerField(default=0)
+    reject_qty = models.PositiveIntegerField(default=0)
+    cleaned_qty = models.PositiveIntegerField(default=0)
+    pouches_packed = models.PositiveIntegerField(default=0)
+    loose_pieces_packed = models.PositiveIntegerField(default=0)
+    pieces_packed = models.PositiveIntegerField(default=0)
+    cartons_completed = models.PositiveIntegerField(default=0)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.EXPECTED)
+    entered_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, related_name="+", on_delete=models.SET_NULL
+    )
+    entered_at = models.DateTimeField(null=True, blank=True)
+    is_late_entry = models.BooleanField(default=False)
+    remarks = models.TextField(blank=True)
     execution = models.OneToOneField(
         "processes.ProcessExecution",
         null=True,
         blank=True,
         on_delete=models.PROTECT,
-        related_name="packing_work_session",
+        related_name="packing_interval_record",
     )
-    status = models.CharField(max_length=10, choices=Status.choices, default=Status.DRAFT)
-    started_at = models.DateTimeField(null=True, blank=True)
-    completed_at = models.DateTimeField(null=True, blank=True)
-    remarks = models.TextField(blank=True)
     organization = models.ForeignKey(
-        "core.Organization", on_delete=models.PROTECT, related_name="packing_work_sessions"
+        "core.Organization", on_delete=models.PROTECT, related_name="packing_interval_records"
     )
 
     class Meta:
-        ordering = ["-created_at"]
+        ordering = ["from_time"]
 
     def __str__(self) -> str:
-        return f"Session for {self.allocation}"
+        return f"{self.allocation} — {self.from_time:%H:%M}-{self.to_time:%H:%M}"
+
+    @property
+    def quality_total(self) -> int:
+        return self.premium_qty + self.standard_qty + self.reject_qty
+
+    @property
+    def yield_percent(self) -> float | None:
+        total = self.quality_total
+        return round(self.premium_qty / total * 100, 1) if total else None
+
+    @property
+    def reject_percent(self) -> float | None:
+        total = self.quality_total
+        return round(self.reject_qty / total * 100, 1) if total else None
+
+    @property
+    def actual_rate(self) -> float | None:
+        """Total quantity processed (sorted) per hour — comparable to
+        `standard_rate_snapshot`, which rates the same combined Sorting +
+        Cleaning + Packing process. Distinct from `packing_rate`, which
+        rates finished-pieces-packed specifically.
+        """
+        if not self.available_minutes:
+            return None
+        return round(self.quality_total / (self.available_minutes / 60), 1)
+
+    @property
+    def packing_rate(self) -> float | None:
+        if not self.available_minutes:
+            return None
+        return round(self.pieces_packed / (self.available_minutes / 60), 1)
+
+    @property
+    def efficiency_percent(self) -> float | None:
+        rate = self.actual_rate
+        if rate is None or not self.standard_rate_snapshot:
+            return None
+        return round(float(rate) / float(self.standard_rate_snapshot) * 100, 1)

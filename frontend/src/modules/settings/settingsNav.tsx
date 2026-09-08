@@ -13,6 +13,7 @@ import {
   GoldOutlined,
   IdcardOutlined,
   InboxOutlined,
+  SettingOutlined,
   ShopOutlined,
   SwapOutlined,
   TableOutlined,
@@ -137,6 +138,18 @@ export const SETTINGS_GROUPS: SettingsGroupConfig[] = [
         label: 'Shifts',
         icon: <ClusterOutlined />,
         path: '/shifts',
+      },
+      {
+        key: 'operators',
+        label: 'Operators',
+        icon: <TeamOutlined />,
+        path: '/operators',
+      },
+      {
+        key: 'packing-execution-config',
+        label: 'Packing Execution',
+        icon: <SettingOutlined />,
+        path: '/packing-execution-config',
       },
       {
         key: 'work-centres',

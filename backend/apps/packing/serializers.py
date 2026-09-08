@@ -1,5 +1,6 @@
 from typing import Any
 
+from django.utils import timezone
 from rest_framework import serializers
 
 from apps.accounts.models import Employee
@@ -7,15 +8,19 @@ from apps.core.models import Organization
 from apps.items.models import Item
 
 from .models import (
-    PackingAllocationOperator,
+    PackingExecutionConfig,
+    PackingIntervalRecord,
     PackingJob,
     PackingMaterialMovement,
     PackingMaterialRequest,
     PackingMaterialRequestLine,
     PackingPlanLine,
+    PackingShift,
     PackingWorkCentreAllocation,
-    PackingWorkSession,
+    PackingWorkCentreSession,
+    PackingWorkCentreSessionOperator,
     Shift,
+    WorkCentreIssueEvent,
 )
 from .services import MaterialRequirementRow, PackingDemandRow
 
@@ -93,18 +98,27 @@ class PackingDemandSerializer(serializers.Serializer):
 
 class PackingPlanLineSerializer(serializers.ModelSerializer):
     order_no = serializers.CharField(source="export_order_line.export_order.order_number", read_only=True)
+    customer_name = serializers.CharField(
+        source="export_order_line.export_order.customer.name", read_only=True
+    )
     item_name = serializers.CharField(source="export_order_line.item.name", read_only=True, default="")
     shift_name = serializers.CharField(source="shift.name", read_only=True)
     bay_name = serializers.CharField(source="bay.name", read_only=True)
     has_job = serializers.SerializerMethodField()
     job_id = serializers.SerializerMethodField()
+    job_number = serializers.SerializerMethodField()
+    job_status = serializers.SerializerMethodField()
+    job_target_qty = serializers.SerializerMethodField()
+    job_packed_qty = serializers.SerializerMethodField()
 
     class Meta:
         model = PackingPlanLine
         fields = [
             "id",
+            "plan_code",
             "export_order_line",
             "order_no",
+            "customer_name",
             "item_name",
             "date",
             "shift",
@@ -116,10 +130,31 @@ class PackingPlanLineSerializer(serializers.ModelSerializer):
             "remarks",
             "has_job",
             "job_id",
+            "job_number",
+            "job_status",
+            "job_target_qty",
+            "job_packed_qty",
         ]
+        read_only_fields = ["plan_code"]
 
     def get_has_job(self, obj: PackingPlanLine) -> bool:
         return getattr(obj, "packing_job", None) is not None
+
+    def get_job_number(self, obj: PackingPlanLine) -> str | None:
+        job = getattr(obj, "packing_job", None)
+        return job.job_number if job is not None else None
+
+    def get_job_status(self, obj: PackingPlanLine) -> str | None:
+        job = getattr(obj, "packing_job", None)
+        return job.status if job is not None else None
+
+    def get_job_target_qty(self, obj: PackingPlanLine) -> int | None:
+        job = getattr(obj, "packing_job", None)
+        return job.target_qty if job is not None else None
+
+    def get_job_packed_qty(self, obj: PackingPlanLine) -> int | None:
+        job = getattr(obj, "packing_job", None)
+        return job.packed_qty if job is not None else None
 
     def get_job_id(self, obj: PackingPlanLine) -> int | None:
         job = getattr(obj, "packing_job", None)
@@ -147,6 +182,8 @@ class PackingPlanLineSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data: dict[str, Any]) -> PackingPlanLine:
+        from .services import generate_plan_code
+
         # Creating a plan line IS the act of planning it — the Plan
         # Packing modal has one action ("Create Plan"), no separate
         # draft-then-confirm step, so it lands directly in PLANNED rather
@@ -155,6 +192,7 @@ class PackingPlanLineSerializer(serializers.ModelSerializer):
         return PackingPlanLine.objects.create(
             organization=Organization.get_default(),
             status=PackingPlanLine.Status.PLANNED,
+            plan_code=generate_plan_code(validated_data["export_order_line"]),
             **validated_data,
         )
 
@@ -250,123 +288,8 @@ class PackingMaterialRequestSerializer(serializers.ModelSerializer):
         return request
 
 
-class PackingAllocationOperatorSerializer(serializers.ModelSerializer):
-    employee_name = serializers.CharField(source="employee.full_name", read_only=True)
-
-    class Meta:
-        model = PackingAllocationOperator
-        fields = ["id", "employee", "employee_name"]
-
-
-class PackingWorkSessionSerializer(serializers.ModelSerializer):
-    from apps.processes.serializers import ProcessExecutionSerializer as _ExecSerializer
-
-    execution_detail = _ExecSerializer(source="execution", read_only=True)
-
-    class Meta:
-        model = PackingWorkSession
-        fields = [
-            "id",
-            "allocation",
-            "execution",
-            "execution_detail",
-            "status",
-            "started_at",
-            "completed_at",
-            "remarks",
-        ]
-        read_only_fields = ["execution"]
-
-
-class PackingWorkCentreAllocationSerializer(serializers.ModelSerializer):
-    work_centre_name = serializers.CharField(source="work_centre.name", read_only=True)
-    work_centre_code = serializers.CharField(source="work_centre.code", read_only=True)
-    shift_name = serializers.CharField(source="shift.name", read_only=True)
-    operators = PackingAllocationOperatorSerializer(many=True, read_only=True)
-    operator_ids = serializers.PrimaryKeyRelatedField(
-        queryset=Employee.objects.all(), many=True, write_only=True, required=False
-    )
-    packed_qty = serializers.IntegerField(read_only=True)
-    balance_qty = serializers.IntegerField(read_only=True)
-    sessions = PackingWorkSessionSerializer(many=True, read_only=True)
-
-    class Meta:
-        model = PackingWorkCentreAllocation
-        fields = [
-            "id",
-            "job",
-            "work_centre",
-            "work_centre_name",
-            "work_centre_code",
-            "date",
-            "shift",
-            "shift_name",
-            "sequence",
-            "assigned_qty",
-            "status",
-            "operators",
-            "operator_ids",
-            "packed_qty",
-            "balance_qty",
-            "sessions",
-        ]
-
-    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
-        job = attrs.get("job", getattr(self.instance, "job", None))
-        assigned_qty = attrs.get("assigned_qty", getattr(self.instance, "assigned_qty", None))
-        if job is not None and assigned_qty is not None:
-            already_allocated = job.allocated_qty
-            if self.instance is not None:
-                already_allocated -= self.instance.assigned_qty
-            if already_allocated + assigned_qty > job.target_qty:
-                raise serializers.ValidationError(
-                    {"assigned_qty": "Total allocations cannot exceed the job's target quantity."}
-                )
-
-        work_centre = attrs.get("work_centre", getattr(self.instance, "work_centre", None))
-        status = attrs.get("status", getattr(self.instance, "status", None))
-        if (
-            work_centre is not None
-            and status == PackingWorkCentreAllocation.Status.RUNNING
-        ):
-            conflict = PackingWorkCentreAllocation.objects.filter(
-                work_centre=work_centre, status=PackingWorkCentreAllocation.Status.RUNNING
-            )
-            if self.instance is not None:
-                conflict = conflict.exclude(pk=self.instance.pk)
-            if conflict.exists():
-                raise serializers.ValidationError(
-                    {"status": "This Work Centre already has a running allocation."}
-                )
-        return attrs
-
-    def create(self, validated_data: dict[str, Any]) -> PackingWorkCentreAllocation:
-        operator_ids = validated_data.pop("operator_ids", [])
-        organization = Organization.get_default()
-        allocation = PackingWorkCentreAllocation.objects.create(
-            organization=organization, **validated_data
-        )
-        for employee in operator_ids:
-            PackingAllocationOperator.objects.create(
-                allocation=allocation, employee=employee, organization=organization
-            )
-        return allocation
-
-    def update(
-        self, instance: PackingWorkCentreAllocation, validated_data: dict[str, Any]
-    ) -> PackingWorkCentreAllocation:
-        operator_ids = validated_data.pop("operator_ids", None)
-        instance = super().update(instance, validated_data)
-        if operator_ids is not None:
-            instance.operators.all().delete()
-            for employee in operator_ids:
-                PackingAllocationOperator.objects.create(
-                    allocation=instance, employee=employee, organization=instance.organization
-                )
-        return instance
-
-
 class PackingJobSerializer(serializers.ModelSerializer):
+    plan_code = serializers.CharField(source="plan_line.plan_code", read_only=True)
     order_no = serializers.CharField(
         source="plan_line.export_order_line.export_order.order_number", read_only=True
     )
@@ -377,6 +300,7 @@ class PackingJobSerializer(serializers.ModelSerializer):
         source="plan_line.export_order_line.item.name", read_only=True, default=""
     )
     date = serializers.DateField(source="plan_line.date", read_only=True)
+    shift = serializers.IntegerField(source="plan_line.shift_id", read_only=True)
     shift_name = serializers.CharField(source="plan_line.shift.name", read_only=True)
     bay_name = serializers.CharField(source="plan_line.bay.name", read_only=True)
     bay = serializers.IntegerField(source="plan_line.bay_id", read_only=True)
@@ -392,10 +316,12 @@ class PackingJobSerializer(serializers.ModelSerializer):
             "id",
             "job_number",
             "plan_line",
+            "plan_code",
             "order_no",
             "customer_name",
             "item_name",
             "date",
+            "shift",
             "shift_name",
             "bay",
             "bay_name",
@@ -410,23 +336,244 @@ class PackingJobSerializer(serializers.ModelSerializer):
         ]
 
 
-class TodaysWorkAllocationSerializer(serializers.Serializer):
-    """Flat, purpose-built row for /packing/today — deliberately not the
-    full `PackingWorkCentreAllocationSerializer`, since that screen is an
-    operational list, not a detail view (spec §3.10: "Show only
-    information needed to run today's floor.")."""
+class PackingExecutionConfigSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PackingExecutionConfig
+        fields = [
+            "id",
+            "recording_mode",
+            "default_interval_minutes",
+            "auto_create_expected_intervals",
+            "allow_late_entry",
+            "missing_record_warning_minutes",
+            "plan_calculation",
+            "allow_partial_interval_on_sku_change",
+        ]
 
-    allocation_id = serializers.IntegerField()
-    job_id = serializers.IntegerField()
-    job_number = serializers.CharField()
-    order_no = serializers.CharField()
-    item_name = serializers.CharField()
-    bay_id = serializers.IntegerField()
-    bay_name = serializers.CharField()
-    work_centre_id = serializers.IntegerField()
-    work_centre_name = serializers.CharField()
-    sequence = serializers.IntegerField()
-    assigned_qty = serializers.IntegerField()
-    packed_qty = serializers.IntegerField()
-    balance_qty = serializers.IntegerField()
-    status = serializers.CharField()
+
+class PackingIntervalRecordSerializer(serializers.ModelSerializer):
+    quality_total = serializers.IntegerField(read_only=True)
+    yield_percent = serializers.FloatField(read_only=True)
+    reject_percent = serializers.FloatField(read_only=True)
+    actual_rate = serializers.FloatField(read_only=True)
+    packing_rate = serializers.FloatField(read_only=True)
+    efficiency_percent = serializers.FloatField(read_only=True)
+
+    class Meta:
+        model = PackingIntervalRecord
+        fields = [
+            "id",
+            "allocation",
+            "from_time",
+            "to_time",
+            "scheduled_minutes",
+            "downtime_minutes",
+            "available_minutes",
+            "standard_rate_snapshot",
+            "planned_output",
+            "premium_qty",
+            "standard_qty",
+            "reject_qty",
+            "cleaned_qty",
+            "pouches_packed",
+            "loose_pieces_packed",
+            "pieces_packed",
+            "cartons_completed",
+            "status",
+            "entered_by",
+            "entered_at",
+            "is_late_entry",
+            "remarks",
+            "quality_total",
+            "yield_percent",
+            "reject_percent",
+            "actual_rate",
+            "packing_rate",
+            "efficiency_percent",
+        ]
+        read_only_fields = [
+            "scheduled_minutes",
+            "downtime_minutes",
+            "available_minutes",
+            "standard_rate_snapshot",
+            "planned_output",
+            "pieces_packed",
+            "status",
+            "entered_by",
+            "entered_at",
+            "is_late_entry",
+        ]
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        for field in ("premium_qty", "standard_qty", "reject_qty", "cleaned_qty", "cartons_completed"):
+            value = attrs.get(field)
+            if value is not None and value < 0:
+                raise serializers.ValidationError({field: "Cannot be negative."})
+        return attrs
+
+
+class WorkCentreIssueEventSerializer(serializers.ModelSerializer):
+    is_open = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        model = WorkCentreIssueEvent
+        fields = [
+            "id",
+            "session",
+            "allocation",
+            "issue_type",
+            "description",
+            "stops_productive_time",
+            "started_at",
+            "resolved_at",
+            "reported_by",
+            "resolved_by",
+            "is_open",
+        ]
+        read_only_fields = ["started_at", "resolved_at", "reported_by", "resolved_by"]
+
+    def create(self, validated_data: dict[str, Any]) -> WorkCentreIssueEvent:
+        request = self.context["request"]
+        session = validated_data["session"]
+        return WorkCentreIssueEvent.objects.create(
+            organization=session.organization,
+            started_at=timezone.now(),
+            reported_by=request.user,
+            **validated_data,
+        )
+
+
+class PackingWorkCentreSessionOperatorSerializer(serializers.ModelSerializer):
+    employee_name = serializers.CharField(source="employee.full_name", read_only=True)
+
+    class Meta:
+        model = PackingWorkCentreSessionOperator
+        fields = ["id", "employee", "employee_name"]
+
+
+class PackingWorkCentreAllocationSerializer(serializers.ModelSerializer):
+    job_number = serializers.CharField(source="job.job_number", read_only=True)
+    order_no = serializers.CharField(
+        source="job.plan_line.export_order_line.export_order.order_number", read_only=True
+    )
+    item_name = serializers.CharField(
+        source="job.plan_line.export_order_line.item.name", read_only=True, default=""
+    )
+    work_centre_code = serializers.CharField(source="session.work_centre.code", read_only=True)
+    packed_qty = serializers.IntegerField(read_only=True)
+    processed_qty = serializers.IntegerField(read_only=True)
+    balance_qty = serializers.IntegerField(read_only=True)
+    sequence = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = PackingWorkCentreAllocation
+        fields = [
+            "id",
+            "session",
+            "job",
+            "job_number",
+            "order_no",
+            "item_name",
+            "work_centre_code",
+            "process_version",
+            "sequence",
+            "assigned_qty",
+            "status",
+            "started_at",
+            "completed_at",
+            "packed_qty",
+            "processed_qty",
+            "balance_qty",
+        ]
+        read_only_fields = ["process_version", "status", "started_at", "completed_at"]
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        job = attrs.get("job", getattr(self.instance, "job", None))
+        assigned_qty = attrs.get("assigned_qty", getattr(self.instance, "assigned_qty", None))
+        if job is not None and assigned_qty is not None:
+            already_allocated = job.allocated_qty
+            if self.instance is not None:
+                already_allocated -= self.instance.assigned_qty
+            if already_allocated + assigned_qty > job.target_qty:
+                raise serializers.ValidationError(
+                    {"assigned_qty": "Total allocations cannot exceed the job's target quantity."}
+                )
+        return attrs
+
+    def create(self, validated_data: dict[str, Any]) -> PackingWorkCentreAllocation:
+        session = validated_data["session"]
+        next_sequence = session.allocations.count() + 1
+        return PackingWorkCentreAllocation.objects.create(
+            organization=session.organization,
+            sequence=next_sequence,
+            **validated_data,
+        )
+
+
+class PackingWorkCentreSessionSerializer(serializers.ModelSerializer):
+    work_centre_code = serializers.CharField(source="work_centre.code", read_only=True)
+    work_centre_name = serializers.CharField(source="work_centre.name", read_only=True)
+    bay_name = serializers.CharField(source="bay.name", read_only=True)
+    date = serializers.DateField(source="packing_shift.date", read_only=True)
+    shift_id = serializers.IntegerField(source="packing_shift.shift_id", read_only=True)
+    shift_name = serializers.CharField(source="packing_shift.shift.name", read_only=True)
+    operators = PackingWorkCentreSessionOperatorSerializer(many=True, read_only=True)
+    allocations = PackingWorkCentreAllocationSerializer(many=True, read_only=True)
+    current_allocation_id = serializers.SerializerMethodField()
+    open_issue = serializers.SerializerMethodField()
+
+    class Meta:
+        model = PackingWorkCentreSession
+        fields = [
+            "id",
+            "packing_shift",
+            "work_centre",
+            "work_centre_code",
+            "work_centre_name",
+            "bay",
+            "bay_name",
+            "date",
+            "shift_id",
+            "shift_name",
+            "status",
+            "started_at",
+            "stopped_at",
+            "stop_reason",
+            "operators",
+            "allocations",
+            "current_allocation_id",
+            "open_issue",
+        ]
+
+    def get_current_allocation_id(self, obj: PackingWorkCentreSession) -> int | None:
+        current = obj.current_allocation
+        return current.id if current else None
+
+    def get_open_issue(self, obj: PackingWorkCentreSession) -> dict[str, Any] | None:
+        issue = obj.issue_events.filter(resolved_at__isnull=True).order_by("-started_at").first()
+        if issue is None:
+            return None
+        return {
+            "id": issue.id,
+            "issue_type": issue.issue_type,
+            "description": issue.description,
+            "started_at": issue.started_at,
+        }
+
+
+class PackingShiftSerializer(serializers.ModelSerializer):
+    shift_name = serializers.CharField(source="shift.name", read_only=True)
+    work_centre_sessions = PackingWorkCentreSessionSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = PackingShift
+        fields = [
+            "id",
+            "date",
+            "shift",
+            "shift_name",
+            "status",
+            "started_at",
+            "stopped_at",
+            "work_centre_sessions",
+        ]

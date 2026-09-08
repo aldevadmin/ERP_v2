@@ -39,7 +39,7 @@ describe('CustomerDetailPage', () => {
       emails: ['ops@acme.com'],
       phone_numbers: ['+1-555-1000'],
       internal_coordinator: 1,
-      internal_coordinator_detail: { id: 1, employee_code: 'EMP1', full_name: 'Asha Rao', team: null },
+      internal_coordinator_detail: { id: 1, employee_code: 'EMP1', full_name: 'Asha Rao', team: null, team_name: null, designation: '', is_active: true },
       is_active: true,
       addresses: [
         {

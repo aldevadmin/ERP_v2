@@ -55,7 +55,7 @@ export default function CustomerFormPage() {
   }, [id, form])
 
   useEffect(() => {
-    listEmployees().then((response) => setEmployees(response.results))
+    listEmployees({ isActive: true }).then((response) => setEmployees(response.results))
   }, [])
 
   const handleSubmit = async (values: CustomerFormValues) => {

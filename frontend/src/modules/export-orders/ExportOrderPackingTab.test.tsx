@@ -34,7 +34,7 @@ const readinessRow: PackingMonitorRow = {
   last_transaction_at: '2026-08-10T09:15:00Z',
 }
 
-const employee: Employee = { id: 1, employee_code: 'EMP-1', full_name: 'Ravi K', team: null }
+const employee: Employee = { id: 1, employee_code: 'EMP-1', full_name: 'Ravi K', team: null, team_name: null, designation: '', is_active: true }
 const team: Team = { id: 1, name: 'Morning Shift' }
 
 function setupMocks() {

@@ -54,7 +54,7 @@ export default function AddPackingTransactionModal({
   const [shiftTeamOptions, setShiftTeamOptions] = useState<{ value: string; label: string }[]>([])
 
   useEffect(() => {
-    listEmployees().then((response) =>
+    listEmployees({ isActive: true }).then((response) =>
       setEmployeeOptions(response.results.map((e) => ({ value: e.id, label: e.full_name }))),
     )
     listTeams().then((response) =>
