@@ -1,21 +1,30 @@
 import { apiFetch } from '../../shared/api/http'
 import type {
+  BulkSummaryRow,
+  BulkSummarySaveRow,
+  ExpectedBlock,
   PackingDemandListResponse,
   PackingExecutionConfig,
   PackingIntervalRecord,
   PackingJob,
+  PackingJobEvent,
   PackingMaterialRequest,
   PackingMaterialRequestFormValues,
   PackingMaterialRequirementRow,
   PackingPlanLine,
   PackingPlanLineFormValues,
+  PackingRecordingBlockInput,
+  PackingRecordingSchedule,
+  PackingRecordingScheduleVersion,
   PackingShift,
   PackingWorkCentreAllocation,
   PackingWorkCentreSession,
   RecordIntervalPayload,
+  RecordSummaryPayload,
   ReceiveMaterialLine,
   Shift,
   StartShiftWorkCentreEntry,
+  SummaryInfo,
   WorkCentreIssueEvent,
 } from './types'
 
@@ -136,16 +145,69 @@ export function getPackingJob(id: number): Promise<PackingJob> {
   return apiFetch<PackingJob>(`/packing-jobs/${id}/`)
 }
 
-export function holdPackingJob(id: number): Promise<PackingJob> {
-  return apiFetch<PackingJob>(`/packing-jobs/${id}/hold/`, { method: 'POST' })
+export interface PauseJobPayload {
+  reason: string
+  remarks?: string
+  release_work_centres: boolean
 }
 
-export function resumePackingJob(id: number): Promise<PackingJob> {
-  return apiFetch<PackingJob>(`/packing-jobs/${id}/resume/`, { method: 'POST' })
+export function holdPackingJob(id: number, payload: PauseJobPayload): Promise<PackingJob> {
+  return apiFetch<PackingJob>(`/packing-jobs/${id}/hold/`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export function resumePackingJob(id: number, allocationIds: number[]): Promise<PackingJob> {
+  return apiFetch<PackingJob>(`/packing-jobs/${id}/resume/`, {
+    method: 'POST',
+    body: JSON.stringify({ allocation_ids: allocationIds }),
+  })
 }
 
 export function completePackingJob(id: number): Promise<PackingJob> {
   return apiFetch<PackingJob>(`/packing-jobs/${id}/complete/`, { method: 'POST' })
+}
+
+export interface StopJobPayload {
+  reason: string
+  remarks?: string
+  return_to_demand: boolean
+}
+
+export function stopPackingJob(id: number, payload: StopJobPayload): Promise<PackingJob> {
+  return apiFetch<PackingJob>(`/packing-jobs/${id}/stop/`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export function cancelPackingJob(id: number, reason: string): Promise<PackingJob> {
+  return apiFetch<PackingJob>(`/packing-jobs/${id}/cancel/`, {
+    method: 'POST',
+    body: JSON.stringify({ reason }),
+  })
+}
+
+export function listJobEvents(jobId: number): Promise<PackingJobEvent[]> {
+  return apiFetch<PackingJobEvent[]>(`/packing-jobs/${jobId}/events/`)
+}
+
+export interface ReschedulePlanLinePayload {
+  date: string
+  shift: number
+  bay: number
+  quantity?: number
+}
+
+export function reschedulePackingPlanLine(
+  id: number,
+  payload: ReschedulePlanLinePayload,
+): Promise<PackingPlanLine> {
+  return apiFetch<PackingPlanLine>(`/packing-plan-lines/${id}/reschedule/`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
 }
 
 export function listJobMaterialRequirements(
@@ -198,9 +260,15 @@ export function updateExecutionConfig(
   })
 }
 
-export function getTodaysShift(date: string, shiftId: number): Promise<{ shift: PackingShift | null }> {
+export interface TodaysShiftResponse {
+  shift: PackingShift | null
+  unassigned_jobs: PackingJob[]
+  active_jobs: PackingJob[]
+}
+
+export function getTodaysShift(date: string, shiftId: number): Promise<TodaysShiftResponse> {
   const query = new URLSearchParams({ date, shift_id: String(shiftId) })
-  return apiFetch<{ shift: PackingShift | null }>(`/packing-today/?${query.toString()}`)
+  return apiFetch<TodaysShiftResponse>(`/packing-today/?${query.toString()}`)
 }
 
 export function startPackingShift(
@@ -261,10 +329,8 @@ export function completeAllocation(id: number): Promise<PackingWorkCentreAllocat
   })
 }
 
-export function getNextInterval(
-  allocationId: number,
-): Promise<{ from_time: string; to_time: string; default_interval_minutes: number }> {
-  return apiFetch(`/packing-allocations/${allocationId}/next-interval/`)
+export function getRecordingBlocks(allocationId: number): Promise<ExpectedBlock[]> {
+  return apiFetch<ExpectedBlock[]>(`/packing-allocations/${allocationId}/recording-blocks/`)
 }
 
 export function listIntervalRecords(allocationId: number): Promise<PackingIntervalRecord[]> {
@@ -306,4 +372,81 @@ export function reportIssue(values: {
 
 export function resolveIssue(id: number): Promise<WorkCentreIssueEvent> {
   return apiFetch<WorkCentreIssueEvent>(`/packing-issue-events/${id}/resolve/`, { method: 'POST' })
+}
+
+export function listRecordingSchedules(): Promise<PackingRecordingSchedule[]> {
+  return apiFetch<{ results: PackingRecordingSchedule[] }>('/packing-recording-schedules/').then(
+    (r) => r.results,
+  )
+}
+
+export function getRecordingSchedule(id: number): Promise<PackingRecordingSchedule> {
+  return apiFetch<PackingRecordingSchedule>(`/packing-recording-schedules/${id}/`)
+}
+
+export function createRecordingSchedule(values: {
+  name: string
+  shift: number
+  is_active: boolean
+}): Promise<PackingRecordingSchedule> {
+  return apiFetch<PackingRecordingSchedule>('/packing-recording-schedules/', {
+    method: 'POST',
+    body: JSON.stringify(values),
+  })
+}
+
+export function newRecordingScheduleDraft(
+  scheduleId: number,
+): Promise<PackingRecordingScheduleVersion> {
+  return apiFetch<PackingRecordingScheduleVersion>(
+    `/packing-recording-schedules/${scheduleId}/new-draft/`,
+    { method: 'POST' },
+  )
+}
+
+export function replaceRecordingScheduleBlocks(
+  versionId: number,
+  blocks: PackingRecordingBlockInput[],
+): Promise<PackingRecordingScheduleVersion> {
+  return apiFetch<PackingRecordingScheduleVersion>(
+    `/packing-recording-schedule-versions/${versionId}/blocks/`,
+    { method: 'POST', body: JSON.stringify({ blocks }) },
+  )
+}
+
+export function activateRecordingScheduleVersion(
+  versionId: number,
+): Promise<PackingRecordingScheduleVersion> {
+  return apiFetch<PackingRecordingScheduleVersion>(
+    `/packing-recording-schedule-versions/${versionId}/activate/`,
+    { method: 'POST' },
+  )
+}
+
+export function getSummaryInfo(allocationId: number): Promise<SummaryInfo> {
+  return apiFetch<SummaryInfo>(`/packing-allocations/${allocationId}/summary-info/`)
+}
+
+export function recordSummary(
+  allocationId: number,
+  payload: RecordSummaryPayload,
+): Promise<PackingIntervalRecord> {
+  return apiFetch<PackingIntervalRecord>(`/packing-allocations/${allocationId}/summary/`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export function listBulkSummaryRows(jobId: number): Promise<BulkSummaryRow[]> {
+  return apiFetch<BulkSummaryRow[]>(`/packing-jobs/${jobId}/bulk-summary-rows/`)
+}
+
+export function saveBulkSummaries(
+  jobId: number,
+  rows: BulkSummarySaveRow[],
+): Promise<PackingIntervalRecord[]> {
+  return apiFetch<PackingIntervalRecord[]>(`/packing-jobs/${jobId}/bulk-summaries/`, {
+    method: 'POST',
+    body: JSON.stringify({ rows }),
+  })
 }

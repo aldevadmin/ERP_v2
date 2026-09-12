@@ -1,29 +1,103 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Button, Card, DatePicker, Empty, Flex, Segmented, Select, Space, Typography, message } from 'antd'
+import {
+  Button,
+  Card,
+  DatePicker,
+  Flex,
+  Progress,
+  Segmented,
+  Select,
+  Space,
+  Table,
+  Tag,
+  Tooltip,
+  Typography,
+  message,
+} from 'antd'
+import { WarningOutlined } from '@ant-design/icons'
 import dayjs, { type Dayjs } from 'dayjs'
 import { useSearchParams } from 'react-router'
 import { ApiError } from '../../shared/api/http'
+import AddWorkCentreModal from './AddWorkCentreModal'
 import AssignWorkModal from './AssignWorkModal'
 import CompleteAllocationModal from './CompleteAllocationModal'
+import PackingJobGroup from './PackingJobGroup'
 import RecordIntervalModal from './RecordIntervalModal'
+import RecordSummaryModal from './RecordSummaryModal'
 import ReportIssueModal from './ReportIssueModal'
-import ShiftSetupPanel from './ShiftSetupPanel'
 import StopWorkCentreModal from './StopWorkCentreModal'
 import {
   getExecutionConfig,
+  getPackingJob,
   getTodaysShift,
   listShifts,
   resumeWorkCentreSession,
   startAllocation,
   stopPackingShift,
 } from './api'
-import type { PackingExecutionConfig, PackingShift, PackingWorkCentreAllocation, PackingWorkCentreSession, Shift } from './types'
+import JobDetailTabs from './JobDetailTabs'
+import JobMaterialSection from './JobMaterialSection'
+import type {
+  PackingExecutionConfig,
+  PackingJob,
+  PackingShift,
+  PackingWorkCentreAllocation,
+  PackingWorkCentreSession,
+  Shift,
+} from './types'
 import WorkCentreDetailDrawer from './WorkCentreDetailDrawer'
-import WorkCentreTile from './WorkCentreTile'
 
 const { Title, Text } = Typography
 
-type StatusFilter = 'ALL' | 'RUNNING' | 'IDLE' | 'ISSUE' | 'STOPPED' | 'MISSING'
+type JobBucket = 'UNASSIGNED' | 'QUEUED' | 'RUNNING' | 'PAUSED' | 'COMPLETED'
+type JobStatusFilter = 'ALL' | JobBucket | 'MISSING'
+
+const BUCKET_LABELS: Record<JobBucket, string> = {
+  UNASSIGNED: 'Unassigned',
+  QUEUED: 'Queued',
+  RUNNING: 'Running',
+  PAUSED: 'Paused',
+  COMPLETED: 'Completed',
+}
+
+const BUCKET_COLORS: Record<JobBucket, string> = {
+  UNASSIGNED: 'default',
+  QUEUED: 'blue',
+  RUNNING: 'green',
+  PAUSED: 'orange',
+  COMPLETED: 'green',
+}
+
+const WC_TAG_COLORS: Record<PackingWorkCentreSession['status'], string> = {
+  RUNNING: 'green',
+  IDLE: 'default',
+  ISSUE: 'orange',
+  STOPPED: 'default',
+}
+
+interface JobRow {
+  job: PackingJob
+  bucket: JobBucket
+}
+
+// A Work Centre Session "belongs" to whichever Job has a claim on its
+// slot — the Job with the RUNNING allocation there, the one that's
+// ON_HOLD (paused without releasing the station), or, failing those, the
+// earliest-queued not-yet-started one. That last case is what lets a
+// queued Work Centre still show up (with its own "Start" button) under
+// the Job that's waiting on it, rather than needing a separate
+// unowned-sessions view — a Session only has no owner at all once it has
+// no allocations whatsoever.
+function sessionOwnerJobId(session: PackingWorkCentreSession): number | null {
+  const current = session.allocations.find((a) => a.id === session.current_allocation_id)
+  if (current) return current.job
+  const held = session.allocations.find((a) => a.status === 'ON_HOLD')
+  if (held) return held.job
+  const queued = session.allocations
+    .filter((a) => a.status === 'PLANNED')
+    .sort((a, b) => a.sequence - b.sequence)[0]
+  return queued ? queued.job : null
+}
 
 export default function TodaysWorkPage() {
   // Deep-link params (e.g. from a Packing Job's "View on Packing Floor"
@@ -45,14 +119,33 @@ export default function TodaysWorkPage() {
     const b = searchParams.get('bay')
     return b ? Number(b) : 'ALL'
   })
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL')
+  const [jobStatusFilter, setJobStatusFilter] = useState<JobStatusFilter>('ALL')
 
   const [detailSession, setDetailSession] = useState<PackingWorkCentreSession | null>(null)
   const [recordAllocation, setRecordAllocation] = useState<PackingWorkCentreAllocation | null>(null)
+  const [summaryAllocation, setSummaryAllocation] = useState<PackingWorkCentreAllocation | null>(null)
   const [assignSessionId, setAssignSessionId] = useState<number | null>(null)
   const [issueSessionId, setIssueSessionId] = useState<number | null>(null)
   const [stopSession, setStopSession] = useState<PackingWorkCentreSession | null>(null)
   const [completeSession, setCompleteSession] = useState<PackingWorkCentreSession | null>(null)
+
+  const [focusedJobId, setFocusedJobId] = useState<number | null>(null)
+  const [focusedJob, setFocusedJob] = useState<PackingJob | null>(null)
+  const [unassignedJobs, setUnassignedJobs] = useState<PackingJob[]>([])
+  const [activeJobs, setActiveJobs] = useState<PackingJob[]>([])
+  const [assigningJob, setAssigningJob] = useState<PackingJob | null>(null)
+
+  const loadFocusedJob = useCallback(() => {
+    if (focusedJobId === null) {
+      setFocusedJob(null)
+      return
+    }
+    getPackingJob(focusedJobId).then(setFocusedJob)
+  }, [focusedJobId])
+
+  useEffect(() => {
+    loadFocusedJob()
+  }, [loadFocusedJob])
 
   useEffect(() => {
     listShifts({ isActive: true }).then((response) => {
@@ -66,7 +159,11 @@ export default function TodaysWorkPage() {
     if (!shiftId) return
     setLoading(true)
     getTodaysShift(date.format('YYYY-MM-DD'), shiftId)
-      .then((response) => setShift(response.shift))
+      .then((response) => {
+        setShift(response.shift)
+        setUnassignedJobs(response.unassigned_jobs)
+        setActiveJobs(response.active_jobs)
+      })
       .finally(() => setLoading(false))
   }, [date, shiftId])
 
@@ -109,20 +206,53 @@ export default function TodaysWorkPage() {
     )
   }
 
-  const filteredSessions = sessions.filter((s) => {
-    if (bayFilter !== 'ALL' && s.bay !== bayFilter) return false
-    if (statusFilter === 'ALL') return true
-    if (statusFilter === 'MISSING') return isMissing(s)
-    return s.status === statusFilter
-  })
-
-  const grouped = useMemo(() => {
-    const map = new Map<string, PackingWorkCentreSession[]>()
-    filteredSessions.forEach((s) => {
-      map.set(s.bay_name, [...(map.get(s.bay_name) ?? []), s])
+  // Every Work Centre Session's Job, regardless of the Bay filter — a
+  // focused Job should always show all of its own stations, even ones in
+  // a Bay you've filtered out of the overview table.
+  const sessionsByJob = useMemo(() => {
+    const map = new Map<number, PackingWorkCentreSession[]>()
+    sessions.forEach((session) => {
+      const ownerId = sessionOwnerJobId(session)
+      if (ownerId === null) return
+      map.set(ownerId, [...(map.get(ownerId) ?? []), session])
     })
-    return Array.from(map.entries())
-  }, [filteredSessions])
+    return map
+  }, [sessions])
+
+  // Job-first, one row per Job: every active Job that's actually started
+  // (RUNNING/PAUSED) shows its live Work Centres; one with an allocation
+  // that hasn't started yet (still READY/AWAITING_MATERIAL) is "queued";
+  // one with no allocation at all is "unassigned"; one that's finished
+  // stays visible as "completed" rather than disappearing off the board.
+  // This single table replaces three separate lists so you can see every
+  // parallel Job at once instead of scrolling past a full card per Job.
+  const allJobRows: JobRow[] = useMemo(() => {
+    const runningOrPaused = activeJobs.filter(
+      (j) => j.status === 'IN_PROGRESS' || j.status === 'ON_HOLD',
+    )
+    const completed = activeJobs.filter((j) => j.status === 'COMPLETED')
+    const queued = activeJobs.filter(
+      (j) => j.status !== 'IN_PROGRESS' && j.status !== 'ON_HOLD' && j.status !== 'COMPLETED',
+    )
+    return [
+      ...unassignedJobs.map((job) => ({ job, bucket: 'UNASSIGNED' as const })),
+      ...queued.map((job) => ({ job, bucket: 'QUEUED' as const })),
+      ...runningOrPaused.map((job) => ({
+        job,
+        bucket: (job.status === 'ON_HOLD' ? 'PAUSED' : 'RUNNING') as JobBucket,
+      })),
+      ...completed.map((job) => ({ job, bucket: 'COMPLETED' as const })),
+    ]
+  }, [unassignedJobs, activeJobs])
+
+  const isJobMissing = (job: PackingJob) => (sessionsByJob.get(job.id) ?? []).some(isMissing)
+
+  const filteredJobRows = allJobRows.filter(({ job, bucket }) => {
+    if (bayFilter !== 'ALL' && job.bay !== bayFilter) return false
+    if (jobStatusFilter === 'ALL') return true
+    if (jobStatusFilter === 'MISSING') return isJobMissing(job)
+    return bucket === jobStatusFilter
+  })
 
   const counts = {
     active: sessions.filter((s) => s.status !== 'STOPPED').length,
@@ -181,41 +311,13 @@ export default function TodaysWorkPage() {
         </Flex>
       }
     >
-      {!shift || shift.status === 'NOT_STARTED' ? (
-        shiftId ? (
-          <ShiftSetupPanel
-            date={date.format('YYYY-MM-DD')}
-            shiftId={shiftId}
-            onStarted={() => load()}
-          />
-        ) : (
-          <Empty description="No shifts configured yet." />
-        )
-      ) : (
-        <div>
-          <Flex justify="space-between" align="center" wrap="wrap" gap={12} style={{ marginBottom: 16 }}>
-            <Space wrap>
-              <Select
-                aria-label="Bay"
-                style={{ width: 160 }}
-                value={bayFilter}
-                onChange={setBayFilter}
-                options={[{ value: 'ALL', label: 'All Bays' }, ...bays.map((b) => ({ value: b.id, label: b.name }))]}
-              />
-              <Segmented
-                value={statusFilter}
-                onChange={(v) => setStatusFilter(v as StatusFilter)}
-                options={[
-                  { label: 'All', value: 'ALL' },
-                  { label: 'Running', value: 'RUNNING' },
-                  { label: 'Idle', value: 'IDLE' },
-                  { label: 'Issue', value: 'ISSUE' },
-                  { label: 'Stopped', value: 'STOPPED' },
-                  { label: 'Missing Records', value: 'MISSING' },
-                ]}
-              />
-            </Space>
-            <Space size="large">
+      <Card
+        size="small"
+        style={{ marginBottom: 16 }}
+        title={`All Packing Jobs (${filteredJobRows.length})`}
+        extra={
+          shift && shift.status !== 'NOT_STARTED' ? (
+            <Space size="large" wrap>
               <Text>
                 Active: <Text strong>{counts.active}</Text>
               </Text>
@@ -228,45 +330,207 @@ export default function TodaysWorkPage() {
               <Text>
                 Issue: <Text strong>{counts.issue}</Text>
               </Text>
-              <Button danger onClick={() => void handleStopShift()}>
+              <Button danger size="small" onClick={() => void handleStopShift()}>
                 Stop Shift
               </Button>
             </Space>
-          </Flex>
+          ) : undefined
+        }
+      >
+        <Flex justify="flex-end" align="center" wrap="wrap" gap={12} style={{ marginBottom: 12 }}>
+          <Space wrap>
+            <Select
+              aria-label="Jump to Job"
+              placeholder="Jump to a Job..."
+              showSearch
+              allowClear
+              style={{ width: 220 }}
+              value={focusedJobId ?? undefined}
+              onChange={(v) => setFocusedJobId(v ?? null)}
+              onClear={() => setFocusedJobId(null)}
+              filterOption={(input, option) =>
+                ((option?.label as string) ?? '').toLowerCase().includes(input.toLowerCase())
+              }
+              options={allJobRows.map(({ job }) => ({ value: job.id, label: job.job_number }))}
+            />
+            <Select
+              aria-label="Bay"
+              style={{ width: 140 }}
+              value={bayFilter}
+              onChange={setBayFilter}
+              options={[{ value: 'ALL', label: 'All Bays' }, ...bays.map((b) => ({ value: b.id, label: b.name }))]}
+            />
+            <Segmented
+              value={jobStatusFilter}
+              onChange={(v) => setJobStatusFilter(v as JobStatusFilter)}
+              options={[
+                { label: 'All', value: 'ALL' },
+                { label: 'Unassigned', value: 'UNASSIGNED' },
+                { label: 'Queued', value: 'QUEUED' },
+                { label: 'Running', value: 'RUNNING' },
+                { label: 'Paused', value: 'PAUSED' },
+                { label: 'Completed', value: 'COMPLETED' },
+                { label: 'Missing Records', value: 'MISSING' },
+              ]}
+            />
+          </Space>
+        </Flex>
 
-          {grouped.length === 0 && <Empty description="No Work Centres match this filter." />}
+        <Table<JobRow>
+          rowKey={(r) => r.job.id}
+          size="small"
+          pagination={false}
+          dataSource={filteredJobRows}
+          locale={{ emptyText: 'No Jobs match this filter.' }}
+          expandable={{
+            expandedRowKeys: focusedJobId !== null ? [focusedJobId] : [],
+            onExpand: (expanded, record) => setFocusedJobId(expanded ? record.job.id : null),
+            expandRowByClick: true,
+            expandedRowRender: (record) => {
+              if (!focusedJob || focusedJob.id !== record.job.id) return null
+              return (
+                <>
+                  <PackingJobGroup
+                    job={focusedJob}
+                    sessions={sessionsByJob.get(focusedJob.id) ?? []}
+                    missingRecordMinutes={missingMinutes}
+                    onChanged={() => {
+                      loadFocusedJob()
+                      load()
+                    }}
+                    onOpenDetail={(session) => setDetailSession(session)}
+                    onRecordHour={(session) => {
+                      const current = session.allocations.find(
+                        (a) => a.id === session.current_allocation_id,
+                      )
+                      if (current) setRecordAllocation(current)
+                    }}
+                    onRecordSummary={(session) => {
+                      const current = session.allocations.find(
+                        (a) => a.id === session.current_allocation_id,
+                      )
+                      if (current) setSummaryAllocation(current)
+                    }}
+                    onAssignWork={(session) => setAssignSessionId(session.id)}
+                    onStartAllocation={(allocationId) => void handleStartAllocation(allocationId)}
+                    onReportIssue={(session) => setIssueSessionId(session.id)}
+                    onStopWorkCentre={(session) => setStopSession(session)}
+                    onResume={(session) => void handleResume(session)}
+                    onAddWorkCentre={setAssigningJob}
+                    compact
+                    middleSlot={
+                      <div style={{ marginBottom: 16 }}>
+                        <Text
+                          strong
+                          style={{
+                            display: 'block',
+                            marginBottom: 8,
+                            textTransform: 'uppercase',
+                            fontSize: 12,
+                          }}
+                        >
+                          Material
+                        </Text>
+                        <JobMaterialSection
+                          job={focusedJob}
+                          onChanged={() => {
+                            loadFocusedJob()
+                            load()
+                          }}
+                        />
+                      </div>
+                    }
+                  />
+                  <Card>
+                    <JobDetailTabs job={focusedJob} variant="floor" />
+                  </Card>
+                </>
+              )
+            },
+          }}
+          columns={[
+            {
+              title: 'Job',
+              key: 'job',
+              render: (_, { job }) => (
+                <Text strong>{job.job_number}</Text>
+              ),
+            },
+            {
+              title: 'Product',
+              key: 'product',
+              render: (_, { job }) => (
+                <>
+                  <div>{job.item_name}</div>
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    {job.order_no} • {job.customer_sku_code || '—'}
+                  </Text>
+                </>
+              ),
+            },
+            { title: 'Bay', key: 'bay', render: (_, { job }) => job.bay_name, width: 90 },
+            {
+              title: 'Status',
+              key: 'status',
+              width: 110,
+              render: (_, { bucket }) => <Tag color={BUCKET_COLORS[bucket]}>{BUCKET_LABELS[bucket]}</Tag>,
+            },
+            {
+              title: 'Work Centres',
+              key: 'work_centres',
+              render: (_, { job }) => {
+                const jobSessions = sessionsByJob.get(job.id) ?? []
+                if (jobSessions.length === 0) return <Text type="secondary">—</Text>
+                return (
+                  <Space size={4} wrap>
+                    {jobSessions.map((s) => (
+                      <Tag key={s.id} color={WC_TAG_COLORS[s.status]}>
+                        {s.work_centre_code}
+                      </Tag>
+                    ))}
+                  </Space>
+                )
+              },
+            },
+            {
+              title: 'Progress',
+              key: 'progress',
+              width: 140,
+              render: (_, { job }) => (
+                <Progress
+                  percent={Math.round(((job.target_qty - job.balance_qty) / (job.target_qty || 1)) * 100)}
+                  size="small"
+                />
+              ),
+            },
+            {
+              title: '',
+              key: 'missing',
+              width: 32,
+              render: (_, { job }) =>
+                isJobMissing(job) ? (
+                  <Tooltip title="At least one Work Centre is overdue for a record.">
+                    <WarningOutlined style={{ color: '#faad14' }} />
+                  </Tooltip>
+                ) : null,
+            },
+          ]}
+        />
+      </Card>
 
-          <Flex vertical gap={20}>
-            {grouped.map(([bayName, baySessions]) => (
-              <div key={bayName}>
-                <Text strong style={{ display: 'block', marginBottom: 8, textTransform: 'uppercase' }}>
-                  {bayName}
-                </Text>
-                <Flex gap={12} wrap="wrap">
-                  {baySessions.map((session) => (
-                    <WorkCentreTile
-                      key={session.id}
-                      session={session}
-                      missingRecordMinutes={missingMinutes}
-                      onOpenDetail={() => setDetailSession(session)}
-                      onRecordHour={() => {
-                        const current = session.allocations.find((a) => a.id === session.current_allocation_id)
-                        if (current) setRecordAllocation(current)
-                      }}
-                      onAssignWork={() => setAssignSessionId(session.id)}
-                      onStartAllocation={(allocationId) => void handleStartAllocation(allocationId)}
-                      onReportIssue={() => setIssueSessionId(session.id)}
-                      onStopWorkCentre={() => setStopSession(session)}
-                      onResume={() => void handleResume(session)}
-                    />
-                  ))}
-                </Flex>
-              </div>
-            ))}
-          </Flex>
-        </div>
-      )}
-
+      <AddWorkCentreModal
+        open={assigningJob !== null}
+        job={assigningJob}
+        sessions={sessions}
+        date={date.format('YYYY-MM-DD')}
+        shiftId={shiftId ?? 0}
+        onClose={() => setAssigningJob(null)}
+        onAssigned={() => {
+          setAssigningJob(null)
+          loadFocusedJob()
+          load()
+        }}
+      />
       <AssignWorkModal
         open={assignSessionId !== null}
         sessionId={assignSessionId}
@@ -316,6 +580,14 @@ export default function TodaysWorkPage() {
           load()
         }}
       />
+      <RecordSummaryModal
+        open={summaryAllocation !== null}
+        allocation={summaryAllocation}
+        onClose={() => setSummaryAllocation(null)}
+        onSaved={() => {
+          load()
+        }}
+      />
 
       <WorkCentreDetailDrawer
         open={detailSession !== null}
@@ -325,12 +597,17 @@ export default function TodaysWorkPage() {
           const current = detailSession?.allocations.find((a) => a.id === detailSession.current_allocation_id)
           if (current) setRecordAllocation(current)
         }}
+        onRecordSummary={() => {
+          const current = detailSession?.allocations.find((a) => a.id === detailSession.current_allocation_id)
+          if (current) setSummaryAllocation(current)
+        }}
         onCompleteOrChangeSku={() => {
           if (detailSession) setCompleteSession(detailSession)
         }}
         onReportIssue={() => detailSession && setIssueSessionId(detailSession.id)}
         onStopWorkCentre={() => detailSession && setStopSession(detailSession)}
         onStartAllocation={(allocationId) => void handleStartAllocation(allocationId)}
+        onFocusJob={setFocusedJobId}
       />
     </Card>
   )

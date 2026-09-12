@@ -69,6 +69,7 @@ export interface WorkCentre {
   type_name: string
   bay: number | null
   bay_name: string | null
+  operator_count: number
   is_active: boolean
   capabilities: WorkCentreCapability[]
   capabilities_count: number
@@ -88,5 +89,6 @@ export interface WorkCentreFormValues {
   code: string
   type: number
   bay: number | null
+  operator_count: number
   is_active: boolean
 }

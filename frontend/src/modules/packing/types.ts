@@ -73,7 +73,29 @@ export type PackingJobStatus =
   | 'IN_PROGRESS'
   | 'COMPLETED'
   | 'ON_HOLD'
+  | 'STOPPED'
   | 'CANCELLED'
+
+export type PackingJobEventType =
+  | 'START'
+  | 'PAUSE'
+  | 'RESUME'
+  | 'STOP'
+  | 'COMPLETE'
+  | 'CANCEL'
+  | 'RESCHEDULE'
+
+export interface PackingJobEvent {
+  id: number
+  job: number
+  event_type: PackingJobEventType
+  reason: string
+  remarks: string
+  details: Record<string, unknown>
+  performed_by: number | null
+  performed_by_name: string
+  created_at: string
+}
 
 export interface PackingJob {
   id: number
@@ -83,6 +105,8 @@ export interface PackingJob {
   order_no: string
   customer_name: string
   item_name: string
+  customer_sku_code: string
+  packaging_profile_label: string | null
   date: string
   shift: number
   shift_name: string
@@ -95,6 +119,8 @@ export interface PackingJob {
   reject_qty: number
   balance_qty: number
   allocated_qty: number
+  has_running_allocation: boolean
+  can_reschedule: boolean
   remarks: string
 }
 
@@ -255,9 +281,12 @@ export interface StartShiftWorkCentreEntry {
   operator_ids: number[]
 }
 
+export type PackingRecordType = 'INTERVAL' | 'SUMMARY' | 'ADJUSTMENT'
+
 export interface PackingIntervalRecord {
   id: number
   allocation: number
+  schedule_block: number | null
   from_time: string
   to_time: string
   scheduled_minutes: number
@@ -274,6 +303,9 @@ export interface PackingIntervalRecord {
   pieces_packed: number
   cartons_completed: number
   status: IntervalRecordStatus
+  record_type: PackingRecordType
+  covers_unrecorded_only: boolean
+  is_final_summary: boolean
   entered_by: number | null
   entered_at: string | null
   is_late_entry: boolean
@@ -287,8 +319,7 @@ export interface PackingIntervalRecord {
 }
 
 export interface RecordIntervalPayload {
-  from_time?: string
-  to_time?: string
+  schedule_block?: number | null
   premium_qty: number
   standard_qty: number
   reject_qty: number
@@ -297,6 +328,92 @@ export interface RecordIntervalPayload {
   loose_pieces_packed: number
   cartons_completed: number
   remarks?: string
+}
+
+export interface RecordSummaryPayload {
+  is_final_summary?: boolean
+  premium_qty: number
+  standard_qty: number
+  reject_qty: number
+  cleaned_qty: number
+  pouches_packed: number
+  loose_pieces_packed: number
+  cartons_completed: number
+  remarks?: string
+}
+
+export interface SummaryInfo {
+  entered_blocks: string[]
+  missing_blocks: string[]
+}
+
+export type BulkSummaryRowMode = 'SUMMARY' | 'MIXED'
+
+export interface BulkSummaryRow {
+  allocation: number
+  work_centre_code: string
+  operators: string
+  assigned_qty: number
+  mode: BulkSummaryRowMode
+}
+
+export interface BulkSummarySaveRow {
+  allocation: number
+  is_final_summary?: boolean
+  premium_qty: number
+  standard_qty: number
+  reject_qty: number
+  cleaned_qty?: number
+  pouches_packed?: number
+  loose_pieces_packed?: number
+  cartons_completed?: number
+  remarks?: string
+}
+
+export type RecordingScheduleVersionStatus = 'DRAFT' | 'ACTIVE' | 'ARCHIVED'
+export type RecordingMode = 'FLEXIBLE' | 'INTERVAL_REQUIRED' | 'SUMMARY_ONLY'
+
+export interface PackingRecordingBlock {
+  id: number
+  sequence: number
+  from_time: string
+  to_time: string
+  is_active: boolean
+  duration_minutes: number
+}
+
+export interface PackingRecordingBlockInput {
+  sequence: number
+  from_time: string
+  to_time: string
+  is_active: boolean
+}
+
+export interface PackingRecordingScheduleVersion {
+  id: number
+  schedule: number
+  version_number: number
+  status: RecordingScheduleVersionStatus
+  recording_mode: RecordingMode
+  blocks: PackingRecordingBlock[]
+}
+
+export interface PackingRecordingSchedule {
+  id: number
+  name: string
+  shift: number
+  shift_name: string
+  is_active: boolean
+  current_version: PackingRecordingScheduleVersion | null
+}
+
+export interface ExpectedBlock {
+  schedule_block_id: number | null
+  display_label: string
+  from_time: string
+  to_time: string
+  scheduled_minutes: number
+  is_partial: boolean
 }
 
 export interface WorkCentreIssueEvent {

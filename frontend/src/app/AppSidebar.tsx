@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Avatar, Dropdown, Layout, Menu, Space, Typography } from 'antd'
 import {
   DashboardOutlined,
@@ -15,7 +15,20 @@ import { useAuth } from '../shared/auth/AuthContext'
 const { Sider } = Layout
 const { Text } = Typography
 
-type NavItem = { key: string; icon: ReactNode; label: ReactNode } | { type: 'divider' }
+type NavItem =
+  | { key: string; icon: ReactNode; label: ReactNode }
+  | { key: string; icon: ReactNode; label: ReactNode; children: { key: string; label: ReactNode }[] }
+  | { type: 'divider' }
+
+// Packing's two children in the sidebar. "Orders" lands on the Packing
+// Orders/Weekly Planner/Packing Floor screen, which keeps its own
+// horizontal tab bar (PackingLayout) to switch between those three —
+// they're one connected workflow, not separate sidebar destinations.
+// "Settings" is the module's own config, kept apart from that workflow.
+const PACKING_CHILDREN = [
+  { key: '/packing/orders', label: 'Orders', matches: ['/packing/orders', '/packing/planner', '/packing/today'] },
+  { key: '/packing/settings', label: 'Settings', matches: ['/packing/settings'] },
+]
 
 const NAV_ITEMS: NavItem[] = [
   { key: '/', icon: <DashboardOutlined />, label: <Link to="/">Dashboard</Link> },
@@ -29,17 +42,34 @@ const NAV_ITEMS: NavItem[] = [
     icon: <DeploymentUnitOutlined />,
     label: <Link to="/production">Production</Link>,
   },
-  { key: '/packing', icon: <InboxOutlined />, label: <Link to="/packing">Packing</Link> },
+  {
+    key: '/packing',
+    icon: <InboxOutlined />,
+    label: 'Packing',
+    children: PACKING_CHILDREN.map((child) => ({
+      key: child.key,
+      label: <Link to={child.key}>{child.label}</Link>,
+    })),
+  },
   { key: '/inventory', icon: <DatabaseOutlined />, label: <Link to="/inventory">Inventory</Link> },
   { type: 'divider' },
   { key: '/settings', icon: <SettingOutlined />, label: <Link to="/settings">Settings</Link> },
 ]
 
+function packingChildFor(pathname: string): string {
+  // e.g. /packing/planner or /packing/settings/recording-schedule both
+  // need to highlight their owning child; bare /packing falls back to
+  // Orders, its default landing page.
+  const match = PACKING_CHILDREN.find((child) => child.matches.some((prefix) => pathname.startsWith(prefix)))
+  return match?.key ?? '/packing/orders'
+}
+
 function selectedKeyFor(pathname: string): string {
   if (pathname === '/') return '/'
+  if (pathname.startsWith('/packing')) return packingChildFor(pathname)
   const match = NAV_ITEMS.filter(
     (item): item is Extract<NavItem, { key: string }> =>
-      'key' in item && item.key !== '/' && pathname.startsWith(item.key),
+      'key' in item && item.key !== '/' && item.key !== '/packing' && pathname.startsWith(item.key),
   )
   // Every page that isn't one of the other top-level sections above is
   // reached by drilling into Settings (master data, operations config) —
@@ -62,8 +92,20 @@ function LeafLogo() {
 export default function AppSidebar() {
   const location = useLocation()
   const [collapsed, setCollapsed] = useState(false)
+  const [openKeys, setOpenKeys] = useState<string[]>(
+    location.pathname.startsWith('/packing') ? ['/packing'] : [],
+  )
   const { state, logout } = useAuth()
   const user = state.user
+
+  // Keep the Packing submenu expanded whenever we're anywhere under
+  // /packing — e.g. arriving via a Link from another page, not just by
+  // clicking the submenu header itself.
+  useEffect(() => {
+    if (location.pathname.startsWith('/packing')) {
+      setOpenKeys((keys) => (keys.includes('/packing') ? keys : [...keys, '/packing']))
+    }
+  }, [location.pathname])
 
   const displayName = user?.employee?.full_name ?? user?.username ?? ''
   const primaryRole = user?.roles?.[0] ?? ''
@@ -106,6 +148,8 @@ export default function AppSidebar() {
         mode="inline"
         theme="light"
         selectedKeys={[selectedKeyFor(location.pathname)]}
+        openKeys={openKeys}
+        onOpenChange={setOpenKeys}
         items={NAV_ITEMS}
         style={{ borderInlineEnd: 'none', flex: 1 }}
       />

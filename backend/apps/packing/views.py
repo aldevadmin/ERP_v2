@@ -1,5 +1,4 @@
 from datetime import date as date_cls
-from datetime import datetime
 from typing import Any, cast
 
 from django.db.models import Q, QuerySet
@@ -12,19 +11,24 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounts.models import Employee
+from apps.core.mixins import ProtectedDestroyMixin
 from apps.core.models import Organization
 from apps.export_orders.models import ExportOrder, ExportOrderLine
 from apps.processes.serializers import ProcessExecutionSerializer
-from apps.work_centres.models import WorkCentre
+from apps.work_centres.models import Bay, WorkCentre
 
 from .models import (
     PackingExecutionConfig,
     PackingIntervalRecord,
     PackingJob,
+    PackingJobEvent,
     PackingMaterialMovement,
     PackingMaterialRequest,
     PackingMaterialRequestLine,
     PackingPlanLine,
+    PackingRecordingBlock,
+    PackingRecordingSchedule,
+    PackingRecordingScheduleVersion,
     PackingShift,
     PackingWorkCentreAllocation,
     PackingWorkCentreSession,
@@ -34,42 +38,55 @@ from .models import (
 )
 from .permissions import CanManagePacking, IsInternalStaff
 from .serializers import (
+    BulkSummaryRowInputSerializer,
+    BulkSummaryRowSerializer,
+    ExpectedBlockSerializer,
     PackingDemandSerializer,
     PackingExecutionConfigSerializer,
     PackingIntervalRecordSerializer,
+    PackingJobEventSerializer,
     PackingJobSerializer,
     PackingMaterialRequestSerializer,
     PackingMaterialRequirementSerializer,
     PackingPlanLineSerializer,
+    PackingRecordingBlockWriteSerializer,
+    PackingRecordingScheduleSerializer,
+    PackingRecordingScheduleVersionSerializer,
     PackingShiftSerializer,
     PackingWorkCentreAllocationSerializer,
     PackingWorkCentreSessionSerializer,
+    RecordSummarySerializer,
     ShiftSerializer,
+    SummaryInfoSerializer,
     WorkCentreIssueEventSerializer,
 )
 from .services import (
+    activate_recording_schedule_version,
     build_interval_execution_data,
+    bulk_record_summaries,
+    BulkSummaryRow,
+    cancel_job,
+    complete_job,
     compute_interval_minutes,
     compute_planned_output,
+    create_recording_schedule_draft,
+    entered_and_missing_block_labels,
+    expected_blocks_for_allocation,
     get_execution_config,
     get_or_create_job_for_plan_line,
     material_requirements_for_job,
-    next_expected_interval,
     packing_demand_row,
+    pause_job,
+    record_summary,
+    replace_schedule_blocks,
+    reschedule_plan_line,
     resolve_process_version_for_work_centre,
+    resume_job,
+    standard_rate_for_allocation,
     start_packing_shift,
+    stop_job,
     stop_packing_shift,
 )
-
-
-def _parse_aware(value: str) -> datetime:
-    """Parses a caller-supplied ISO datetime, localizing it to the current
-    timezone if it arrived naive — defensive, since a naive datetime
-    compared against `timezone.now()` (used throughout interval/late-entry
-    logic) raises rather than just warns.
-    """
-    parsed = datetime.fromisoformat(value)
-    return timezone.make_aware(parsed) if timezone.is_naive(parsed) else parsed
 
 
 class ShiftViewSet(
@@ -94,6 +111,71 @@ class ShiftViewSet(
         if is_active is not None:
             queryset = queryset.filter(is_active=is_active.lower() in ("true", "1"))
         return queryset
+
+
+class PackingRecordingScheduleViewSet(
+    ProtectedDestroyMixin,
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.UpdateModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet,
+):
+    """Settings > Packing Recording Schedule — spec v5 §9.3. Creating a
+    schedule auto-creates its first DRAFT version (an empty schedule with
+    no version at all would be a confusing dead end); every subsequent
+    edit goes through `new-draft` + the version's own `blocks`/`activate`
+    actions, since only a DRAFT's blocks may change.
+    """
+
+    queryset = PackingRecordingSchedule.objects.select_related("shift").prefetch_related("versions__blocks")
+    serializer_class = PackingRecordingScheduleSerializer
+
+    def get_permissions(self) -> list[BasePermission]:
+        if self.action in ("create", "update", "partial_update", "destroy", "new_draft"):
+            return [CanManagePacking()]
+        return [IsInternalStaff()]
+
+    def perform_create(self, serializer: serializers.BaseSerializer) -> None:
+        schedule = serializer.save(organization=Organization.get_default())
+        create_recording_schedule_draft(schedule)
+
+    @action(detail=True, methods=["post"], url_path="new-draft")
+    def new_draft(self, request: Request, pk: str | None = None) -> Response:
+        schedule = self.get_object()
+        create_recording_schedule_draft(schedule)
+        schedule.refresh_from_db()
+        return Response(self.get_serializer(schedule).data, status=201)
+
+
+class PackingRecordingScheduleVersionViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
+    queryset = PackingRecordingScheduleVersion.objects.select_related("schedule").prefetch_related("blocks")
+    serializer_class = PackingRecordingScheduleVersionSerializer
+
+    def get_permissions(self) -> list[BasePermission]:
+        return [CanManagePacking()]
+
+    @action(detail=True, methods=["post"])
+    def blocks(self, request: Request, pk: str | None = None) -> Response:
+        version = self.get_object()
+        data = cast(dict[str, Any], request.data)
+        rows_serializer = PackingRecordingBlockWriteSerializer(data=data.get("blocks", []), many=True)
+        rows_serializer.is_valid(raise_exception=True)
+        try:
+            replace_schedule_blocks(version, cast(list[dict[str, Any]], rows_serializer.validated_data))
+        except ValueError as exc:
+            raise serializers.ValidationError({"detail": str(exc)}) from exc
+        return Response(self.get_serializer(version).data)
+
+    @action(detail=True, methods=["post"])
+    def activate(self, request: Request, pk: str | None = None) -> Response:
+        version = self.get_object()
+        try:
+            activate_recording_schedule_version(version)
+        except ValueError as exc:
+            raise serializers.ValidationError({"detail": str(exc)}) from exc
+        return Response(self.get_serializer(version).data)
 
 
 class PackingOrdersView(APIView):
@@ -222,6 +304,35 @@ class PackingPlanLineViewSet(
         job = get_or_create_job_for_plan_line(plan_line)
         return Response(PackingJobSerializer(job).data)
 
+    @action(detail=True, methods=["post"])
+    def reschedule(self, request: Request, pk: str | None = None) -> Response:
+        plan_line = self.get_object()
+        data = cast(dict[str, Any], request.data)
+        new_date, shift_id, bay_id = data.get("date"), data.get("shift"), data.get("bay")
+        if not new_date or not shift_id or not bay_id:
+            raise serializers.ValidationError({"detail": "date, shift and bay are required."})
+        try:
+            shift = Shift.objects.get(pk=shift_id)
+        except Shift.DoesNotExist:
+            raise serializers.ValidationError({"detail": "Invalid shift."})
+        try:
+            bay = Bay.objects.get(pk=bay_id)
+        except Bay.DoesNotExist:
+            raise serializers.ValidationError({"detail": "Invalid bay."})
+        quantity = data.get("quantity")
+        try:
+            result = reschedule_plan_line(
+                plan_line,
+                new_date=new_date,
+                shift=shift,
+                bay=bay,
+                quantity=int(quantity) if quantity is not None else None,
+                user=request.user,
+            )
+        except ValueError as exc:
+            raise serializers.ValidationError({"detail": str(exc)}) from exc
+        return Response(PackingPlanLineSerializer(result).data)
+
 
 class PackingJobViewSet(
     mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.UpdateModelMixin, viewsets.GenericViewSet
@@ -231,6 +342,7 @@ class PackingJobViewSet(
         "plan_line__export_order_line__item",
         "plan_line__shift",
         "plan_line__bay",
+        "packaging_profile_version__profile",
     )
     serializer_class = PackingJobSerializer
 
@@ -242,24 +354,114 @@ class PackingJobViewSet(
 
     @action(detail=True, methods=["post"])
     def hold(self, request: Request, pk: str | None = None) -> Response:
+        """"Pause Job" (kept at the existing `/hold/` URL for frontend
+        compatibility) — cascades into any running/queued allocations per
+        spec v5 §6.2, rather than blocking until the floor is stopped.
+        """
         job = self.get_object()
-        job.status = PackingJob.Status.ON_HOLD
-        job.save(update_fields=["status"])
+        data = cast(dict[str, Any], request.data)
+        try:
+            pause_job(
+                job,
+                reason=(data.get("reason") or "").strip(),
+                remarks=(data.get("remarks") or "").strip(),
+                release_work_centres=bool(data.get("release_work_centres", True)),
+                user=request.user,
+            )
+        except ValueError as exc:
+            raise serializers.ValidationError({"detail": str(exc)}) from exc
         return Response(self.get_serializer(job).data)
 
     @action(detail=True, methods=["post"])
     def resume(self, request: Request, pk: str | None = None) -> Response:
         job = self.get_object()
-        job.status = PackingJob.Status.IN_PROGRESS
-        job.save(update_fields=["status"])
+        data = cast(dict[str, Any], request.data)
+        allocation_ids = [int(v) for v in data.get("allocation_ids", [])]
+        try:
+            resume_job(job, allocation_ids=allocation_ids, user=request.user)
+        except ValueError as exc:
+            raise serializers.ValidationError({"detail": str(exc)}) from exc
         return Response(self.get_serializer(job).data)
 
     @action(detail=True, methods=["post"])
     def complete(self, request: Request, pk: str | None = None) -> Response:
         job = self.get_object()
-        job.status = PackingJob.Status.COMPLETED
-        job.save(update_fields=["status"])
+        try:
+            complete_job(job, user=request.user)
+        except ValueError as exc:
+            raise serializers.ValidationError({"detail": str(exc)}) from exc
         return Response(self.get_serializer(job).data)
+
+    @action(detail=True, methods=["post"])
+    def stop(self, request: Request, pk: str | None = None) -> Response:
+        job = self.get_object()
+        data = cast(dict[str, Any], request.data)
+        reason = (data.get("reason") or "").strip()
+        if not reason:
+            raise serializers.ValidationError({"detail": "A reason is required to stop a Job."})
+        try:
+            stop_job(
+                job,
+                reason=reason,
+                remarks=(data.get("remarks") or "").strip(),
+                return_to_demand=bool(data.get("return_to_demand", True)),
+                user=request.user,
+            )
+        except ValueError as exc:
+            raise serializers.ValidationError({"detail": str(exc)}) from exc
+        return Response(self.get_serializer(job).data)
+
+    @action(detail=True, methods=["post"])
+    def cancel(self, request: Request, pk: str | None = None) -> Response:
+        job = self.get_object()
+        data = cast(dict[str, Any], request.data)
+        reason = (data.get("reason") or "").strip()
+        if not reason:
+            raise serializers.ValidationError({"detail": "A reason is required to cancel a Job."})
+        try:
+            cancel_job(job, reason=reason, user=request.user)
+        except ValueError as exc:
+            raise serializers.ValidationError({"detail": str(exc)}) from exc
+        return Response(self.get_serializer(job).data)
+
+    @action(detail=True, methods=["get"])
+    def events(self, request: Request, pk: str | None = None) -> Response:
+        job = self.get_object()
+        return Response(
+            PackingJobEventSerializer(
+                job.events.select_related("performed_by"), many=True
+            ).data
+        )
+
+    @action(detail=True, methods=["get"], url_path="bulk-summary-rows")
+    def bulk_summary_rows(self, request: Request, pk: str | None = None) -> Response:
+        """Rows for Bulk Summary Entry (spec v5 §8.4) — every Work Centre
+        that has actually started working this Job, so a supervisor can
+        save several summaries in one action instead of opening a modal
+        per Work Centre.
+        """
+        job = self.get_object()
+        allocations = (
+            job.allocations.exclude(status=PackingWorkCentreAllocation.Status.CANCELLED)
+            .filter(started_at__isnull=False)
+            .select_related("session__work_centre")
+            .prefetch_related("session__operators__employee", "interval_records")
+        )
+        return Response(BulkSummaryRowSerializer(allocations, many=True).data)
+
+    @action(detail=True, methods=["post"], url_path="bulk-summaries")
+    def bulk_summaries(self, request: Request, pk: str | None = None) -> Response:
+        """Bulk Summary Entry save — spec v5 §8.4."""
+        job = self.get_object()
+        data = cast(dict[str, Any], request.data)
+        rows_serializer = BulkSummaryRowInputSerializer(data=data.get("rows", []), many=True)
+        rows_serializer.is_valid(raise_exception=True)
+        rows = [BulkSummaryRow(**row) for row in rows_serializer.validated_data]
+        try:
+            records = bulk_record_summaries(job, rows, user=request.user)
+        except ValueError as exc:
+            raise serializers.ValidationError({"detail": str(exc)}) from exc
+        return Response(PackingIntervalRecordSerializer(records, many=True).data, status=201)
 
     @action(detail=True, methods=["get"], url_path="material-requirements")
     def material_requirements(self, request: Request, pk: str | None = None) -> Response:
@@ -405,13 +607,27 @@ class PackingShiftViewSet(
             raise serializers.ValidationError({"detail": "date and shift are required."})
         shift = Shift.objects.get(id=shift_id)
 
+        # Also reused to add a single Work Centre to an *already-running*
+        # shift mid-day (spec v5 §6.7 "Add Work Centre to running job") —
+        # `start_packing_shift` is itself idempotent for that, but operator
+        # conflicts must additionally be checked against sessions this call
+        # didn't touch (an earlier Start Shift or an earlier Add).
+        existing_shift = PackingShift.objects.filter(date=date_, shift_id=shift_id).first()
+        already_assigned_employees: set[int] = set()
+        if existing_shift is not None:
+            already_assigned_employees = set(
+                PackingWorkCentreSessionOperator.objects.filter(
+                    session__packing_shift=existing_shift
+                ).values_list("employee_id", flat=True)
+            )
+
         entries = []
         seen_employees: set[int] = set()
         for row in data.get("work_centres", []):
             work_centre = WorkCentre.objects.get(id=row["work_centre"])
             operator_ids = row.get("operator_ids", [])
             for employee_id in operator_ids:
-                if employee_id in seen_employees:
+                if employee_id in seen_employees or employee_id in already_assigned_employees:
                     raise serializers.ValidationError(
                         {"detail": "An operator cannot be assigned to two Work Centres in the same shift."}
                     )
@@ -488,20 +704,27 @@ class PackingWorkCentreSessionViewSet(
     def allocations(self, request: Request, pk: str | None = None) -> Response:
         """"Assign Work" (spec v2 §2.2) — queues a Job/SKU onto this
         session. `sequence` is derived server-side from how many
-        allocations this session already has.
+        allocations this session already has. A Job still AWAITING_MATERIAL
+        may not get a Work Centre allocation — material must be received
+        first, since this is the one place a new allocation is ever
+        created (both "Add Work Centre" and "Assign Work" call it).
         """
         session = self.get_object()
         if request.method == "POST":
             data = cast(dict[str, Any], request.data)
+            job_id = data.get("job")
+            job = PackingJob.objects.filter(id=cast(Any, job_id)).first() if job_id else None
+            if job is not None and job.status == PackingJob.Status.AWAITING_MATERIAL:
+                raise serializers.ValidationError(
+                    {
+                        "detail": "Material must be received before allocating a Work Centre to this Job."
+                    }
+                )
             serializer = PackingWorkCentreAllocationSerializer(
                 data={**data, "session": session.id}
             )
             serializer.is_valid(raise_exception=True)
-            allocation = serializer.save(created_by=request.user, updated_by=request.user)
-            job = allocation.job
-            if job.status == PackingJob.Status.AWAITING_MATERIAL and job.allocated_qty > 0:
-                job.status = PackingJob.Status.READY
-                job.save(update_fields=["status"])
+            serializer.save(created_by=request.user, updated_by=request.user)
             return Response(serializer.data, status=201)
         return Response(
             PackingWorkCentreAllocationSerializer(session.allocations.all(), many=True).data
@@ -578,6 +801,11 @@ class PackingWorkCentreAllocationViewSet(
         if session.status != PackingWorkCentreSession.Status.ISSUE:
             session.status = PackingWorkCentreSession.Status.RUNNING
             session.save(update_fields=["status", "updated_at"])
+
+        job = allocation.job
+        if job.status in (PackingJob.Status.AWAITING_MATERIAL, PackingJob.Status.READY):
+            job.status = PackingJob.Status.IN_PROGRESS
+            job.save(update_fields=["status", "updated_at"])
         return Response(self.get_serializer(allocation).data)
 
     @action(detail=True, methods=["post"])
@@ -602,26 +830,30 @@ class PackingWorkCentreAllocationViewSet(
         if job.balance_qty <= 0:
             job.status = PackingJob.Status.COMPLETED
             job.save(update_fields=["status"])
-        elif job.status == PackingJob.Status.READY:
-            job.status = PackingJob.Status.IN_PROGRESS
-            job.save(update_fields=["status"])
         return Response(self.get_serializer(allocation).data)
 
-    @action(detail=True, methods=["get"], url_path="next-interval")
-    def next_interval(self, request: Request, pk: str | None = None) -> Response:
-        """The interval window Record Hour should open with — spec v2
-        §2.4: "auto-select the expected open interval.\""""
+    @action(detail=True, methods=["get"], url_path="recording-blocks")
+    def recording_blocks(self, request: Request, pk: str | None = None) -> Response:
+        """Which schedule blocks are available to record right now for
+        this allocation — spec v5 §9.4's Record Interval block picker.
+        Falls back to a single legacy rolling window if this shift has no
+        recording schedule configured. Never a system-clock-generated
+        range the caller invents — see `expected_blocks_for_allocation`.
+        """
         allocation = self.get_object()
         config = get_execution_config(allocation.organization)
-        start, end = next_expected_interval(allocation, config)
-        return Response({"from_time": start, "to_time": end, "default_interval_minutes": config.default_interval_minutes})
+        rows = expected_blocks_for_allocation(allocation, config)
+        return Response(ExpectedBlockSerializer(rows, many=True).data)
 
     @action(detail=True, methods=["get", "post"], url_path="interval-records")
     def interval_records(self, request: Request, pk: str | None = None) -> Response:
-        """Record Hour — spec v2 §2.4. `from_time`/`to_time` may be
-        omitted to use the auto-selected expected interval. Missing
-        intervals are allowed (never blocking); a record entered after the
-        configured grace period is flagged `is_late_entry`.
+        """Record Hour — spec v2 §2.4, spec v5 §9.4. The caller selects a
+        `schedule_block` id from `recording-blocks` (or omits it to take
+        whichever is first available); From/To always come from that
+        block server-side — never accepted as raw client input, per spec
+        v5's "no system-clock From/To" rule. Missing intervals are
+        allowed (never blocking); a record entered after the configured
+        grace period is flagged `is_late_entry`.
         """
         allocation = self.get_object()
         if request.method == "GET":
@@ -630,20 +862,33 @@ class PackingWorkCentreAllocationViewSet(
 
         data = cast(dict[str, Any], request.data)
         config = get_execution_config(allocation.organization)
+        rows = expected_blocks_for_allocation(allocation, config)
+        if not rows:
+            raise serializers.ValidationError(
+                {"detail": "Nothing is available to record for this allocation right now."}
+            )
 
-        if data.get("from_time") and data.get("to_time"):
-            from_time = _parse_aware(data["from_time"])
-            to_time = _parse_aware(data["to_time"])
+        requested_block_id = data.get("schedule_block")
+        if requested_block_id is not None:
+            row = next((r for r in rows if r.schedule_block_id == int(requested_block_id)), None)
+            if row is None:
+                raise serializers.ValidationError(
+                    {"detail": "This block is no longer available to record — pick another."}
+                )
         else:
-            from_time, to_time = next_expected_interval(allocation, config)
+            row = rows[0]
+
+        from_time, to_time = row.from_time, row.to_time
+        schedule_block = (
+            PackingRecordingBlock.objects.filter(id=row.schedule_block_id).first()
+            if row.schedule_block_id
+            else None
+        )
 
         session = allocation.session
         scheduled, downtime, available = compute_interval_minutes(session, from_time, to_time)
 
-        capability = session.work_centre.capabilities.filter(
-            process_definition=allocation.process_version.process_definition
-        ).first() if allocation.process_version else None
-        standard_rate = capability.standard_rate if capability else None
+        standard_rate = standard_rate_for_allocation(allocation)
         planned_output = compute_planned_output(config, standard_rate, available)
 
         premium_qty = int(data.get("premium_qty", 0))
@@ -674,6 +919,7 @@ class PackingWorkCentreAllocationViewSet(
 
         record = PackingIntervalRecord.objects.create(
             allocation=allocation,
+            schedule_block=schedule_block,
             from_time=from_time,
             to_time=to_time,
             scheduled_minutes=scheduled,
@@ -699,6 +945,33 @@ class PackingWorkCentreAllocationViewSet(
             created_by=cast(Any, request.user),
             updated_by=cast(Any, request.user),
         )
+        return Response(PackingIntervalRecordSerializer(record).data, status=201)
+
+    @action(detail=True, methods=["get"], url_path="summary-info")
+    def summary_info(self, request: Request, pk: str | None = None) -> Response:
+        """Which schedule blocks are already entered vs. still missing for
+        this allocation — the informational panel on Record Summary's modal
+        (spec v5 §8.3).
+        """
+        allocation = self.get_object()
+        entered, missing = entered_and_missing_block_labels(allocation)
+        return Response(
+            SummaryInfoSerializer({"entered_blocks": entered, "missing_blocks": missing}).data
+        )
+
+    @action(detail=True, methods=["post"])
+    def summary(self, request: Request, pk: str | None = None) -> Response:
+        """Record Summary — spec v5 §8.3. One consolidated output entry for
+        this allocation, usable alone (Summary-only Work Centres) or
+        alongside interval records already entered (Flexible mode).
+        """
+        allocation = self.get_object()
+        serializer = RecordSummarySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            record = record_summary(allocation, user=request.user, **serializer.validated_data)
+        except ValueError as exc:
+            raise serializers.ValidationError({"detail": str(exc)}) from exc
         return Response(PackingIntervalRecordSerializer(record).data, status=201)
 
 
@@ -793,7 +1066,24 @@ class TodaysShiftView(APIView):
     Control Board's data source. Returns the `PackingShift` for that
     date+shift with its Work Centre Sessions nested (or `null` if the
     shift hasn't been set up/started yet, in which case the frontend shows
-    the Shift Setup screen instead).
+    the Shift Setup screen instead), plus:
+
+    - `unassigned_jobs` — every Job released for this date+shift (any Bay)
+      that has never been assigned to a Work Centre. A Job only becomes
+      visible on the floor once "Assign Work" creates its first
+      allocation, so without this a released-but-unassigned Job (e.g.
+      released from Weekly Planner and never picked up) is otherwise
+      invisible here — you'd only find it by knowing to search for it
+      from a Work Centre's own "Assign Work" modal.
+    - `active_jobs` — every Job with a non-cancelled allocation on one of
+      *today's* sessions (spec v5's job-first Packing Floor: this is the
+      set of full Job records the frontend groups Work Centre tiles
+      under). Deliberately scoped to what's actually on today's floor
+      right now, not to the Job's own `plan_line` date — a Job can be
+      actively running today even if its own plan was for a different
+      day (e.g. carried over, or rescheduled after starting). Includes
+      COMPLETED Jobs on purpose — a Job's row should stay put (now showing
+      Completed) rather than disappear the moment it finishes.
     """
 
     permission_classes = [IsInternalStaff]
@@ -817,6 +1107,58 @@ class TodaysShiftView(APIView):
             )
             .first()
         )
-        if packing_shift is None:
-            return Response({"shift": None})
-        return Response({"shift": PackingShiftSerializer(packing_shift).data})
+
+        candidates = (
+            PackingJob.objects.filter(plan_line__date=date_, plan_line__shift_id=shift_id)
+            .exclude(status__in=[PackingJob.Status.CANCELLED, PackingJob.Status.COMPLETED])
+            .select_related(
+                "plan_line__export_order_line__export_order__customer",
+                "plan_line__export_order_line__item",
+                "plan_line__shift",
+                "plan_line__bay",
+                "packaging_profile_version__profile",
+            )
+        )
+        unassigned_jobs = [job for job in candidates if job.allocated_qty == 0]
+
+        # Includes a Job whose allocation just COMPLETED, so its row stays
+        # on today's floor board (now showing Completed) instead of
+        # silently vanishing the moment the last SKU finishes — CANCELLED
+        # is still dropped, since a cancelled allocation never did
+        # anything on this floor worth keeping visible.
+        active_job_ids: set[int] = set()
+        if packing_shift is not None:
+            for session in packing_shift.work_centre_sessions.all():
+                for allocation in session.allocations.all():
+                    if allocation.status != PackingWorkCentreAllocation.Status.CANCELLED:
+                        active_job_ids.add(allocation.job_id)
+
+        # A Job planned for this date+shift that reached COMPLETED stays
+        # visible too, even when its own allocation history wouldn't
+        # otherwise surface it — e.g. it was stopped (cascading its
+        # allocation to CANCELLED) and then completed manually afterward.
+        active_job_ids |= set(
+            PackingJob.objects.filter(
+                plan_line__date=date_,
+                plan_line__shift_id=shift_id,
+                status=PackingJob.Status.COMPLETED,
+            ).values_list("id", flat=True)
+        )
+
+        active_jobs = PackingJob.objects.filter(id__in=active_job_ids).exclude(
+            status=PackingJob.Status.CANCELLED
+        ).select_related(
+            "plan_line__export_order_line__export_order__customer",
+            "plan_line__export_order_line__item",
+            "plan_line__shift",
+            "plan_line__bay",
+            "packaging_profile_version__profile",
+        )
+
+        return Response(
+            {
+                "shift": PackingShiftSerializer(packing_shift).data if packing_shift else None,
+                "unassigned_jobs": PackingJobSerializer(unassigned_jobs, many=True).data,
+                "active_jobs": PackingJobSerializer(active_jobs, many=True).data,
+            }
+        )

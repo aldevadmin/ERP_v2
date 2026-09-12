@@ -17,6 +17,7 @@ const JOB_STATUS_COLORS: Record<PackingJobStatus, string> = {
   IN_PROGRESS: 'processing',
   COMPLETED: 'green',
   ON_HOLD: 'orange',
+  STOPPED: 'default',
   CANCELLED: 'red',
 }
 

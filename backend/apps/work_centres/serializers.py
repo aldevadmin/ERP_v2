@@ -73,6 +73,7 @@ class WorkCentreSerializer(serializers.ModelSerializer):
             "type_name",
             "bay",
             "bay_name",
+            "operator_count",
             "is_active",
             "capabilities",
             "capabilities_count",

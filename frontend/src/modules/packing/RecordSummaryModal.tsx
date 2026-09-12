@@ -8,19 +8,18 @@ import {
   Input,
   InputNumber,
   Modal,
-  Select,
+  Radio,
   Tag,
   Typography,
 } from 'antd'
 import { CheckCircleFilled } from '@ant-design/icons'
-import dayjs from 'dayjs'
 import { ApiError } from '../../shared/api/http'
-import { getRecordingBlocks, recordInterval } from './api'
-import type { ExpectedBlock, PackingWorkCentreAllocation } from './types'
+import { getSummaryInfo, recordSummary } from './api'
+import type { PackingWorkCentreAllocation, SummaryInfo } from './types'
 
 const { Text } = Typography
 
-export default function RecordIntervalModal({
+export default function RecordSummaryModal({
   open,
   allocation,
   onClose,
@@ -31,11 +30,11 @@ export default function RecordIntervalModal({
   onClose: () => void
   onSaved: () => void
 }) {
-  const [blocks, setBlocks] = useState<ExpectedBlock[]>([])
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
+  const [info, setInfo] = useState<SummaryInfo | null>(null)
   const [loading, setLoading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isFinalSummary, setIsFinalSummary] = useState(false)
 
   const [premiumQty, setPremiumQty] = useState<number | null>(null)
   const [standardQty, setStandardQty] = useState<number | null>(null)
@@ -46,32 +45,22 @@ export default function RecordIntervalModal({
   const [cartonsCompleted, setCartonsCompleted] = useState<number | null>(null)
   const [remarks, setRemarks] = useState('')
 
-  const resetOutputFields = () => {
-    setPremiumQty(null)
-    setStandardQty(null)
-    setRejectQty(null)
-    setCleanedQty(null)
-    setPouchesPacked(null)
-    setLoosePiecesPacked(null)
-    setCartonsCompleted(null)
-    setRemarks('')
-  }
-
-  const loadBlocks = (allocationId: number) => {
-    setLoading(true)
-    return getRecordingBlocks(allocationId)
-      .then((rows) => {
-        setBlocks(rows)
-        setSelectedIndex(rows.length > 0 ? 0 : null)
-      })
-      .finally(() => setLoading(false))
-  }
-
   useEffect(() => {
     if (open && allocation) {
       setError(null)
-      resetOutputFields()
-      void loadBlocks(allocation.id)
+      setIsFinalSummary(false)
+      setPremiumQty(null)
+      setStandardQty(null)
+      setRejectQty(null)
+      setCleanedQty(null)
+      setPouchesPacked(null)
+      setLoosePiecesPacked(null)
+      setCartonsCompleted(null)
+      setRemarks('')
+      setLoading(true)
+      getSummaryInfo(allocation.id)
+        .then(setInfo)
+        .finally(() => setLoading(false))
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, allocation?.id])
@@ -80,15 +69,14 @@ export default function RecordIntervalModal({
 
   const total = (premiumQty ?? 0) + (standardQty ?? 0) + (rejectQty ?? 0)
   const isBalanced = total > 0
-  const selected = selectedIndex !== null ? blocks[selectedIndex] : null
+  const hasScheduleInfo = !!info && (info.entered_blocks.length > 0 || info.missing_blocks.length > 0)
 
-  const handleSave = async (andNext: boolean) => {
-    if (!selected) return
+  const handleSave = async () => {
     setError(null)
     setSubmitting(true)
     try {
-      await recordInterval(allocation.id, {
-        schedule_block: selected.schedule_block_id,
+      await recordSummary(allocation.id, {
+        is_final_summary: isFinalSummary,
         premium_qty: premiumQty ?? 0,
         standard_qty: standardQty ?? 0,
         reject_qty: rejectQty ?? 0,
@@ -99,14 +87,9 @@ export default function RecordIntervalModal({
         remarks,
       })
       onSaved()
-      if (!andNext) {
-        onClose()
-      } else {
-        resetOutputFields()
-        await loadBlocks(allocation.id)
-      }
+      onClose()
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not save this interval.')
+      setError(err instanceof ApiError ? err.message : 'Could not save this summary.')
     } finally {
       setSubmitting(false)
     }
@@ -114,66 +97,50 @@ export default function RecordIntervalModal({
 
   return (
     <Modal
-      title={`Record Hour — ${allocation.work_centre_code}`}
+      title={`Record Work Summary — ${allocation.work_centre_code}`}
       open={open}
       onCancel={onClose}
       footer={[
         <Button key="cancel" onClick={onClose}>
           Cancel
         </Button>,
-        <Button key="save" loading={submitting} disabled={!selected} onClick={() => void handleSave(false)}>
-          Save
-        </Button>,
-        <Button
-          key="next"
-          type="primary"
-          loading={submitting}
-          disabled={!selected}
-          onClick={() => void handleSave(true)}
-        >
-          Save & Next Work Centre
+        <Button key="save" type="primary" loading={submitting} onClick={() => void handleSave()}>
+          Save Work Summary
         </Button>,
       ]}
       destroyOnHidden
       width={520}
     >
       <Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>
-        {allocation.order_no} • {allocation.item_name}
+        {allocation.job_number} • {allocation.order_no} • {allocation.item_name}
       </Text>
       {error && <Alert type="error" title={error} showIcon style={{ marginBottom: 16 }} />}
 
-      {!loading && blocks.length === 0 && (
-        <Alert
-          type="warning"
-          showIcon
-          style={{ marginBottom: 16 }}
-          title="Nothing is available to record for this allocation right now."
-        />
+      {hasScheduleInfo && (
+        <Descriptions column={1} size="small" bordered style={{ marginBottom: 16, opacity: loading ? 0.5 : 1 }}>
+          <Descriptions.Item label="Interval blocks entered">
+            {info!.entered_blocks.length > 0 ? info!.entered_blocks.join(', ') : '—'}
+          </Descriptions.Item>
+          <Descriptions.Item label="Missing / unrecorded">
+            {info!.missing_blocks.length > 0 ? info!.missing_blocks.join(', ') : '—'}
+          </Descriptions.Item>
+        </Descriptions>
       )}
 
-      {blocks.length > 1 && (
-        <Flex vertical gap={4} style={{ marginBottom: 12 }}>
-          <Text>Interval</Text>
-          <Select<number>
-            value={selectedIndex ?? undefined}
-            onChange={setSelectedIndex}
-            options={blocks.map((b, i) => ({ value: i, label: b.display_label }))}
-          />
-        </Flex>
-      )}
-
-      <Descriptions column={2} size="small" bordered style={{ marginBottom: 16, opacity: loading ? 0.5 : 1 }}>
-        <Descriptions.Item label="From">
-          {selected ? dayjs(selected.from_time).format('HH:mm') : '—'}
-        </Descriptions.Item>
-        <Descriptions.Item label="To">
-          {selected ? dayjs(selected.to_time).format('HH:mm') : '—'}
-        </Descriptions.Item>
-        <Descriptions.Item label="Scheduled">
-          {selected ? `${selected.scheduled_minutes} min${selected.is_partial ? ' (partial)' : ''}` : '—'}
-        </Descriptions.Item>
+      <Descriptions column={1} size="small" bordered style={{ marginBottom: 16 }}>
         <Descriptions.Item label="Assigned Qty">{allocation.assigned_qty.toLocaleString()}</Descriptions.Item>
       </Descriptions>
+
+      <Radio.Group
+        value={isFinalSummary}
+        onChange={(e) => setIsFinalSummary(e.target.value as boolean)}
+        style={{ display: 'block', marginBottom: 16 }}
+      >
+        <Flex vertical gap={4}>
+          <Radio value={false}>Add summary for unrecorded output only</Radio>
+          <Radio value={true}>Final consolidated summary (authorized correction)</Radio>
+        </Flex>
+      </Radio.Group>
 
       <Text strong style={{ display: 'block', marginBottom: 8 }}>
         SORTING OUTPUT

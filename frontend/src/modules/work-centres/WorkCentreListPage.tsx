@@ -113,6 +113,7 @@ export default function WorkCentreListPage() {
             { title: 'Name', dataIndex: 'name' },
             { title: 'Type', dataIndex: 'type_name' },
             { title: 'Capable Processes', dataIndex: 'capabilities_count' },
+            { title: 'Operators', dataIndex: 'operator_count' },
             {
               title: 'Status',
               dataIndex: 'is_active',

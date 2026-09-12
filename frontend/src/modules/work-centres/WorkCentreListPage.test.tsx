@@ -26,6 +26,7 @@ const response: WorkCentreListResponse = {
       type_name: 'Machine',
       bay: null,
       bay_name: null,
+      operator_count: 3,
       is_active: true,
       capabilities: [],
       capabilities_count: 2,
@@ -57,6 +58,7 @@ describe('WorkCentreListPage', () => {
     expect(screen.getByText('WC-1')).toBeInTheDocument()
     expect(screen.getByText('Machine')).toBeInTheDocument()
     expect(screen.getByText('2')).toBeInTheDocument()
+    expect(screen.getByText('3')).toBeInTheDocument()
     expect(mockedApi.listWorkCentres).toHaveBeenCalledWith({
       search: undefined,
       isActive: true,

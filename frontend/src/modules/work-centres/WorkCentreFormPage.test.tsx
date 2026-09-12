@@ -97,6 +97,7 @@ describe('WorkCentreFormPage — create', () => {
       type_name: 'Machine',
       bay: null,
       bay_name: null,
+      operator_count: 2,
       is_active: true,
       capabilities: [],
       capabilities_count: 0,
@@ -137,6 +138,7 @@ describe('WorkCentreFormPage — edit', () => {
     type_name: 'Machine',
     bay: null,
     bay_name: null,
+    operator_count: 2,
     is_active: true,
     capabilities: [
       {

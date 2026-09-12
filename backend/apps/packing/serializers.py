@@ -11,10 +11,14 @@ from .models import (
     PackingExecutionConfig,
     PackingIntervalRecord,
     PackingJob,
+    PackingJobEvent,
     PackingMaterialMovement,
     PackingMaterialRequest,
     PackingMaterialRequestLine,
     PackingPlanLine,
+    PackingRecordingBlock,
+    PackingRecordingSchedule,
+    PackingRecordingScheduleVersion,
     PackingShift,
     PackingWorkCentreAllocation,
     PackingWorkCentreSession,
@@ -22,7 +26,7 @@ from .models import (
     Shift,
     WorkCentreIssueEvent,
 )
-from .services import MaterialRequirementRow, PackingDemandRow
+from .services import MaterialRequirementRow, PackingDemandRow, job_has_running_allocation
 
 
 class ShiftSerializer(serializers.ModelSerializer):
@@ -299,6 +303,9 @@ class PackingJobSerializer(serializers.ModelSerializer):
     item_name = serializers.CharField(
         source="plan_line.export_order_line.item.name", read_only=True, default=""
     )
+    customer_sku_code = serializers.CharField(
+        source="plan_line.export_order_line.customer_sku_code", read_only=True, default=""
+    )
     date = serializers.DateField(source="plan_line.date", read_only=True)
     shift = serializers.IntegerField(source="plan_line.shift_id", read_only=True)
     shift_name = serializers.CharField(source="plan_line.shift.name", read_only=True)
@@ -309,6 +316,9 @@ class PackingJobSerializer(serializers.ModelSerializer):
     reject_qty = serializers.IntegerField(read_only=True)
     balance_qty = serializers.IntegerField(read_only=True)
     allocated_qty = serializers.IntegerField(read_only=True)
+    packaging_profile_label = serializers.SerializerMethodField()
+    has_running_allocation = serializers.SerializerMethodField()
+    can_reschedule = serializers.SerializerMethodField()
 
     class Meta:
         model = PackingJob
@@ -320,6 +330,8 @@ class PackingJobSerializer(serializers.ModelSerializer):
             "order_no",
             "customer_name",
             "item_name",
+            "customer_sku_code",
+            "packaging_profile_label",
             "date",
             "shift",
             "shift_name",
@@ -332,8 +344,51 @@ class PackingJobSerializer(serializers.ModelSerializer):
             "reject_qty",
             "balance_qty",
             "allocated_qty",
+            "has_running_allocation",
+            "can_reschedule",
             "remarks",
         ]
+
+    def get_packaging_profile_label(self, obj: PackingJob) -> str | None:
+        version = obj.packaging_profile_version
+        if version is None:
+            return None
+        return f"{version.profile.code} (v{version.version_number})"
+
+    def get_has_running_allocation(self, obj: PackingJob) -> bool:
+        return job_has_running_allocation(obj)
+
+    def get_can_reschedule(self, obj: PackingJob) -> bool:
+        """False once the Job's own Plan Line has been cancelled — e.g. a
+        Stop with "return to demand" already released this balance back
+        to the demand pool for re-planning via Weekly Planner, so there's
+        no live Plan Line left here to move to a new date/shift/bay.
+        """
+        return obj.plan_line.status != PackingPlanLine.Status.CANCELLED
+
+
+class PackingJobEventSerializer(serializers.ModelSerializer):
+    performed_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = PackingJobEvent
+        fields = [
+            "id",
+            "job",
+            "event_type",
+            "reason",
+            "remarks",
+            "details",
+            "performed_by",
+            "performed_by_name",
+            "created_at",
+        ]
+
+    def get_performed_by_name(self, obj: PackingJobEvent) -> str:
+        user = obj.performed_by
+        if user is None:
+            return ""
+        return user.get_full_name() or user.get_username()
 
 
 class PackingExecutionConfigSerializer(serializers.ModelSerializer):
@@ -351,6 +406,56 @@ class PackingExecutionConfigSerializer(serializers.ModelSerializer):
         ]
 
 
+class PackingRecordingBlockSerializer(serializers.ModelSerializer):
+    duration_minutes = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = PackingRecordingBlock
+        fields = ["id", "sequence", "from_time", "to_time", "is_active", "duration_minutes"]
+
+
+class PackingRecordingBlockWriteSerializer(serializers.Serializer):
+    sequence = serializers.IntegerField(min_value=1)
+    from_time = serializers.TimeField()
+    to_time = serializers.TimeField()
+    is_active = serializers.BooleanField(default=True)
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        if attrs["from_time"] >= attrs["to_time"]:
+            raise serializers.ValidationError("Each block's From must be before its To.")
+        return attrs
+
+
+class PackingRecordingScheduleVersionSerializer(serializers.ModelSerializer):
+    blocks = PackingRecordingBlockSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = PackingRecordingScheduleVersion
+        fields = ["id", "schedule", "version_number", "status", "recording_mode", "blocks"]
+
+
+class PackingRecordingScheduleSerializer(serializers.ModelSerializer):
+    shift_name = serializers.CharField(source="shift.name", read_only=True)
+    current_version = serializers.SerializerMethodField()
+
+    class Meta:
+        model = PackingRecordingSchedule
+        fields = ["id", "name", "shift", "shift_name", "is_active", "current_version"]
+
+    def get_current_version(self, obj: PackingRecordingSchedule) -> dict[str, Any] | None:
+        version = obj.current_version()
+        return PackingRecordingScheduleVersionSerializer(version).data if version else None
+
+
+class ExpectedBlockSerializer(serializers.Serializer):
+    schedule_block_id = serializers.IntegerField(allow_null=True)
+    display_label = serializers.CharField()
+    from_time = serializers.DateTimeField()
+    to_time = serializers.DateTimeField()
+    scheduled_minutes = serializers.IntegerField()
+    is_partial = serializers.BooleanField()
+
+
 class PackingIntervalRecordSerializer(serializers.ModelSerializer):
     quality_total = serializers.IntegerField(read_only=True)
     yield_percent = serializers.FloatField(read_only=True)
@@ -364,6 +469,7 @@ class PackingIntervalRecordSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "allocation",
+            "schedule_block",
             "from_time",
             "to_time",
             "scheduled_minutes",
@@ -380,6 +486,9 @@ class PackingIntervalRecordSerializer(serializers.ModelSerializer):
             "pieces_packed",
             "cartons_completed",
             "status",
+            "record_type",
+            "covers_unrecorded_only",
+            "is_final_summary",
             "entered_by",
             "entered_at",
             "is_late_entry",
@@ -410,6 +519,57 @@ class PackingIntervalRecordSerializer(serializers.ModelSerializer):
             if value is not None and value < 0:
                 raise serializers.ValidationError({field: "Cannot be negative."})
         return attrs
+
+
+class _SummaryQuantitiesMixin(serializers.Serializer):
+    """Shared fields for a single Summary entry — spec v5 §8.3/§8.4, used
+    by both the single Record Summary action and each row of a Bulk
+    Summary save."""
+
+    is_final_summary = serializers.BooleanField(default=False)
+    premium_qty = serializers.IntegerField(min_value=0, default=0)
+    standard_qty = serializers.IntegerField(min_value=0, default=0)
+    reject_qty = serializers.IntegerField(min_value=0, default=0)
+    cleaned_qty = serializers.IntegerField(min_value=0, default=0)
+    pouches_packed = serializers.IntegerField(min_value=0, default=0)
+    loose_pieces_packed = serializers.IntegerField(min_value=0, default=0)
+    cartons_completed = serializers.IntegerField(min_value=0, default=0)
+    remarks = serializers.CharField(required=False, allow_blank=True, default="")
+
+
+class RecordSummarySerializer(_SummaryQuantitiesMixin):
+    pass
+
+
+class SummaryInfoSerializer(serializers.Serializer):
+    entered_blocks = serializers.ListField(child=serializers.CharField())
+    missing_blocks = serializers.ListField(child=serializers.CharField())
+
+
+class BulkSummaryRowInputSerializer(_SummaryQuantitiesMixin):
+    allocation = serializers.IntegerField()
+
+
+class BulkSummaryRowSerializer(serializers.Serializer):
+    """One row of the Bulk Summary Entry table (spec v5 §8.4) — a Work
+    Centre currently holding this Job, with enough context to decide what
+    to type without opening the individual Record Summary modal.
+    """
+
+    allocation = serializers.IntegerField(source="id")
+    work_centre_code = serializers.CharField(source="session.work_centre.code")
+    operators = serializers.SerializerMethodField()
+    assigned_qty = serializers.IntegerField()
+    mode = serializers.SerializerMethodField()
+
+    def get_operators(self, obj: Any) -> str:
+        return " + ".join(o.employee.full_name for o in obj.session.operators.all())
+
+    def get_mode(self, obj: Any) -> str:
+        has_interval = any(
+            r.record_type == PackingIntervalRecord.RecordType.INTERVAL for r in obj.interval_records.all()
+        )
+        return "MIXED" if has_interval else "SUMMARY"
 
 
 class WorkCentreIssueEventSerializer(serializers.ModelSerializer):

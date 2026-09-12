@@ -53,7 +53,9 @@ import PackingOrdersPage from '../modules/packing/PackingOrdersPage'
 import WeeklyPackingPlannerPage from '../modules/packing/WeeklyPackingPlannerPage'
 import TodaysWorkPage from '../modules/packing/TodaysWorkPage'
 import PackingJobPage from '../modules/packing/PackingJobPage'
+import PackingSettingsLayout from '../modules/packing/PackingSettingsLayout'
 import PackingExecutionConfigPage from '../modules/packing/PackingExecutionConfigPage'
+import PackingRecordingSchedulePage from '../modules/packing/PackingRecordingSchedulePage'
 import ShiftListPage from '../modules/packing/ShiftListPage'
 import ShiftFormPage from '../modules/packing/ShiftFormPage'
 import InventoryPage from '../modules/inventory/InventoryPage'
@@ -615,11 +617,27 @@ function AuthenticatedShell() {
               />
               <Route path="/packing/jobs/:jobId" element={<PackingJobPage />} />
               <Route
-                path="/packing-execution-config"
+                path="/packing/settings"
                 element={
-                  <SettingsLayout>
+                  <PackingSettingsLayout>
                     <PackingExecutionConfigPage />
-                  </SettingsLayout>
+                  </PackingSettingsLayout>
+                }
+              />
+              <Route
+                path="/packing/settings/execution"
+                element={
+                  <PackingSettingsLayout>
+                    <PackingExecutionConfigPage />
+                  </PackingSettingsLayout>
+                }
+              />
+              <Route
+                path="/packing/settings/recording-schedule"
+                element={
+                  <PackingSettingsLayout>
+                    <PackingRecordingSchedulePage />
+                  </PackingSettingsLayout>
                 }
               />
               <Route

@@ -1,7 +1,6 @@
-import { Button, Card, Dropdown, Progress, Tag, Typography } from 'antd'
+import { Button, Card, Dropdown, Progress, Space, Tag, Typography } from 'antd'
 import { DownOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
-import { useNavigate } from 'react-router'
 import type { PackingWorkCentreSession } from './types'
 
 const { Text } = Typography
@@ -18,6 +17,7 @@ export default function WorkCentreTile({
   missingRecordMinutes,
   onOpenDetail,
   onRecordHour,
+  onRecordSummary,
   onAssignWork,
   onStartAllocation,
   onReportIssue,
@@ -28,17 +28,25 @@ export default function WorkCentreTile({
   missingRecordMinutes: number
   onOpenDetail: () => void
   onRecordHour: () => void
+  onRecordSummary: () => void
   onAssignWork: () => void
   onStartAllocation: (allocationId: number) => void
   onReportIssue: () => void
   onStopWorkCentre: () => void
   onResume: () => void
 }) {
-  const navigate = useNavigate()
   const current = session.allocations.find((a) => a.id === session.current_allocation_id) ?? null
   const queued = current
     ? null
     : session.allocations.filter((a) => a.status === 'PLANNED').sort((a, b) => a.sequence - b.sequence)[0] ?? null
+  // A Job paused with "keep Work Centres reserved" leaves its allocation
+  // ON_HOLD rather than PLANNED — it's not next-in-queue, it's waiting on
+  // that Job's own Resume. Without this, the tile looks identical to one
+  // that was never assigned to anyone.
+  const held =
+    current || queued
+      ? null
+      : session.allocations.filter((a) => a.status === 'ON_HOLD').sort((a, b) => a.sequence - b.sequence)[0] ?? null
   const progress = current ? Math.round((current.processed_qty / (current.assigned_qty || 1)) * 100) : 0
 
   const nextExpectedOverdue =
@@ -53,12 +61,6 @@ export default function WorkCentreTile({
     { key: 'issue', label: 'Report Issue', disabled: session.status === 'STOPPED' },
     { key: 'stop', label: 'Stop Work Centre', disabled: session.status === 'STOPPED' },
   ]
-
-  const openJob = (jobId: number) => {
-    navigate(`/packing/jobs/${jobId}`, {
-      state: { from: { label: 'Packing Floor', path: '/packing/today' } },
-    })
-  }
 
   const handleMenuClick = (key: string) => {
     if (key === 'detail' || key === 'change-sku') onOpenDetail()
@@ -76,7 +78,7 @@ export default function WorkCentreTile({
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
         <Text strong>{session.work_centre_code}</Text>
-        <Tag color={STATUS_COLORS[session.status]}>{session.status}</Tag>
+        <Tag color={held ? 'purple' : STATUS_COLORS[session.status]}>{held ? 'RESERVED' : session.status}</Tag>
       </div>
       <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>
         {session.operators.map((o) => o.employee_name).join(' + ') || 'No operators'}
@@ -84,22 +86,7 @@ export default function WorkCentreTile({
 
       {current ? (
         <>
-          <Text style={{ display: 'block' }}>{current.item_name}</Text>
-          <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>
-            {current.order_no} •{' '}
-            <Button
-              type="link"
-              size="small"
-              style={{ padding: 0, height: 'auto', fontSize: 12 }}
-              onClick={(e) => {
-                e.stopPropagation()
-                openJob(current.job)
-              }}
-            >
-              {current.job_number}
-            </Button>
-          </Text>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 8 }}>
             <span>Assigned {current.assigned_qty.toLocaleString()}</span>
             <span>Packed {current.packed_qty.toLocaleString()}</span>
           </div>
@@ -107,20 +94,8 @@ export default function WorkCentreTile({
         </>
       ) : queued ? (
         <div style={{ padding: '8px 0' }}>
-          <Text style={{ display: 'block' }}>{queued.item_name}</Text>
           <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>
-            <Button
-              type="link"
-              size="small"
-              style={{ padding: 0, height: 'auto', fontSize: 12 }}
-              onClick={(e) => {
-                e.stopPropagation()
-                openJob(queued.job)
-              }}
-            >
-              {queued.job_number}
-            </Button>{' '}
-            • Assigned {queued.assigned_qty.toLocaleString()}
+            Assigned {queued.assigned_qty.toLocaleString()}
           </Text>
           {session.status !== 'STOPPED' && session.status !== 'ISSUE' && (
             <Button
@@ -134,6 +109,15 @@ export default function WorkCentreTile({
               Start
             </Button>
           )}
+        </div>
+      ) : held ? (
+        <div style={{ padding: '8px 0' }}>
+          <Text style={{ fontSize: 12, display: 'block', marginBottom: 2 }}>
+            {held.job_number} — {held.item_name}
+          </Text>
+          <Text type="secondary" style={{ fontSize: 12, display: 'block' }}>
+            Assigned {held.assigned_qty.toLocaleString()} · Job is paused
+          </Text>
         </div>
       ) : (
         <div style={{ padding: '12px 0' }}>
@@ -172,13 +156,32 @@ export default function WorkCentreTile({
             Resume
           </Button>
         ) : current ? (
-          <Button size="small" onClick={onRecordHour}>
-            Record Hour
-          </Button>
+          <Space.Compact size="small">
+            <Button size="small" onClick={onRecordHour}>
+              Record Output
+            </Button>
+            <Dropdown
+              trigger={['click']}
+              menu={{
+                items: [
+                  { key: 'interval', label: 'Record Interval' },
+                  { key: 'summary', label: 'Record Summary' },
+                  { key: 'view', label: 'View Records' },
+                ],
+                onClick: ({ key }) => {
+                  if (key === 'interval') onRecordHour()
+                  if (key === 'summary') onRecordSummary()
+                  if (key === 'view') onOpenDetail()
+                },
+              }}
+            >
+              <Button size="small" icon={<DownOutlined />} />
+            </Dropdown>
+          </Space.Compact>
         ) : (
           <span />
         )}
-        <Dropdown menu={{ items: menuItems, onClick: ({ key }) => handleMenuClick(key) }}>
+        <Dropdown trigger={['click']} menu={{ items: menuItems, onClick: ({ key }) => handleMenuClick(key) }}>
           <Button size="small" icon={<DownOutlined />} />
         </Dropdown>
       </div>

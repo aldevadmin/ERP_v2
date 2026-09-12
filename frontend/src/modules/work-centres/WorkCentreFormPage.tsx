@@ -8,6 +8,7 @@ import {
   Flex,
   Form,
   Input,
+  InputNumber,
   Select,
   Switch,
   Table,
@@ -191,7 +192,7 @@ export default function WorkCentreFormPage() {
         layout="vertical"
         onFinish={handleSubmit}
         disabled={loading || submitting}
-        initialValues={{ is_active: true }}
+        initialValues={{ is_active: true, operator_count: 2 }}
       >
         <Form.Item
           label="Code"
@@ -230,6 +231,14 @@ export default function WorkCentreFormPage() {
             placeholder="No bay"
             options={bays.map((b) => ({ value: b.id, label: b.name }))}
           />
+        </Form.Item>
+        <Form.Item
+          label="Number of Operators"
+          name="operator_count"
+          tooltip="How many operators this station is staffed with per shift — Packing's Shift Setup screen shows this many operator slots."
+          rules={[{ required: true, message: 'Enter the number of operators.' }]}
+        >
+          <InputNumber size="large" min={1} max={10} style={{ maxWidth: 240, width: '100%' }} />
         </Form.Item>
         <Form.Item label="Active" name="is_active" valuePropName="checked">
           <Switch />

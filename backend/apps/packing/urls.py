@@ -8,6 +8,8 @@ from .views import (
     PackingMaterialRequestViewSet,
     PackingOrdersView,
     PackingPlanLineViewSet,
+    PackingRecordingScheduleVersionViewSet,
+    PackingRecordingScheduleViewSet,
     PackingShiftViewSet,
     PackingWorkCentreAllocationViewSet,
     PackingWorkCentreSessionViewSet,
@@ -34,6 +36,14 @@ router.register(
     "packing-interval-records", PackingIntervalRecordViewSet, basename="packing-interval-record"
 )
 router.register("packing-issue-events", WorkCentreIssueEventViewSet, basename="packing-issue-event")
+router.register(
+    "packing-recording-schedules", PackingRecordingScheduleViewSet, basename="packing-recording-schedule"
+)
+router.register(
+    "packing-recording-schedule-versions",
+    PackingRecordingScheduleVersionViewSet,
+    basename="packing-recording-schedule-version",
+)
 
 urlpatterns = [
     path("packing-orders/", PackingOrdersView.as_view(), name="packing-orders"),

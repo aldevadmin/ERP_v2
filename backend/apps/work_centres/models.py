@@ -1,3 +1,4 @@
+from django.core.validators import MinValueValidator
 from django.db import models
 
 from apps.core.models import BaseModel
@@ -68,6 +69,12 @@ class WorkCentre(BaseModel):
     bay = models.ForeignKey(
         Bay, null=True, blank=True, on_delete=models.PROTECT, related_name="work_centres"
     )
+    # How many operators this station is staffed with per shift — read by
+    # Packing's Shift Setup screen to render that many operator slots.
+    # Lives here (not a Packing-only setting) since it's a property of the
+    # physical station itself, reusable by any future module that staffs
+    # Work Centres the same way.
+    operator_count = models.PositiveSmallIntegerField(default=2, validators=[MinValueValidator(1)])
     organization = models.ForeignKey(
         "core.Organization", on_delete=models.PROTECT, related_name="work_centres"
     )

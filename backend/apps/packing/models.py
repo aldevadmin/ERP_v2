@@ -1,8 +1,34 @@
+from datetime import date, datetime
+
 from django.conf import settings
 from django.db import models
-from django.db.models import Sum
+from django.db.models import Q, QuerySet, Sum
 
 from apps.core.models import BaseModel
+
+
+def _apply_final_summary_override(queryset: QuerySet) -> QuerySet:
+    """Excludes every non-final record for an allocation that has an
+    authorized "final consolidated summary" — spec v5 §8.5/§11.1: SUMMARY
+    must not double-count INTERVAL records. A supervisor's default summary
+    only covers unrecorded output and is meant to add to the total; ticking
+    "final consolidated summary" instead marks that one record as the sole
+    authoritative total for the allocation, so every earlier record for it
+    must stop contributing to output aggregates. `queryset` is expected to
+    be a `ProcessExecutionOutput` queryset already filtered to the relevant
+    job/session/allocation scope.
+    """
+    final_allocation_ids = list(
+        PackingIntervalRecord.objects.filter(is_final_summary=True)
+        .values_list("allocation_id", flat=True)
+        .distinct()
+    )
+    if not final_allocation_ids:
+        return queryset
+    return queryset.filter(
+        Q(execution__packing_interval_record__is_final_summary=True)
+        | ~Q(execution__packing_interval_record__allocation_id__in=final_allocation_ids)
+    )
 
 
 class Shift(BaseModel):
@@ -89,6 +115,7 @@ class PackingJob(BaseModel):
         IN_PROGRESS = "IN_PROGRESS", "In Progress"
         COMPLETED = "COMPLETED", "Completed"
         ON_HOLD = "ON_HOLD", "On Hold"
+        STOPPED = "STOPPED", "Stopped"
         CANCELLED = "CANCELLED", "Cancelled"
 
     plan_line = models.OneToOneField(
@@ -136,9 +163,11 @@ class PackingJob(BaseModel):
         from apps.processes.models import ProcessExecutionOutput
 
         return (
-            ProcessExecutionOutput.objects.filter(
-                execution__packing_interval_record__allocation__job=self,
-                output_definition__classification__name="Good",
+            _apply_final_summary_override(
+                ProcessExecutionOutput.objects.filter(
+                    execution__packing_interval_record__allocation__job=self,
+                    output_definition__classification__name="Good",
+                )
             ).aggregate(total=Sum("quantity"))["total"]
             or 0
         )
@@ -148,9 +177,11 @@ class PackingJob(BaseModel):
         from apps.processes.models import ProcessExecutionOutput
 
         return (
-            ProcessExecutionOutput.objects.filter(
-                execution__packing_interval_record__allocation__job=self,
-                output_definition__classification__name="Standard",
+            _apply_final_summary_override(
+                ProcessExecutionOutput.objects.filter(
+                    execution__packing_interval_record__allocation__job=self,
+                    output_definition__classification__name="Standard",
+                )
             ).aggregate(total=Sum("quantity"))["total"]
             or 0
         )
@@ -160,9 +191,11 @@ class PackingJob(BaseModel):
         from apps.processes.models import ProcessExecutionOutput
 
         return (
-            ProcessExecutionOutput.objects.filter(
-                execution__packing_interval_record__allocation__job=self,
-                output_definition__classification__name__in=["Reject", "Scrap"],
+            _apply_final_summary_override(
+                ProcessExecutionOutput.objects.filter(
+                    execution__packing_interval_record__allocation__job=self,
+                    output_definition__classification__name__in=["Reject", "Scrap"],
+                )
             ).aggregate(total=Sum("quantity"))["total"]
             or 0
         )
@@ -181,8 +214,10 @@ class PackingJob(BaseModel):
         from apps.processes.models import ProcessExecutionOutput
 
         return (
-            ProcessExecutionOutput.objects.filter(
-                execution__packing_interval_record__allocation__job=self,
+            _apply_final_summary_override(
+                ProcessExecutionOutput.objects.filter(
+                    execution__packing_interval_record__allocation__job=self,
+                )
             ).aggregate(total=Sum("quantity"))["total"]
             or 0
         )
@@ -199,6 +234,46 @@ class PackingJob(BaseModel):
             )["total"]
             or 0
         )
+
+
+class PackingJobEvent(BaseModel):
+    """One audit entry for a Job lifecycle action — spec v5 §10.2. Every
+    Start/Pause/Resume/Stop/Complete/Cancel/Reschedule writes exactly one
+    of these, independent of `PackingJob.status` (which only ever holds
+    the *current* state). `details` carries whatever extra, action-specific
+    context is worth keeping (e.g. `release_work_centres` for a Pause,
+    `return_to_demand` for a Stop, old/new schedule for a Reschedule) — a
+    JSON blob rather than a wide table of mostly-null columns, since each
+    event type uses a different subset. `created_at` (from `BaseModel`) is
+    the event's own timestamp; there is no separate `occurred_at`.
+    """
+
+    class EventType(models.TextChoices):
+        START = "START", "Start"
+        PAUSE = "PAUSE", "Pause"
+        RESUME = "RESUME", "Resume"
+        STOP = "STOP", "Stop"
+        COMPLETE = "COMPLETE", "Complete"
+        CANCEL = "CANCEL", "Cancel"
+        RESCHEDULE = "RESCHEDULE", "Reschedule"
+
+    job = models.ForeignKey(PackingJob, on_delete=models.CASCADE, related_name="events")
+    event_type = models.CharField(max_length=12, choices=EventType.choices)
+    reason = models.CharField(max_length=200, blank=True)
+    remarks = models.TextField(blank=True)
+    details = models.JSONField(default=dict, blank=True)
+    performed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, related_name="+", on_delete=models.SET_NULL
+    )
+    organization = models.ForeignKey(
+        "core.Organization", on_delete=models.PROTECT, related_name="packing_job_events"
+    )
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.job.job_number} — {self.event_type}"
 
 
 class PackingMaterialRequest(BaseModel):
@@ -375,6 +450,118 @@ class PackingExecutionConfig(BaseModel):
         return f"Packing execution config — {self.organization}"
 
 
+class PackingRecordingSchedule(BaseModel):
+    """A named timetable family for one Shift (e.g. "Packing Shift 1
+    Standard") — spec v5 §9.3. The schedule itself is just a name +
+    Shift; the actual From/To blocks live on its versions, so a later
+    edit never reinterprets a shift that already ran against an earlier
+    version (same DRAFT→ACTIVE→ARCHIVED convention as
+    `apps.processes.ProcessDefinitionVersion`).
+    """
+
+    name = models.CharField(max_length=100)
+    shift = models.ForeignKey(Shift, on_delete=models.PROTECT, related_name="recording_schedules")
+    is_active = models.BooleanField(default=True)
+    organization = models.ForeignKey(
+        "core.Organization", on_delete=models.PROTECT, related_name="packing_recording_schedules"
+    )
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self) -> str:
+        return self.name
+
+    def current_version(self) -> "PackingRecordingScheduleVersion | None":
+        """The version the UI/API should read and write — the `ACTIVE`
+        one if there is one, otherwise the latest `DRAFT`/`ARCHIVED` row.
+        """
+        return (
+            self.versions.filter(status=PackingRecordingScheduleVersion.Status.ACTIVE).first()
+            or self.versions.first()
+        )
+
+
+class PackingRecordingScheduleVersion(BaseModel):
+    """One immutable-once-`ACTIVE` snapshot of a schedule's blocks. Only a
+    `DRAFT` version may have its blocks edited; a `PackingShift` snapshots
+    whichever version is `ACTIVE` at Start Shift time onto its own
+    `recording_schedule_version` FK, so a later re-publish of this
+    schedule never rewrites how an already-run shift's blocks are
+    interpreted.
+    """
+
+    class Status(models.TextChoices):
+        DRAFT = "DRAFT", "Draft"
+        ACTIVE = "ACTIVE", "Active"
+        ARCHIVED = "ARCHIVED", "Archived"
+
+    class RecordingMode(models.TextChoices):
+        FLEXIBLE = "FLEXIBLE", "Flexible"
+        INTERVAL_REQUIRED = "INTERVAL_REQUIRED", "Interval Required"
+        SUMMARY_ONLY = "SUMMARY_ONLY", "Summary Only"
+
+    schedule = models.ForeignKey(
+        PackingRecordingSchedule, on_delete=models.CASCADE, related_name="versions"
+    )
+    version_number = models.PositiveIntegerField()
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.DRAFT)
+    recording_mode = models.CharField(
+        max_length=20, choices=RecordingMode.choices, default=RecordingMode.FLEXIBLE
+    )
+    organization = models.ForeignKey(
+        "core.Organization", on_delete=models.PROTECT, related_name="packing_recording_schedule_versions"
+    )
+
+    class Meta:
+        ordering = ["-version_number"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["schedule", "version_number"], name="unique_version_per_recording_schedule"
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.schedule.name} v{self.version_number} ({self.status})"
+
+
+class PackingRecordingBlock(BaseModel):
+    """One From/To slice of a schedule version (e.g. B3 11:30–13:15) —
+    spec v5 §9.2/§9.3. Plain wall-clock times, not datetimes: the actual
+    window for a given shift is this time-of-day combined with that
+    `PackingShift`'s own date.
+    """
+
+    version = models.ForeignKey(
+        PackingRecordingScheduleVersion, on_delete=models.CASCADE, related_name="blocks"
+    )
+    sequence = models.PositiveIntegerField()
+    from_time = models.TimeField()
+    to_time = models.TimeField()
+    is_active = models.BooleanField(default=True)
+    organization = models.ForeignKey(
+        "core.Organization", on_delete=models.PROTECT, related_name="packing_recording_blocks"
+    )
+
+    class Meta:
+        ordering = ["sequence"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["version", "sequence"], name="unique_block_sequence_per_version"
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"B{self.sequence} {self.from_time:%H:%M}-{self.to_time:%H:%M}"
+
+    @property
+    def duration_minutes(self) -> int:
+        today = date.today()
+        start = datetime.combine(today, self.from_time)
+        end = datetime.combine(today, self.to_time)
+        return max(int((end - start).total_seconds() // 60), 0)
+
+
 class PackingShift(BaseModel):
     """One Date + Shift's floor session — the top of the v2 execution
     hierarchy (spec v2 §1.1/§1.4). Created and started together by the
@@ -390,6 +577,16 @@ class PackingShift(BaseModel):
 
     date = models.DateField()
     shift = models.ForeignKey(Shift, on_delete=models.PROTECT, related_name="packing_shifts")
+    # Snapshotted once at Start Shift time (spec v5 §9.3's "Link/snapshot
+    # schedule version onto PackingShift") — never re-resolved later, so a
+    # subsequent schedule re-publish can't reinterpret a shift already run.
+    recording_schedule_version = models.ForeignKey(
+        PackingRecordingScheduleVersion,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="packing_shifts",
+    )
     status = models.CharField(max_length=12, choices=Status.choices, default=Status.NOT_STARTED)
     started_at = models.DateTimeField(null=True, blank=True)
     started_by = models.ForeignKey(
@@ -466,9 +663,11 @@ class PackingWorkCentreSession(BaseModel):
         from apps.processes.models import ProcessExecutionOutput
 
         return (
-            ProcessExecutionOutput.objects.filter(
-                execution__packing_interval_record__allocation__session=self,
-                output_definition__classification__name="Good",
+            _apply_final_summary_override(
+                ProcessExecutionOutput.objects.filter(
+                    execution__packing_interval_record__allocation__session=self,
+                    output_definition__classification__name="Good",
+                )
             ).aggregate(total=Sum("quantity"))["total"]
             or 0
         )
@@ -555,9 +754,11 @@ class PackingWorkCentreAllocation(BaseModel):
         from apps.processes.models import ProcessExecutionOutput
 
         return (
-            ProcessExecutionOutput.objects.filter(
-                execution__packing_interval_record__allocation=self,
-                output_definition__classification__name="Good",
+            _apply_final_summary_override(
+                ProcessExecutionOutput.objects.filter(
+                    execution__packing_interval_record__allocation=self,
+                    output_definition__classification__name="Good",
+                )
             ).aggregate(total=Sum("quantity"))["total"]
             or 0
         )
@@ -571,8 +772,10 @@ class PackingWorkCentreAllocation(BaseModel):
         from apps.processes.models import ProcessExecutionOutput
 
         return (
-            ProcessExecutionOutput.objects.filter(
-                execution__packing_interval_record__allocation=self,
+            _apply_final_summary_override(
+                ProcessExecutionOutput.objects.filter(
+                    execution__packing_interval_record__allocation=self,
+                )
             ).aggregate(total=Sum("quantity"))["total"]
             or 0
         )
@@ -645,8 +848,28 @@ class PackingIntervalRecord(BaseModel):
         LATE_ENTRY = "LATE_ENTRY", "Late Entry"
         CORRECTED = "CORRECTED", "Corrected"
 
+    class RecordType(models.TextChoices):
+        INTERVAL = "INTERVAL", "Interval"
+        SUMMARY = "SUMMARY", "Summary"
+        ADJUSTMENT = "ADJUSTMENT", "Adjustment"
+
     allocation = models.ForeignKey(
         PackingWorkCentreAllocation, on_delete=models.CASCADE, related_name="interval_records"
+    )
+    record_type = models.CharField(
+        max_length=10, choices=RecordType.choices, default=RecordType.INTERVAL
+    )
+    # Null when this organization/shift has no recording schedule
+    # configured yet — the legacy rolling-clock window still works as a
+    # fallback (see `apps.packing.services.expected_blocks_for_allocation`).
+    # PROTECT: a block already used by a real record can't be deleted out
+    # from under it, only deactivated.
+    schedule_block = models.ForeignKey(
+        PackingRecordingBlock,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="interval_records",
     )
     from_time = models.DateTimeField()
     to_time = models.DateTimeField()
@@ -669,6 +892,14 @@ class PackingIntervalRecord(BaseModel):
     )
     entered_at = models.DateTimeField(null=True, blank=True)
     is_late_entry = models.BooleanField(default=False)
+    # Both only meaningful for record_type=SUMMARY — spec v5 §8.3/§8.5.
+    # covers_unrecorded_only: the default "add summary for unrecorded
+    # output only" radio — additive alongside any existing INTERVAL
+    # records. is_final_summary: the "final consolidated summary
+    # (authorized correction)" radio — this record alone becomes the
+    # allocation's authoritative total; see `_apply_final_summary_override`.
+    covers_unrecorded_only = models.BooleanField(default=True)
+    is_final_summary = models.BooleanField(default=False)
     remarks = models.TextField(blank=True)
     execution = models.OneToOneField(
         "processes.ProcessExecution",

@@ -11,19 +11,23 @@ export default function WorkCentreDetailDrawer({
   session,
   onClose,
   onRecordHour,
+  onRecordSummary,
   onCompleteOrChangeSku,
   onReportIssue,
   onStopWorkCentre,
   onStartAllocation,
+  onFocusJob,
 }: {
   open: boolean
   session: PackingWorkCentreSession | null
   onClose: () => void
   onRecordHour: () => void
+  onRecordSummary: () => void
   onCompleteOrChangeSku: () => void
   onReportIssue: () => void
   onStopWorkCentre: () => void
   onStartAllocation: (allocationId: number) => void
+  onFocusJob: (jobId: number) => void
 }) {
   const [records, setRecords] = useState<PackingIntervalRecord[]>([])
 
@@ -56,7 +60,14 @@ export default function WorkCentreDetailDrawer({
           <Title level={5}>Current Work</Title>
           <Descriptions column={1} size="small" bordered style={{ marginBottom: 12 }}>
             <Descriptions.Item label={`${current.order_no} • ${current.item_name}`}>
-              &nbsp;
+              <Button
+                type="link"
+                size="small"
+                style={{ padding: 0, height: 'auto' }}
+                onClick={() => onFocusJob(current.job)}
+              >
+                {current.job_number}
+              </Button>
             </Descriptions.Item>
             <Descriptions.Item label="Assigned">{current.assigned_qty.toLocaleString()} pcs</Descriptions.Item>
             <Descriptions.Item label="Processed">{current.processed_qty.toLocaleString()} pcs</Descriptions.Item>
@@ -66,7 +77,10 @@ export default function WorkCentreDetailDrawer({
 
           <Flex gap={8} style={{ marginBottom: 20 }} wrap="wrap">
             <Button size="small" type="primary" onClick={onRecordHour}>
-              Record Hour
+              Record Interval
+            </Button>
+            <Button size="small" onClick={onRecordSummary}>
+              Record Summary
             </Button>
             <Button size="small" onClick={onCompleteOrChangeSku}>
               Complete SKU
@@ -88,6 +102,18 @@ export default function WorkCentreDetailDrawer({
                 title: 'Time',
                 key: 'time',
                 render: (_, r) => `${dayjs(r.from_time).format('HH:mm')}-${dayjs(r.to_time).format('HH:mm')}`,
+              },
+              {
+                title: 'Type',
+                dataIndex: 'record_type',
+                render: (type: PackingIntervalRecord['record_type'], r) =>
+                  type === 'SUMMARY' ? (
+                    <Tag color={r.is_final_summary ? 'purple' : 'blue'}>
+                      {r.is_final_summary ? 'Final Summary' : 'Summary'}
+                    </Tag>
+                  ) : (
+                    <Tag>{type === 'ADJUSTMENT' ? 'Adjustment' : 'Interval'}</Tag>
+                  ),
               },
               { title: 'Plan', dataIndex: 'planned_output' },
               { title: '1st', dataIndex: 'premium_qty' },

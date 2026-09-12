@@ -38,7 +38,7 @@ export default function PackingExecutionConfigPage() {
     <div>
       <Breadcrumb
         style={{ marginBottom: 12 }}
-        items={[{ title: <Link to="/settings">Settings</Link> }, { title: 'Packing Execution' }]}
+        items={[{ title: <Link to="/packing/settings">Packing</Link> }, { title: 'Execution' }]}
       />
       <Card style={{ maxWidth: 640, margin: '0 auto' }} loading={loading}>
         <Title level={4}>Packing Execution Configuration</Title>
