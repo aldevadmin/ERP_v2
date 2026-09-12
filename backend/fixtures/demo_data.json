@@ -1,0 +1,5550 @@
+[
+{
+  "model": "accounts.user",
+  "pk": 1,
+  "fields": {
+    "password": "pbkdf2_sha256$1000000$qi1qPVKL8pGTeTON0VQ8Fb$ffXOoFzNbJCXcE2J9hqfdP/npMMnR4ug9S23Y6kpeiQ=",
+    "last_login": "2026-09-07T18:24:32.414Z",
+    "is_superuser": true,
+    "username": "admin",
+    "first_name": "",
+    "last_name": "",
+    "email": "admin@example.com",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2026-08-29T12:25:36.766Z",
+    "groups": [
+      6
+    ],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 2,
+  "fields": {
+    "password": "",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "patch_test_user",
+    "first_name": "",
+    "last_name": "",
+    "email": "",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-08-29T17:35:42.111Z",
+    "groups": [
+      6
+    ],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.user",
+  "pk": 3,
+  "fields": {
+    "password": "pbkdf2_sha256$1000000$z6JeGnqXHbzlMFKSEHEBcW$nFOWZtx67Fp1IrREzuU/A79cuTGE9/Fytcsj3bT0lAk=",
+    "last_login": null,
+    "is_superuser": false,
+    "username": "packing_coordinator",
+    "first_name": "",
+    "last_name": "",
+    "email": "",
+    "is_staff": false,
+    "is_active": true,
+    "date_joined": "2026-09-08T08:22:33.510Z",
+    "groups": [
+      4
+    ],
+    "user_permissions": []
+  }
+},
+{
+  "model": "accounts.employee",
+  "pk": 1,
+  "fields": {
+    "created_at": "2026-09-05T09:40:52.970Z",
+    "updated_at": "2026-09-05T09:40:52.970Z",
+    "created_by": null,
+    "updated_by": null,
+    "user": null,
+    "employee_code": "EMP-001",
+    "full_name": "Ravi",
+    "organization": 1,
+    "team": null,
+    "designation": "",
+    "is_active": true
+  }
+},
+{
+  "model": "accounts.employee",
+  "pk": 2,
+  "fields": {
+    "created_at": "2026-09-05T09:40:52.978Z",
+    "updated_at": "2026-09-05T09:40:52.978Z",
+    "created_by": null,
+    "updated_by": null,
+    "user": null,
+    "employee_code": "EMP-002",
+    "full_name": "Manoj",
+    "organization": 1,
+    "team": null,
+    "designation": "",
+    "is_active": true
+  }
+},
+{
+  "model": "accounts.employee",
+  "pk": 4,
+  "fields": {
+    "created_at": "2026-09-08T08:13:09.635Z",
+    "updated_at": "2026-09-08T08:13:09.635Z",
+    "created_by": null,
+    "updated_by": null,
+    "user": null,
+    "employee_code": "US-03",
+    "full_name": "User 3",
+    "organization": 1,
+    "team": null,
+    "designation": "",
+    "is_active": true
+  }
+},
+{
+  "model": "accounts.employee",
+  "pk": 5,
+  "fields": {
+    "created_at": "2026-09-08T08:13:24.120Z",
+    "updated_at": "2026-09-08T08:13:24.120Z",
+    "created_by": null,
+    "updated_by": null,
+    "user": null,
+    "employee_code": "US-04",
+    "full_name": "User 4",
+    "organization": 1,
+    "team": null,
+    "designation": "",
+    "is_active": true
+  }
+},
+{
+  "model": "accounts.employee",
+  "pk": 6,
+  "fields": {
+    "created_at": "2026-09-08T08:13:34.510Z",
+    "updated_at": "2026-09-08T08:13:34.510Z",
+    "created_by": null,
+    "updated_by": null,
+    "user": null,
+    "employee_code": "US-05",
+    "full_name": "User 5",
+    "organization": 1,
+    "team": null,
+    "designation": "",
+    "is_active": true
+  }
+},
+{
+  "model": "accounts.employee",
+  "pk": 7,
+  "fields": {
+    "created_at": "2026-09-11T11:24:49.273Z",
+    "updated_at": "2026-09-11T11:24:56.396Z",
+    "created_by": null,
+    "updated_by": null,
+    "user": null,
+    "employee_code": "US-06",
+    "full_name": "Test User 6",
+    "organization": 1,
+    "team": null,
+    "designation": "",
+    "is_active": true
+  }
+},
+{
+  "model": "accounts.employee",
+  "pk": 8,
+  "fields": {
+    "created_at": "2026-09-11T11:25:09.694Z",
+    "updated_at": "2026-09-11T11:25:09.694Z",
+    "created_by": null,
+    "updated_by": null,
+    "user": null,
+    "employee_code": "US-07",
+    "full_name": "Test User 7",
+    "organization": 1,
+    "team": null,
+    "designation": "",
+    "is_active": true
+  }
+},
+{
+  "model": "accounts.employee",
+  "pk": 9,
+  "fields": {
+    "created_at": "2026-09-11T11:25:21.685Z",
+    "updated_at": "2026-09-11T11:25:21.685Z",
+    "created_by": null,
+    "updated_by": null,
+    "user": null,
+    "employee_code": "US-08",
+    "full_name": "Test User 8",
+    "organization": 1,
+    "team": null,
+    "designation": "",
+    "is_active": true
+  }
+},
+{
+  "model": "accounts.employee",
+  "pk": 10,
+  "fields": {
+    "created_at": "2026-09-11T11:25:30.497Z",
+    "updated_at": "2026-09-11T11:25:30.497Z",
+    "created_by": null,
+    "updated_by": null,
+    "user": null,
+    "employee_code": "US-09",
+    "full_name": "Test User 9",
+    "organization": 1,
+    "team": null,
+    "designation": "",
+    "is_active": true
+  }
+},
+{
+  "model": "accounts.employee",
+  "pk": 11,
+  "fields": {
+    "created_at": "2026-09-11T11:25:39.868Z",
+    "updated_at": "2026-09-11T11:25:39.868Z",
+    "created_by": null,
+    "updated_by": null,
+    "user": null,
+    "employee_code": "US-10",
+    "full_name": "Test User 10",
+    "organization": 1,
+    "team": null,
+    "designation": "",
+    "is_active": true
+  }
+},
+{
+  "model": "accounts.employee",
+  "pk": 12,
+  "fields": {
+    "created_at": "2026-09-11T11:25:51.424Z",
+    "updated_at": "2026-09-11T11:25:51.424Z",
+    "created_by": null,
+    "updated_by": null,
+    "user": null,
+    "employee_code": "US-11",
+    "full_name": "Test User 11",
+    "organization": 1,
+    "team": null,
+    "designation": "",
+    "is_active": true
+  }
+},
+{
+  "model": "accounts.employee",
+  "pk": 13,
+  "fields": {
+    "created_at": "2026-09-11T11:26:05.862Z",
+    "updated_at": "2026-09-11T11:26:05.862Z",
+    "created_by": null,
+    "updated_by": null,
+    "user": null,
+    "employee_code": "US-12",
+    "full_name": "Test User 12",
+    "organization": 1,
+    "team": null,
+    "designation": "",
+    "is_active": true
+  }
+},
+{
+  "model": "accounts.employee",
+  "pk": 14,
+  "fields": {
+    "created_at": "2026-09-11T11:26:16.887Z",
+    "updated_at": "2026-09-11T11:26:16.887Z",
+    "created_by": null,
+    "updated_by": null,
+    "user": null,
+    "employee_code": "US-13",
+    "full_name": "Test User 13",
+    "organization": 1,
+    "team": null,
+    "designation": "",
+    "is_active": true
+  }
+},
+{
+  "model": "accounts.employee",
+  "pk": 15,
+  "fields": {
+    "created_at": "2026-09-11T11:26:25.935Z",
+    "updated_at": "2026-09-11T11:26:25.935Z",
+    "created_by": null,
+    "updated_by": null,
+    "user": null,
+    "employee_code": "US-14",
+    "full_name": "Test User 14",
+    "organization": 1,
+    "team": null,
+    "designation": "",
+    "is_active": true
+  }
+},
+{
+  "model": "core.organization",
+  "pk": 1,
+  "fields": {
+    "created_at": "2026-08-29T12:25:12.410Z",
+    "updated_at": "2026-08-29T12:25:12.410Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Default Organization"
+  }
+},
+{
+  "model": "core.sequence",
+  "pk": 1,
+  "fields": {
+    "key": "export_order:2026",
+    "last_value": 1
+  }
+},
+{
+  "model": "core.sequence",
+  "pk": 2,
+  "fields": {
+    "key": "packing_job",
+    "last_value": 11
+  }
+},
+{
+  "model": "customer_mappings.customerproductmapping",
+  "pk": 3,
+  "fields": {
+    "created_at": "2026-09-01T09:01:55.552Z",
+    "updated_at": "2026-09-01T09:01:55.552Z",
+    "created_by": null,
+    "updated_by": null,
+    "customer": 1,
+    "item": 4,
+    "customer_sku": "01-20-25B",
+    "mapping_code": "10SQPL_PLM-VT-01-20-25B",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "customer_mappings.customerproductmapping",
+  "pk": 4,
+  "fields": {
+    "created_at": "2026-09-01T15:23:51.815Z",
+    "updated_at": "2026-09-01T15:23:51.815Z",
+    "created_by": null,
+    "updated_by": null,
+    "customer": 1,
+    "item": 4,
+    "customer_sku": "01-20-25B-DUP",
+    "mapping_code": "10SQPL_PLM-VT-01-20-25B-DUP",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "customer_mappings.customerproductmapping",
+  "pk": 5,
+  "fields": {
+    "created_at": "2026-09-09T14:19:37.730Z",
+    "updated_at": "2026-09-09T14:19:37.730Z",
+    "created_by": null,
+    "updated_by": null,
+    "customer": 1,
+    "item": 10,
+    "customer_sku": "01-25-25B PR",
+    "mapping_code": "9SQPL_PRM_PLM-VT-01-25-25B PR",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "customer_mappings.customerproductmappingversion",
+  "pk": 3,
+  "fields": {
+    "created_at": "2026-09-01T09:01:55.559Z",
+    "updated_at": "2026-09-01T09:03:21.223Z",
+    "created_by": null,
+    "updated_by": null,
+    "mapping": 3,
+    "version_number": 1,
+    "status": "PUBLISHED",
+    "effective_from": null,
+    "effective_to": null,
+    "customer_description": "Verterra 10 inch square plate",
+    "packaging_profile_version": 6,
+    "selling_uom": 1,
+    "unit_price": "0.13",
+    "currency": "USD",
+    "barcode": "",
+    "organization": 1
+  }
+},
+{
+  "model": "customer_mappings.customerproductmappingversion",
+  "pk": 4,
+  "fields": {
+    "created_at": "2026-09-01T15:23:51.837Z",
+    "updated_at": "2026-09-01T15:23:51.910Z",
+    "created_by": null,
+    "updated_by": null,
+    "mapping": 4,
+    "version_number": 1,
+    "status": "DRAFT",
+    "effective_from": null,
+    "effective_to": null,
+    "customer_description": "Verterra 10 inch square plate",
+    "packaging_profile_version": 6,
+    "selling_uom": 1,
+    "unit_price": "0.13",
+    "currency": "USD",
+    "barcode": "",
+    "organization": 1
+  }
+},
+{
+  "model": "customer_mappings.customerproductmappingversion",
+  "pk": 5,
+  "fields": {
+    "created_at": "2026-09-09T14:19:37.741Z",
+    "updated_at": "2026-09-09T14:21:24.165Z",
+    "created_by": null,
+    "updated_by": null,
+    "mapping": 5,
+    "version_number": 1,
+    "status": "PUBLISHED",
+    "effective_from": null,
+    "effective_to": null,
+    "customer_description": "9 inch square plate premium",
+    "packaging_profile_version": 9,
+    "selling_uom": 1,
+    "unit_price": "0.12",
+    "currency": "",
+    "barcode": "",
+    "organization": 1
+  }
+},
+{
+  "model": "customers.customer",
+  "pk": 1,
+  "fields": {
+    "created_at": "2026-08-29T13:17:00.768Z",
+    "updated_at": "2026-08-29T13:17:00.768Z",
+    "created_by": null,
+    "updated_by": null,
+    "code": "VT",
+    "name": "Verterra",
+    "main_poc": "Shaun Robbins",
+    "emails": "[]",
+    "phone_numbers": "[]",
+    "internal_coordinator": null,
+    "organization": 1,
+    "is_active": true
+  }
+},
+{
+  "model": "customers.customeraddress",
+  "pk": 1,
+  "fields": {
+    "created_at": "2026-08-29T13:17:00.771Z",
+    "updated_at": "2026-08-29T13:17:00.771Z",
+    "created_by": null,
+    "updated_by": null,
+    "customer": 1,
+    "address_type": "BILLING",
+    "country": "USA",
+    "state": "CT",
+    "line1": "A1",
+    "line2": "A2",
+    "line3": "A3",
+    "pin": "12345"
+  }
+},
+{
+  "model": "customers.customeraddress",
+  "pk": 2,
+  "fields": {
+    "created_at": "2026-08-29T13:17:00.772Z",
+    "updated_at": "2026-08-29T13:17:00.772Z",
+    "created_by": null,
+    "updated_by": null,
+    "customer": 1,
+    "address_type": "SHIPPING",
+    "country": "USA",
+    "state": "KT",
+    "line1": "AA1",
+    "line2": "AA2",
+    "line3": "AA3",
+    "pin": "98541"
+  }
+},
+{
+  "model": "export_orders.exportorder",
+  "pk": 1,
+  "fields": {
+    "created_at": "2026-08-31T17:15:48.258Z",
+    "updated_at": "2026-08-31T17:15:48.258Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "order_number": "EO-2026-0001",
+    "customer": 1,
+    "customer_po_number": "VT0001",
+    "customer_po_date": "2026-08-31",
+    "export_coordinator": null,
+    "country": "",
+    "destination_port": "",
+    "requested_shipment_date": null,
+    "planned_container_ready_date": null,
+    "currency": "",
+    "incoterm": "",
+    "payment_terms": "",
+    "bill_to": null,
+    "ship_to": null,
+    "status": "PLANNING",
+    "internal_remarks": "",
+    "customer_remarks": ""
+  }
+},
+{
+  "model": "export_orders.exportorderstageevent",
+  "pk": 1,
+  "fields": {
+    "created_at": "2026-08-31T17:15:48.273Z",
+    "updated_at": "2026-08-31T17:15:48.273Z",
+    "created_by": 1,
+    "updated_by": null,
+    "export_order": 1,
+    "status": "PLANNING"
+  }
+},
+{
+  "model": "export_orders.exportorderline",
+  "pk": 4,
+  "fields": {
+    "created_at": "2026-09-03T17:23:47.417Z",
+    "updated_at": "2026-09-03T17:23:47.418Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "export_order": 1,
+    "line_number": 1,
+    "customer_sku_code": "01-20-25B",
+    "customer_description": "Verterra 10 inch square plate",
+    "item": 4,
+    "original_customer_quantity": 500,
+    "original_customer_unit": "CARTON",
+    "pieces_per_pouch": 50,
+    "pouches_per_carton": 6,
+    "has_retail_sticker": null,
+    "source_mapping_version": 3,
+    "stock_returned_cartons": 0
+  }
+},
+{
+  "model": "export_orders.exportorderline",
+  "pk": 5,
+  "fields": {
+    "created_at": "2026-09-09T14:21:56.788Z",
+    "updated_at": "2026-09-09T14:22:06.922Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "export_order": 1,
+    "line_number": 2,
+    "customer_sku_code": "01-25-25B PR",
+    "customer_description": "9 inch square plate premium",
+    "item": 10,
+    "original_customer_quantity": 90000,
+    "original_customer_unit": "PIECE",
+    "pieces_per_pouch": 25,
+    "pouches_per_carton": 12,
+    "has_retail_sticker": null,
+    "source_mapping_version": 5,
+    "stock_returned_cartons": 0
+  }
+},
+{
+  "model": "export_orders.skusupplyplan",
+  "pk": 1,
+  "fields": {
+    "created_at": "2026-09-03T17:25:26.390Z",
+    "updated_at": "2026-09-03T17:26:31.518Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "export_order_line": 4,
+    "quantity_from_stock": 30000,
+    "quantity_to_produce": 85000,
+    "quantity_to_procure": 40000,
+    "is_intentionally_underplanned": false,
+    "production_planned_start": null,
+    "production_expected_completion": null,
+    "procurement_planned_order_date": null,
+    "procurement_expected_receipt": null,
+    "responsible_team": null,
+    "responsible_person": null,
+    "risk_status": "ON_TRACK",
+    "planning_status": "NOT_STARTED",
+    "remarks": ""
+  }
+},
+{
+  "model": "export_orders.productionrequirement",
+  "pk": 1,
+  "fields": {
+    "created_at": "2026-09-03T17:54:28.223Z",
+    "updated_at": "2026-09-03T17:54:28.224Z",
+    "created_by": null,
+    "updated_by": null,
+    "export_order_line": 4
+  }
+},
+{
+  "model": "export_orders.productiontransaction",
+  "pk": 1,
+  "fields": {
+    "created_at": "2026-09-03T17:54:28.309Z",
+    "updated_at": "2026-09-03T17:54:28.309Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "production_requirement": 1,
+    "date": "2026-09-03",
+    "quantity_produced": 45000,
+    "quantity_accepted": 40000,
+    "quantity_rejected": 5000,
+    "party_team": "Test",
+    "remarks": "",
+    "source": "MANUAL"
+  }
+},
+{
+  "model": "export_orders.productiontransaction",
+  "pk": 2,
+  "fields": {
+    "created_at": "2026-09-03T17:56:31.810Z",
+    "updated_at": "2026-09-03T17:56:31.810Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "production_requirement": 1,
+    "date": "2026-09-03",
+    "quantity_produced": 25000,
+    "quantity_accepted": 24000,
+    "quantity_rejected": 1000,
+    "party_team": "ZZ",
+    "remarks": "",
+    "source": "MANUAL"
+  }
+},
+{
+  "model": "export_orders.productiontransaction",
+  "pk": 3,
+  "fields": {
+    "created_at": "2026-09-03T17:57:08.779Z",
+    "updated_at": "2026-09-03T17:57:08.779Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "production_requirement": 1,
+    "date": "2026-09-03",
+    "quantity_produced": 6000,
+    "quantity_accepted": 5000,
+    "quantity_rejected": 1000,
+    "party_team": "erere",
+    "remarks": "",
+    "source": "MANUAL"
+  }
+},
+{
+  "model": "export_orders.productiontransaction",
+  "pk": 4,
+  "fields": {
+    "created_at": "2026-09-03T17:57:37.445Z",
+    "updated_at": "2026-09-03T17:57:37.445Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "production_requirement": 1,
+    "date": "2026-09-03",
+    "quantity_produced": 20000,
+    "quantity_accepted": 18000,
+    "quantity_rejected": 2000,
+    "party_team": "asdasd",
+    "remarks": "",
+    "source": "MANUAL"
+  }
+},
+{
+  "model": "export_orders.procurementrequirement",
+  "pk": 1,
+  "fields": {
+    "created_at": "2026-09-03T17:55:11.167Z",
+    "updated_at": "2026-09-03T17:55:11.167Z",
+    "created_by": null,
+    "updated_by": null,
+    "export_order_line": 4
+  }
+},
+{
+  "model": "export_orders.procurementtransaction",
+  "pk": 1,
+  "fields": {
+    "created_at": "2026-09-03T17:55:11.196Z",
+    "updated_at": "2026-09-03T17:55:11.196Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "procurement_requirement": 1,
+    "vendor": null,
+    "date": "2026-09-03",
+    "quantity_received": 50000,
+    "quantity_accepted": 40000,
+    "quantity_rejected": 10000,
+    "party_team": "ABC C",
+    "remarks": ""
+  }
+},
+{
+  "model": "export_orders.packingmaterialrequirement",
+  "pk": 1,
+  "fields": {
+    "created_at": "2026-09-03T17:25:26.394Z",
+    "updated_at": "2026-09-03T17:25:26.394Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "export_order_line": 4,
+    "material_type": "CARTON",
+    "manual_required_qty": null,
+    "manual_to_procure_qty": 600,
+    "available_stock": 0,
+    "ordered_qty": 0,
+    "expected_arrival_date": null,
+    "received_qty": null,
+    "accepted_qty": null,
+    "responsible_person": null,
+    "status": "NOT_STARTED",
+    "remarks": ""
+  }
+},
+{
+  "model": "export_orders.packingmaterialrequirement",
+  "pk": 2,
+  "fields": {
+    "created_at": "2026-09-03T17:25:26.397Z",
+    "updated_at": "2026-09-03T17:25:26.397Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "export_order_line": 4,
+    "material_type": "POUCH",
+    "manual_required_qty": null,
+    "manual_to_procure_qty": 3200,
+    "available_stock": 0,
+    "ordered_qty": 0,
+    "expected_arrival_date": null,
+    "received_qty": null,
+    "accepted_qty": null,
+    "responsible_person": null,
+    "status": "NOT_STARTED",
+    "remarks": ""
+  }
+},
+{
+  "model": "items.uom",
+  "pk": 1,
+  "fields": {
+    "created_at": "2026-08-29T12:25:13.979Z",
+    "updated_at": "2026-08-29T12:25:13.979Z",
+    "created_by": null,
+    "updated_by": null,
+    "code": "PC",
+    "name": "Piece",
+    "decimal_scale": 0,
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "items.uom",
+  "pk": 2,
+  "fields": {
+    "created_at": "2026-08-29T12:25:13.980Z",
+    "updated_at": "2026-08-29T12:25:13.980Z",
+    "created_by": null,
+    "updated_by": null,
+    "code": "KG",
+    "name": "Kilogram",
+    "decimal_scale": 3,
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "items.uom",
+  "pk": 3,
+  "fields": {
+    "created_at": "2026-08-29T12:25:13.981Z",
+    "updated_at": "2026-08-29T12:25:13.981Z",
+    "created_by": null,
+    "updated_by": null,
+    "code": "POUCH",
+    "name": "Pouch",
+    "decimal_scale": 0,
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "items.uom",
+  "pk": 4,
+  "fields": {
+    "created_at": "2026-08-29T12:25:13.982Z",
+    "updated_at": "2026-08-29T12:25:13.982Z",
+    "created_by": null,
+    "updated_by": null,
+    "code": "CARTON",
+    "name": "Carton",
+    "decimal_scale": 0,
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "items.shape",
+  "pk": 1,
+  "fields": {
+    "created_at": "2026-08-29T12:25:18.102Z",
+    "updated_at": "2026-08-29T12:25:18.102Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Round",
+    "short_code": "RD",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "items.shape",
+  "pk": 2,
+  "fields": {
+    "created_at": "2026-08-29T12:25:18.103Z",
+    "updated_at": "2026-08-29T12:25:18.103Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Square",
+    "short_code": "SQ",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "items.shape",
+  "pk": 3,
+  "fields": {
+    "created_at": "2026-08-29T12:25:18.104Z",
+    "updated_at": "2026-08-29T12:25:18.104Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Rectangle",
+    "short_code": "RE",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "items.shape",
+  "pk": 4,
+  "fields": {
+    "created_at": "2026-08-29T12:25:18.105Z",
+    "updated_at": "2026-08-29T12:25:18.105Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Oval",
+    "short_code": "OV",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "items.shape",
+  "pk": 5,
+  "fields": {
+    "created_at": "2026-08-29T12:25:18.106Z",
+    "updated_at": "2026-08-29T12:25:18.106Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Special",
+    "short_code": "SP",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "items.shape",
+  "pk": 6,
+  "fields": {
+    "created_at": "2026-08-29T12:25:18.107Z",
+    "updated_at": "2026-08-29T12:25:18.107Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Container",
+    "short_code": "CN",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "items.shape",
+  "pk": 7,
+  "fields": {
+    "created_at": "2026-08-29T12:25:18.108Z",
+    "updated_at": "2026-08-29T12:25:18.108Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Triangle",
+    "short_code": "TG",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "items.item",
+  "pk": 1,
+  "fields": {
+    "created_at": "2026-08-30T17:39:04.039Z",
+    "updated_at": "2026-08-30T17:39:04.039Z",
+    "created_by": null,
+    "updated_by": null,
+    "code": "PLM - RM",
+    "name": "Palm Leaf - Raw Material",
+    "description": "",
+    "item_class": "RAW_MATERIAL",
+    "product_type": null,
+    "material_type": 1,
+    "shape": null,
+    "length": null,
+    "breadth": null,
+    "height": null,
+    "length_uom": null,
+    "breadth_uom": null,
+    "height_uom": null,
+    "inventory_uom": 1,
+    "purchasable": true,
+    "manufacturable": false,
+    "stockable": true,
+    "sellable": false,
+    "lot_tracking": "REQUIRED",
+    "is_active": true,
+    "available_qty": 0,
+    "organization": 1
+  }
+},
+{
+  "model": "items.item",
+  "pk": 3,
+  "fields": {
+    "created_at": "2026-08-30T17:44:40.038Z",
+    "updated_at": "2026-08-30T17:44:40.038Z",
+    "created_by": null,
+    "updated_by": null,
+    "code": "PLM_LLT",
+    "name": "Large Leaf Template",
+    "description": "",
+    "item_class": "WIP",
+    "product_type": 8,
+    "material_type": 1,
+    "shape": null,
+    "length": null,
+    "breadth": null,
+    "height": null,
+    "length_uom": "IN",
+    "breadth_uom": "IN",
+    "height_uom": "MM",
+    "inventory_uom": 1,
+    "purchasable": false,
+    "manufacturable": true,
+    "stockable": true,
+    "sellable": false,
+    "lot_tracking": "OPTIONAL",
+    "is_active": true,
+    "available_qty": 0,
+    "organization": 1
+  }
+},
+{
+  "model": "items.item",
+  "pk": 4,
+  "fields": {
+    "created_at": "2026-08-30T17:47:20.110Z",
+    "updated_at": "2026-08-31T18:16:08.106Z",
+    "created_by": null,
+    "updated_by": null,
+    "code": "10SQPL_PLM",
+    "name": "10 in Square Plate Premium - Palm",
+    "description": "",
+    "item_class": "FINISHED_GOOD",
+    "product_type": 1,
+    "material_type": 1,
+    "shape": 2,
+    "length": "10.00",
+    "breadth": "10.00",
+    "height": "20.00",
+    "length_uom": "IN",
+    "breadth_uom": "IN",
+    "height_uom": "MM",
+    "inventory_uom": 1,
+    "purchasable": false,
+    "manufacturable": true,
+    "stockable": true,
+    "sellable": true,
+    "lot_tracking": "REQUIRED",
+    "is_active": true,
+    "available_qty": 0,
+    "organization": 1
+  }
+},
+{
+  "model": "items.item",
+  "pk": 5,
+  "fields": {
+    "created_at": "2026-08-31T18:21:58.563Z",
+    "updated_at": "2026-08-31T18:21:58.563Z",
+    "created_by": null,
+    "updated_by": null,
+    "code": "CTN-520x520x340-10SQ300",
+    "name": "Carton Box - 520 x 520 x 340 (10SQ300)",
+    "description": "",
+    "item_class": "PACKAGING_MATERIAL",
+    "product_type": 4,
+    "material_type": null,
+    "shape": null,
+    "length": "520.00",
+    "breadth": "520.00",
+    "height": "340.00",
+    "length_uom": "MM",
+    "breadth_uom": "MM",
+    "height_uom": "MM",
+    "inventory_uom": 1,
+    "purchasable": true,
+    "manufacturable": false,
+    "stockable": true,
+    "sellable": false,
+    "lot_tracking": "REQUIRED",
+    "is_active": true,
+    "available_qty": 0,
+    "organization": 1
+  }
+},
+{
+  "model": "items.item",
+  "pk": 6,
+  "fields": {
+    "created_at": "2026-08-31T18:24:04.615Z",
+    "updated_at": "2026-08-31T18:24:04.615Z",
+    "created_by": null,
+    "updated_by": null,
+    "code": "SCR_10x10_PLM",
+    "name": "SCR - 10x10 - Palm",
+    "description": "",
+    "item_class": "SCRAP_BY_PRODUCT",
+    "product_type": 1,
+    "material_type": 1,
+    "shape": null,
+    "length": null,
+    "breadth": null,
+    "height": null,
+    "length_uom": null,
+    "breadth_uom": null,
+    "height_uom": null,
+    "inventory_uom": 1,
+    "purchasable": false,
+    "manufacturable": true,
+    "stockable": true,
+    "sellable": false,
+    "lot_tracking": "REQUIRED",
+    "is_active": true,
+    "available_qty": 0,
+    "organization": 1
+  }
+},
+{
+  "model": "items.item",
+  "pk": 7,
+  "fields": {
+    "created_at": "2026-09-01T08:39:12.162Z",
+    "updated_at": "2026-09-01T08:39:12.162Z",
+    "created_by": null,
+    "updated_by": null,
+    "code": "PCH - 280x300x5_10SQ",
+    "name": "Pouch - 280 x 300 x 5 (10 SQ)",
+    "description": "",
+    "item_class": "PACKAGING_MATERIAL",
+    "product_type": 5,
+    "material_type": null,
+    "shape": null,
+    "length": "280.00",
+    "breadth": "300.00",
+    "height": "5.00",
+    "length_uom": "MM",
+    "breadth_uom": "MM",
+    "height_uom": "MM",
+    "inventory_uom": 1,
+    "purchasable": true,
+    "manufacturable": false,
+    "stockable": true,
+    "sellable": false,
+    "lot_tracking": "REQUIRED",
+    "is_active": true,
+    "available_qty": 0,
+    "organization": 1
+  }
+},
+{
+  "model": "items.item",
+  "pk": 8,
+  "fields": {
+    "created_at": "2026-09-05T06:46:42.857Z",
+    "updated_at": "2026-09-05T06:46:42.857Z",
+    "created_by": null,
+    "updated_by": null,
+    "code": "WIP_10SQPL_PLM-UNS",
+    "name": "WIP_10 Square Plate - Palm (Unsorted)",
+    "description": "",
+    "item_class": "WIP",
+    "product_type": 1,
+    "material_type": 1,
+    "shape": 2,
+    "length": "10.00",
+    "breadth": "10.00",
+    "height": "20.00",
+    "length_uom": "IN",
+    "breadth_uom": "IN",
+    "height_uom": "MM",
+    "inventory_uom": 1,
+    "purchasable": false,
+    "manufacturable": true,
+    "stockable": true,
+    "sellable": false,
+    "lot_tracking": "REQUIRED",
+    "is_active": true,
+    "available_qty": 0,
+    "organization": 1
+  }
+},
+{
+  "model": "items.item",
+  "pk": 9,
+  "fields": {
+    "created_at": "2026-09-05T06:51:33.204Z",
+    "updated_at": "2026-09-05T06:51:33.204Z",
+    "created_by": null,
+    "updated_by": null,
+    "code": "10SQPL_STD_PLM",
+    "name": "10 in Square Plate Standard - Palm",
+    "description": "",
+    "item_class": "FINISHED_GOOD",
+    "product_type": 1,
+    "material_type": 1,
+    "shape": 2,
+    "length": "10.00",
+    "breadth": "10.00",
+    "height": "20.00",
+    "length_uom": "IN",
+    "breadth_uom": "IN",
+    "height_uom": "MM",
+    "inventory_uom": 1,
+    "purchasable": false,
+    "manufacturable": true,
+    "stockable": true,
+    "sellable": true,
+    "lot_tracking": "REQUIRED",
+    "is_active": true,
+    "available_qty": 0,
+    "organization": 1
+  }
+},
+{
+  "model": "items.item",
+  "pk": 10,
+  "fields": {
+    "created_at": "2026-09-09T14:12:22.789Z",
+    "updated_at": "2026-09-09T14:13:09.039Z",
+    "created_by": null,
+    "updated_by": null,
+    "code": "9SQPL_PRM_PLM",
+    "name": "9 in Square Plate Premium - Palm",
+    "description": "",
+    "item_class": "FINISHED_GOOD",
+    "product_type": 1,
+    "material_type": 1,
+    "shape": 2,
+    "length": "9.00",
+    "breadth": "9.00",
+    "height": "20.00",
+    "length_uom": "IN",
+    "breadth_uom": "IN",
+    "height_uom": "MM",
+    "inventory_uom": 1,
+    "purchasable": false,
+    "manufacturable": true,
+    "stockable": true,
+    "sellable": true,
+    "lot_tracking": "REQUIRED",
+    "is_active": true,
+    "available_qty": 0,
+    "organization": 1
+  }
+},
+{
+  "model": "items.item",
+  "pk": 11,
+  "fields": {
+    "created_at": "2026-09-09T14:12:56.955Z",
+    "updated_at": "2026-09-09T14:12:56.955Z",
+    "created_by": null,
+    "updated_by": null,
+    "code": "9SQPL_STD_PLM",
+    "name": "9 in Square Plate Standard - Palm",
+    "description": "",
+    "item_class": "FINISHED_GOOD",
+    "product_type": 1,
+    "material_type": 1,
+    "shape": 2,
+    "length": "9.00",
+    "breadth": "9.00",
+    "height": "20.00",
+    "length_uom": "IN",
+    "breadth_uom": "IN",
+    "height_uom": "MM",
+    "inventory_uom": 1,
+    "purchasable": false,
+    "manufacturable": true,
+    "stockable": true,
+    "sellable": true,
+    "lot_tracking": "REQUIRED",
+    "is_active": true,
+    "available_qty": 0,
+    "organization": 1
+  }
+},
+{
+  "model": "items.item",
+  "pk": 12,
+  "fields": {
+    "created_at": "2026-09-09T14:14:57.557Z",
+    "updated_at": "2026-09-09T14:14:57.557Z",
+    "created_by": null,
+    "updated_by": null,
+    "code": "CTN-470x470x340-9SQ300",
+    "name": "Carton Box - 470 x 470 x 340 (9SQ300)",
+    "description": "",
+    "item_class": "PACKAGING_MATERIAL",
+    "product_type": 4,
+    "material_type": null,
+    "shape": null,
+    "length": "470.00",
+    "breadth": "470.00",
+    "height": "340.00",
+    "length_uom": "MM",
+    "breadth_uom": "MM",
+    "height_uom": "MM",
+    "inventory_uom": 1,
+    "purchasable": true,
+    "manufacturable": false,
+    "stockable": true,
+    "sellable": false,
+    "lot_tracking": "REQUIRED",
+    "is_active": true,
+    "available_qty": 0,
+    "organization": 1
+  }
+},
+{
+  "model": "items.item",
+  "pk": 13,
+  "fields": {
+    "created_at": "2026-09-09T14:16:18.924Z",
+    "updated_at": "2026-09-09T14:16:18.924Z",
+    "created_by": null,
+    "updated_by": null,
+    "code": "PCH - 250x250x5_9SQ",
+    "name": "Pouch - 250 x 250 x 5 (9 SQ)",
+    "description": "",
+    "item_class": "PACKAGING_MATERIAL",
+    "product_type": 5,
+    "material_type": null,
+    "shape": null,
+    "length": "250.00",
+    "breadth": "250.00",
+    "height": "5.00",
+    "length_uom": "MM",
+    "breadth_uom": "MM",
+    "height_uom": "MM",
+    "inventory_uom": 1,
+    "purchasable": true,
+    "manufacturable": false,
+    "stockable": true,
+    "sellable": false,
+    "lot_tracking": "REQUIRED",
+    "is_active": true,
+    "available_qty": 0,
+    "organization": 1
+  }
+},
+{
+  "model": "items.itemfieldrule",
+  "pk": 1,
+  "fields": {
+    "created_at": "2026-08-29T12:25:18.627Z",
+    "updated_at": "2026-08-29T12:25:18.627Z",
+    "created_by": null,
+    "updated_by": null,
+    "item_class": "RAW_MATERIAL",
+    "field": "product_type",
+    "state": "HIDDEN",
+    "organization": 1
+  }
+},
+{
+  "model": "items.itemfieldrule",
+  "pk": 2,
+  "fields": {
+    "created_at": "2026-08-29T12:25:18.627Z",
+    "updated_at": "2026-08-29T12:25:18.627Z",
+    "created_by": null,
+    "updated_by": null,
+    "item_class": "RAW_MATERIAL",
+    "field": "material_type",
+    "state": "REQUIRED",
+    "organization": 1
+  }
+},
+{
+  "model": "items.itemfieldrule",
+  "pk": 3,
+  "fields": {
+    "created_at": "2026-08-29T12:25:18.627Z",
+    "updated_at": "2026-08-29T12:25:18.627Z",
+    "created_by": null,
+    "updated_by": null,
+    "item_class": "RAW_MATERIAL",
+    "field": "shape",
+    "state": "HIDDEN",
+    "organization": 1
+  }
+},
+{
+  "model": "items.itemfieldrule",
+  "pk": 4,
+  "fields": {
+    "created_at": "2026-08-29T12:25:18.627Z",
+    "updated_at": "2026-08-29T12:25:18.627Z",
+    "created_by": null,
+    "updated_by": null,
+    "item_class": "RAW_MATERIAL",
+    "field": "dimensions",
+    "state": "HIDDEN",
+    "organization": 1
+  }
+},
+{
+  "model": "items.itemfieldrule",
+  "pk": 5,
+  "fields": {
+    "created_at": "2026-08-29T12:25:18.627Z",
+    "updated_at": "2026-08-29T12:25:18.627Z",
+    "created_by": null,
+    "updated_by": null,
+    "item_class": "WIP",
+    "field": "product_type",
+    "state": "REQUIRED",
+    "organization": 1
+  }
+},
+{
+  "model": "items.itemfieldrule",
+  "pk": 6,
+  "fields": {
+    "created_at": "2026-08-29T12:25:18.627Z",
+    "updated_at": "2026-08-29T12:25:18.627Z",
+    "created_by": null,
+    "updated_by": null,
+    "item_class": "WIP",
+    "field": "material_type",
+    "state": "REQUIRED",
+    "organization": 1
+  }
+},
+{
+  "model": "items.itemfieldrule",
+  "pk": 7,
+  "fields": {
+    "created_at": "2026-08-29T12:25:18.627Z",
+    "updated_at": "2026-08-29T12:25:18.627Z",
+    "created_by": null,
+    "updated_by": null,
+    "item_class": "WIP",
+    "field": "shape",
+    "state": "OPTIONAL",
+    "organization": 1
+  }
+},
+{
+  "model": "items.itemfieldrule",
+  "pk": 8,
+  "fields": {
+    "created_at": "2026-08-29T12:25:18.627Z",
+    "updated_at": "2026-08-29T12:25:18.627Z",
+    "created_by": null,
+    "updated_by": null,
+    "item_class": "WIP",
+    "field": "dimensions",
+    "state": "OPTIONAL",
+    "organization": 1
+  }
+},
+{
+  "model": "items.itemfieldrule",
+  "pk": 9,
+  "fields": {
+    "created_at": "2026-08-29T12:25:18.627Z",
+    "updated_at": "2026-08-29T12:25:18.627Z",
+    "created_by": null,
+    "updated_by": null,
+    "item_class": "FINISHED_GOOD",
+    "field": "product_type",
+    "state": "REQUIRED",
+    "organization": 1
+  }
+},
+{
+  "model": "items.itemfieldrule",
+  "pk": 10,
+  "fields": {
+    "created_at": "2026-08-29T12:25:18.627Z",
+    "updated_at": "2026-08-29T12:25:18.627Z",
+    "created_by": null,
+    "updated_by": null,
+    "item_class": "FINISHED_GOOD",
+    "field": "material_type",
+    "state": "REQUIRED",
+    "organization": 1
+  }
+},
+{
+  "model": "items.itemfieldrule",
+  "pk": 11,
+  "fields": {
+    "created_at": "2026-08-29T12:25:18.627Z",
+    "updated_at": "2026-08-29T12:25:18.627Z",
+    "created_by": null,
+    "updated_by": null,
+    "item_class": "FINISHED_GOOD",
+    "field": "shape",
+    "state": "OPTIONAL",
+    "organization": 1
+  }
+},
+{
+  "model": "items.itemfieldrule",
+  "pk": 12,
+  "fields": {
+    "created_at": "2026-08-29T12:25:18.627Z",
+    "updated_at": "2026-08-29T12:25:18.627Z",
+    "created_by": null,
+    "updated_by": null,
+    "item_class": "FINISHED_GOOD",
+    "field": "dimensions",
+    "state": "OPTIONAL",
+    "organization": 1
+  }
+},
+{
+  "model": "items.itemfieldrule",
+  "pk": 13,
+  "fields": {
+    "created_at": "2026-08-29T12:25:18.627Z",
+    "updated_at": "2026-08-29T12:25:18.627Z",
+    "created_by": null,
+    "updated_by": null,
+    "item_class": "PACKAGING_MATERIAL",
+    "field": "product_type",
+    "state": "REQUIRED",
+    "organization": 1
+  }
+},
+{
+  "model": "items.itemfieldrule",
+  "pk": 14,
+  "fields": {
+    "created_at": "2026-08-29T12:25:18.627Z",
+    "updated_at": "2026-08-29T12:25:18.627Z",
+    "created_by": null,
+    "updated_by": null,
+    "item_class": "PACKAGING_MATERIAL",
+    "field": "material_type",
+    "state": "HIDDEN",
+    "organization": 1
+  }
+},
+{
+  "model": "items.itemfieldrule",
+  "pk": 15,
+  "fields": {
+    "created_at": "2026-08-29T12:25:18.627Z",
+    "updated_at": "2026-08-29T12:25:18.627Z",
+    "created_by": null,
+    "updated_by": null,
+    "item_class": "PACKAGING_MATERIAL",
+    "field": "shape",
+    "state": "HIDDEN",
+    "organization": 1
+  }
+},
+{
+  "model": "items.itemfieldrule",
+  "pk": 16,
+  "fields": {
+    "created_at": "2026-08-29T12:25:18.627Z",
+    "updated_at": "2026-08-29T12:25:18.627Z",
+    "created_by": null,
+    "updated_by": null,
+    "item_class": "PACKAGING_MATERIAL",
+    "field": "dimensions",
+    "state": "OPTIONAL",
+    "organization": 1
+  }
+},
+{
+  "model": "items.itemfieldrule",
+  "pk": 17,
+  "fields": {
+    "created_at": "2026-08-29T12:25:18.627Z",
+    "updated_at": "2026-08-29T16:54:53.444Z",
+    "created_by": null,
+    "updated_by": null,
+    "item_class": "CONSUMABLE",
+    "field": "product_type",
+    "state": "HIDDEN",
+    "organization": 1
+  }
+},
+{
+  "model": "items.itemfieldrule",
+  "pk": 18,
+  "fields": {
+    "created_at": "2026-08-29T12:25:18.627Z",
+    "updated_at": "2026-08-29T12:25:18.627Z",
+    "created_by": null,
+    "updated_by": null,
+    "item_class": "CONSUMABLE",
+    "field": "material_type",
+    "state": "HIDDEN",
+    "organization": 1
+  }
+},
+{
+  "model": "items.itemfieldrule",
+  "pk": 19,
+  "fields": {
+    "created_at": "2026-08-29T12:25:18.627Z",
+    "updated_at": "2026-08-29T12:25:18.627Z",
+    "created_by": null,
+    "updated_by": null,
+    "item_class": "CONSUMABLE",
+    "field": "shape",
+    "state": "HIDDEN",
+    "organization": 1
+  }
+},
+{
+  "model": "items.itemfieldrule",
+  "pk": 20,
+  "fields": {
+    "created_at": "2026-08-29T12:25:18.627Z",
+    "updated_at": "2026-08-29T12:25:18.627Z",
+    "created_by": null,
+    "updated_by": null,
+    "item_class": "CONSUMABLE",
+    "field": "dimensions",
+    "state": "HIDDEN",
+    "organization": 1
+  }
+},
+{
+  "model": "items.itemfieldrule",
+  "pk": 21,
+  "fields": {
+    "created_at": "2026-08-29T12:25:18.627Z",
+    "updated_at": "2026-08-29T12:25:18.627Z",
+    "created_by": null,
+    "updated_by": null,
+    "item_class": "SCRAP_BY_PRODUCT",
+    "field": "product_type",
+    "state": "OPTIONAL",
+    "organization": 1
+  }
+},
+{
+  "model": "items.itemfieldrule",
+  "pk": 22,
+  "fields": {
+    "created_at": "2026-08-29T12:25:18.627Z",
+    "updated_at": "2026-08-29T12:25:18.627Z",
+    "created_by": null,
+    "updated_by": null,
+    "item_class": "SCRAP_BY_PRODUCT",
+    "field": "material_type",
+    "state": "OPTIONAL",
+    "organization": 1
+  }
+},
+{
+  "model": "items.itemfieldrule",
+  "pk": 23,
+  "fields": {
+    "created_at": "2026-08-29T12:25:18.627Z",
+    "updated_at": "2026-08-29T12:25:18.627Z",
+    "created_by": null,
+    "updated_by": null,
+    "item_class": "SCRAP_BY_PRODUCT",
+    "field": "shape",
+    "state": "HIDDEN",
+    "organization": 1
+  }
+},
+{
+  "model": "items.itemfieldrule",
+  "pk": 24,
+  "fields": {
+    "created_at": "2026-08-29T12:25:18.627Z",
+    "updated_at": "2026-08-29T12:25:18.627Z",
+    "created_by": null,
+    "updated_by": null,
+    "item_class": "SCRAP_BY_PRODUCT",
+    "field": "dimensions",
+    "state": "HIDDEN",
+    "organization": 1
+  }
+},
+{
+  "model": "items.producttype",
+  "pk": 1,
+  "fields": {
+    "created_at": "2026-08-29T13:18:18.567Z",
+    "updated_at": "2026-08-29T16:56:18.177Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Plate",
+    "short_code": "PL",
+    "applicable_item_classes": "[\"WIP\", \"FINISHED_GOOD\", \"SCRAP_BY_PRODUCT\"]",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "items.producttype",
+  "pk": 2,
+  "fields": {
+    "created_at": "2026-08-29T13:18:32.386Z",
+    "updated_at": "2026-08-29T16:56:18.180Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Bowl",
+    "short_code": "BW",
+    "applicable_item_classes": "[\"WIP\", \"FINISHED_GOOD\", \"SCRAP_BY_PRODUCT\"]",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "items.producttype",
+  "pk": 3,
+  "fields": {
+    "created_at": "2026-08-29T13:31:48.508Z",
+    "updated_at": "2026-08-29T16:56:18.193Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Tray",
+    "short_code": "TR",
+    "applicable_item_classes": "[\"WIP\", \"FINISHED_GOOD\", \"SCRAP_BY_PRODUCT\"]",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "items.producttype",
+  "pk": 4,
+  "fields": {
+    "created_at": "2026-08-29T13:32:02.963Z",
+    "updated_at": "2026-08-29T16:56:18.178Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Carton Box",
+    "short_code": "CTN",
+    "applicable_item_classes": "[\"PACKAGING_MATERIAL\"]",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "items.producttype",
+  "pk": 5,
+  "fields": {
+    "created_at": "2026-08-29T13:32:12.712Z",
+    "updated_at": "2026-08-29T16:56:18.181Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Pouch",
+    "short_code": "PCH",
+    "applicable_item_classes": "[\"PACKAGING_MATERIAL\"]",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "items.producttype",
+  "pk": 6,
+  "fields": {
+    "created_at": "2026-08-29T13:32:26.805Z",
+    "updated_at": "2026-08-29T16:56:18.168Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Label",
+    "short_code": "LBL",
+    "applicable_item_classes": "[\"PACKAGING_MATERIAL\"]",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "items.producttype",
+  "pk": 7,
+  "fields": {
+    "created_at": "2026-08-29T13:32:40.133Z",
+    "updated_at": "2026-08-29T16:56:18.175Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Silica Gel",
+    "short_code": "SLG",
+    "applicable_item_classes": "[\"PACKAGING_MATERIAL\"]",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "items.producttype",
+  "pk": 8,
+  "fields": {
+    "created_at": "2026-08-30T17:41:42.631Z",
+    "updated_at": "2026-08-30T17:46:10.244Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Large Leaf Template",
+    "short_code": "LLT",
+    "applicable_item_classes": "[\"RAW_MATERIAL\", \"WIP\"]",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "items.producttype",
+  "pk": 9,
+  "fields": {
+    "created_at": "2026-08-30T17:41:57.344Z",
+    "updated_at": "2026-08-30T17:46:10.245Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Medium Leaf Template",
+    "short_code": "MLT",
+    "applicable_item_classes": "[\"RAW_MATERIAL\", \"WIP\"]",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "items.producttype",
+  "pk": 10,
+  "fields": {
+    "created_at": "2026-08-30T17:42:09.903Z",
+    "updated_at": "2026-08-30T17:46:10.247Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Small Leaf Template",
+    "short_code": "SLT",
+    "applicable_item_classes": "[\"RAW_MATERIAL\", \"WIP\"]",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "items.materialtype",
+  "pk": 1,
+  "fields": {
+    "created_at": "2026-08-29T13:33:27.814Z",
+    "updated_at": "2026-08-29T16:56:17.031Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Palm",
+    "short_code": "PLM",
+    "applicable_item_classes": "[\"RAW_MATERIAL\", \"WIP\", \"FINISHED_GOOD\", \"SCRAP_BY_PRODUCT\"]",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "items.materialtype",
+  "pk": 2,
+  "fields": {
+    "created_at": "2026-08-29T13:33:37.850Z",
+    "updated_at": "2026-08-29T16:56:17.034Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Wood",
+    "short_code": "WD",
+    "applicable_item_classes": "[\"RAW_MATERIAL\", \"WIP\", \"FINISHED_GOOD\", \"SCRAP_BY_PRODUCT\"]",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "items.materialtype",
+  "pk": 3,
+  "fields": {
+    "created_at": "2026-08-29T13:33:46.953Z",
+    "updated_at": "2026-08-29T16:56:17.027Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Bagasse",
+    "short_code": "BG",
+    "applicable_item_classes": "[\"RAW_MATERIAL\", \"WIP\", \"FINISHED_GOOD\", \"SCRAP_BY_PRODUCT\"]",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "items.materialtype",
+  "pk": 4,
+  "fields": {
+    "created_at": "2026-08-29T13:34:00.212Z",
+    "updated_at": "2026-08-29T16:56:17.029Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Veneer",
+    "short_code": "WV",
+    "applicable_item_classes": "[\"RAW_MATERIAL\", \"WIP\", \"FINISHED_GOOD\", \"SCRAP_BY_PRODUCT\"]",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "items.namingtemplate",
+  "pk": 1,
+  "fields": {
+    "created_at": "2026-08-29T17:00:12.597Z",
+    "updated_at": "2026-08-29T17:00:12.597Z",
+    "created_by": null,
+    "updated_by": null,
+    "item_class": "RAW_MATERIAL",
+    "product_type": null,
+    "shape": null,
+    "name_pattern": "{material_type} - {class}",
+    "code_pattern": "{material_type_short} - {class_short}",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "items.namingtemplate",
+  "pk": 2,
+  "fields": {
+    "created_at": "2026-08-29T17:06:45.520Z",
+    "updated_at": "2026-08-30T07:52:19.086Z",
+    "created_by": null,
+    "updated_by": null,
+    "item_class": "WIP",
+    "product_type": 1,
+    "shape": null,
+    "name_pattern": "{class}_{length}x{breadth} {shape} {product_type} - {material_type}",
+    "code_pattern": "{class_short}_{length}x{breadth}{shape_short}{product_type_short}_{material_type_short}",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "items.namingtemplate",
+  "pk": 4,
+  "fields": {
+    "created_at": "2026-08-29T17:45:10.284Z",
+    "updated_at": "2026-08-29T17:45:10.284Z",
+    "created_by": null,
+    "updated_by": null,
+    "item_class": "WIP",
+    "product_type": 1,
+    "shape": 1,
+    "name_pattern": "{class}_{length} {shape} {product_type} - {material_type}",
+    "code_pattern": "{class_short}_{length}{shape_short}{product_type_short}_{material_type_short}",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "items.namingtemplate",
+  "pk": 5,
+  "fields": {
+    "created_at": "2026-08-30T07:51:08.563Z",
+    "updated_at": "2026-08-30T07:51:08.563Z",
+    "created_by": null,
+    "updated_by": null,
+    "item_class": "WIP",
+    "product_type": 1,
+    "shape": 2,
+    "name_pattern": "{class}_{length} {shape} {product_type} - {material_type}",
+    "code_pattern": "{class_short}_{length}{shape_short}{product_type_short}_{material_type_short}",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "items.namingtemplate",
+  "pk": 6,
+  "fields": {
+    "created_at": "2026-08-30T07:53:10.246Z",
+    "updated_at": "2026-08-30T17:21:03.856Z",
+    "created_by": null,
+    "updated_by": null,
+    "item_class": "FINISHED_GOOD",
+    "product_type": null,
+    "shape": 1,
+    "name_pattern": "{length} {length_uom} {shape} {product_type} - {material_type}",
+    "code_pattern": "{length}{shape_short}{product_type_short}_{material_type_short}",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "items.namingtemplate",
+  "pk": 7,
+  "fields": {
+    "created_at": "2026-08-30T07:53:36.955Z",
+    "updated_at": "2026-08-30T17:20:37.455Z",
+    "created_by": null,
+    "updated_by": null,
+    "item_class": "FINISHED_GOOD",
+    "product_type": null,
+    "shape": 2,
+    "name_pattern": "{length} {length_uom} {shape} {product_type} - {material_type}",
+    "code_pattern": "{length}{shape_short}{product_type_short}_{material_type_short}",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "items.namingtemplate",
+  "pk": 8,
+  "fields": {
+    "created_at": "2026-08-30T08:33:34.430Z",
+    "updated_at": "2026-08-30T17:21:46.408Z",
+    "created_by": null,
+    "updated_by": null,
+    "item_class": "FINISHED_GOOD",
+    "product_type": null,
+    "shape": null,
+    "name_pattern": "{length}x{breadth} {length_uom} {shape} {product_type} - {material_type}",
+    "code_pattern": "{length}x{breadth}{shape_short}{product_type_short}_{material_type_short}",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "items.namingtemplate",
+  "pk": 9,
+  "fields": {
+    "created_at": "2026-08-30T08:38:39.908Z",
+    "updated_at": "2026-08-31T18:19:17.140Z",
+    "created_by": null,
+    "updated_by": null,
+    "item_class": "PACKAGING_MATERIAL",
+    "product_type": 4,
+    "shape": null,
+    "name_pattern": "{product_type} - {length} x {breadth} x {height}",
+    "code_pattern": "{product_type_short} - {length}x{breadth}x{height}",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "items.namingtemplate",
+  "pk": 10,
+  "fields": {
+    "created_at": "2026-08-31T18:13:58.989Z",
+    "updated_at": "2026-08-31T18:13:58.989Z",
+    "created_by": null,
+    "updated_by": null,
+    "item_class": "SCRAP_BY_PRODUCT",
+    "product_type": null,
+    "shape": null,
+    "name_pattern": "{class_short} -",
+    "code_pattern": "{class_short}_",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "items.namingtemplate",
+  "pk": 11,
+  "fields": {
+    "created_at": "2026-09-01T08:37:56.990Z",
+    "updated_at": "2026-09-01T08:37:56.990Z",
+    "created_by": null,
+    "updated_by": null,
+    "item_class": "PACKAGING_MATERIAL",
+    "product_type": 5,
+    "shape": null,
+    "name_pattern": "{product_type} - {length} x {breadth} x {height}",
+    "code_pattern": "{product_type_short} - {length}x{breadth}x{height}",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "packaging.packagingprofile",
+  "pk": 4,
+  "fields": {
+    "created_at": "2026-09-01T06:19:28.612Z",
+    "updated_at": "2026-09-01T08:36:45.311Z",
+    "created_by": null,
+    "updated_by": null,
+    "code": "10SQPL_PLM-300_50x6",
+    "name": "10 in Square Plate Premium - Palm (300_50x6)",
+    "finished_item": 4,
+    "scope": "STANDARD",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "packaging.packagingprofile",
+  "pk": 5,
+  "fields": {
+    "created_at": "2026-09-01T10:45:41.812Z",
+    "updated_at": "2026-09-01T10:45:41.812Z",
+    "created_by": null,
+    "updated_by": null,
+    "code": "10SQPL_PLM-300_50x6-DUP",
+    "name": "10 in Square Plate Premium - Palm (300_50x6)",
+    "finished_item": 4,
+    "scope": "STANDARD",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "packaging.packagingprofile",
+  "pk": 6,
+  "fields": {
+    "created_at": "2026-09-01T10:50:30.730Z",
+    "updated_at": "2026-09-01T10:50:30.730Z",
+    "created_by": null,
+    "updated_by": null,
+    "code": "10SQPL_PLM-300_50x6-DUP2",
+    "name": "10 in Square Plate Premium - Palm (300_50x6)",
+    "finished_item": 4,
+    "scope": "STANDARD",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "packaging.packagingprofile",
+  "pk": 7,
+  "fields": {
+    "created_at": "2026-09-09T14:17:53.419Z",
+    "updated_at": "2026-09-09T14:17:53.419Z",
+    "created_by": null,
+    "updated_by": null,
+    "code": "9SQPL_PRM_PLM-300_50x6",
+    "name": "9 in Square Plate Premium - Palm (300_25x12)",
+    "finished_item": 10,
+    "scope": "STANDARD",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "packaging.packagingprofileversion",
+  "pk": 6,
+  "fields": {
+    "created_at": "2026-09-01T06:19:28.617Z",
+    "updated_at": "2026-09-01T07:55:41.439Z",
+    "created_by": null,
+    "updated_by": null,
+    "profile": 4,
+    "version_number": 1,
+    "status": "PUBLISHED",
+    "effective_from": null,
+    "effective_to": null,
+    "selling_uom": 4,
+    "pack_mode": "CARTON",
+    "pieces_per_pouch": 50,
+    "pouches_per_carton": 6,
+    "carton_length_mm": "520.00",
+    "carton_breadth_mm": "520.00",
+    "carton_height_mm": "340.00",
+    "carton_net_weight_kg": "15.00",
+    "carton_gross_weight_kg": "18.00",
+    "pieces_per_selling_unit": 300,
+    "cbm": "0.0919",
+    "organization": 1
+  }
+},
+{
+  "model": "packaging.packagingprofileversion",
+  "pk": 7,
+  "fields": {
+    "created_at": "2026-09-01T10:45:41.829Z",
+    "updated_at": "2026-09-01T10:45:41.892Z",
+    "created_by": null,
+    "updated_by": null,
+    "profile": 5,
+    "version_number": 1,
+    "status": "DRAFT",
+    "effective_from": null,
+    "effective_to": null,
+    "selling_uom": 4,
+    "pack_mode": "CARTON",
+    "pieces_per_pouch": 50,
+    "pouches_per_carton": 6,
+    "carton_length_mm": "520.00",
+    "carton_breadth_mm": "520.00",
+    "carton_height_mm": "340.00",
+    "carton_net_weight_kg": "15.00",
+    "carton_gross_weight_kg": "18.00",
+    "pieces_per_selling_unit": null,
+    "cbm": null,
+    "organization": 1
+  }
+},
+{
+  "model": "packaging.packagingprofileversion",
+  "pk": 8,
+  "fields": {
+    "created_at": "2026-09-01T10:50:30.735Z",
+    "updated_at": "2026-09-01T10:50:30.805Z",
+    "created_by": null,
+    "updated_by": null,
+    "profile": 6,
+    "version_number": 1,
+    "status": "DRAFT",
+    "effective_from": null,
+    "effective_to": null,
+    "selling_uom": 4,
+    "pack_mode": "CARTON",
+    "pieces_per_pouch": 50,
+    "pouches_per_carton": 6,
+    "carton_length_mm": "520.00",
+    "carton_breadth_mm": "520.00",
+    "carton_height_mm": "340.00",
+    "carton_net_weight_kg": "15.00",
+    "carton_gross_weight_kg": "18.00",
+    "pieces_per_selling_unit": null,
+    "cbm": null,
+    "organization": 1
+  }
+},
+{
+  "model": "packaging.packagingprofileversion",
+  "pk": 9,
+  "fields": {
+    "created_at": "2026-09-09T14:17:53.430Z",
+    "updated_at": "2026-09-09T14:18:46.250Z",
+    "created_by": null,
+    "updated_by": null,
+    "profile": 7,
+    "version_number": 1,
+    "status": "PUBLISHED",
+    "effective_from": null,
+    "effective_to": null,
+    "selling_uom": 4,
+    "pack_mode": "CARTON",
+    "pieces_per_pouch": 25,
+    "pouches_per_carton": 12,
+    "carton_length_mm": "470.00",
+    "carton_breadth_mm": "470.00",
+    "carton_height_mm": "340.00",
+    "carton_net_weight_kg": "13.00",
+    "carton_gross_weight_kg": "15.00",
+    "pieces_per_selling_unit": 300,
+    "cbm": "0.0751",
+    "organization": 1
+  }
+},
+{
+  "model": "packaging.packagingprofilematerial",
+  "pk": 7,
+  "fields": {
+    "created_at": "2026-09-01T07:54:44.475Z",
+    "updated_at": "2026-09-01T07:54:44.475Z",
+    "created_by": null,
+    "updated_by": null,
+    "version": 6,
+    "item": 5,
+    "level": "CARTON",
+    "quantity": "1.000",
+    "uom": 1,
+    "organization": 1
+  }
+},
+{
+  "model": "packaging.packagingprofilematerial",
+  "pk": 8,
+  "fields": {
+    "created_at": "2026-09-01T10:51:04.156Z",
+    "updated_at": "2026-09-01T10:51:04.156Z",
+    "created_by": null,
+    "updated_by": null,
+    "version": 8,
+    "item": 5,
+    "level": "CARTON",
+    "quantity": "1.000",
+    "uom": 1,
+    "organization": 1
+  }
+},
+{
+  "model": "packaging.packagingprofilematerial",
+  "pk": 9,
+  "fields": {
+    "created_at": "2026-09-09T14:18:13.281Z",
+    "updated_at": "2026-09-09T14:18:13.281Z",
+    "created_by": null,
+    "updated_by": null,
+    "version": 9,
+    "item": 12,
+    "level": "CARTON",
+    "quantity": "1.000",
+    "uom": 1,
+    "organization": 1
+  }
+},
+{
+  "model": "packaging.packagingprofilematerial",
+  "pk": 10,
+  "fields": {
+    "created_at": "2026-09-09T14:18:13.288Z",
+    "updated_at": "2026-09-09T14:18:13.288Z",
+    "created_by": null,
+    "updated_by": null,
+    "version": 9,
+    "item": 13,
+    "level": "CARTON",
+    "quantity": "12.000",
+    "uom": 1,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.shift",
+  "pk": 1,
+  "fields": {
+    "created_at": "2026-09-07T17:38:04.348Z",
+    "updated_at": "2026-09-07T17:38:04.348Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Shift 1",
+    "code": "S1",
+    "start_time": null,
+    "end_time": null,
+    "organization": 1,
+    "is_active": true
+  }
+},
+{
+  "model": "packing.packingplanline",
+  "pk": 21,
+  "fields": {
+    "created_at": "2026-09-10T10:20:50.308Z",
+    "updated_at": "2026-09-10T10:20:50.309Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "export_order_line": 4,
+    "plan_code": "[VT0001][01-20-25B] Part 1",
+    "date": "2026-09-11",
+    "shift": 1,
+    "bay": 1,
+    "planned_qty": 20000,
+    "status": "RELEASED",
+    "remarks": "",
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingplanline",
+  "pk": 22,
+  "fields": {
+    "created_at": "2026-09-10T10:21:00.708Z",
+    "updated_at": "2026-09-10T16:25:20.681Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "export_order_line": 5,
+    "plan_code": "[VT0001][01-25-25B PR] Part 1",
+    "date": "2026-09-11",
+    "shift": 1,
+    "bay": 1,
+    "planned_qty": 20000,
+    "status": "CANCELLED",
+    "remarks": "",
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingplanline",
+  "pk": 23,
+  "fields": {
+    "created_at": "2026-09-10T17:32:00.736Z",
+    "updated_at": "2026-09-10T17:32:00.737Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "export_order_line": 5,
+    "plan_code": "[VT0001][01-25-25B PR] Part 2",
+    "date": "2026-09-12",
+    "shift": 1,
+    "bay": 1,
+    "planned_qty": 25000,
+    "status": "RELEASED",
+    "remarks": "",
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingplanline",
+  "pk": 24,
+  "fields": {
+    "created_at": "2026-09-10T17:50:05.648Z",
+    "updated_at": "2026-09-10T17:50:05.648Z",
+    "created_by": null,
+    "updated_by": null,
+    "export_order_line": 5,
+    "plan_code": "[VT0001][01-25-25B PR] Part 3",
+    "date": "2026-09-12",
+    "shift": 1,
+    "bay": 1,
+    "planned_qty": 21000,
+    "status": "RELEASED",
+    "remarks": "",
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingplanline",
+  "pk": 25,
+  "fields": {
+    "created_at": "2026-09-11T11:34:57.422Z",
+    "updated_at": "2026-09-11T11:34:57.422Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "export_order_line": 5,
+    "plan_code": "[VT0001][01-25-25B PR] Part 4",
+    "date": "2026-09-13",
+    "shift": 1,
+    "bay": 1,
+    "planned_qty": 25000,
+    "status": "RELEASED",
+    "remarks": "",
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingplanline",
+  "pk": 26,
+  "fields": {
+    "created_at": "2026-09-11T11:38:46.269Z",
+    "updated_at": "2026-09-11T11:38:46.269Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "export_order_line": 4,
+    "plan_code": "[VT0001][01-20-25B] Part 2",
+    "date": "2026-09-12",
+    "shift": 1,
+    "bay": 1,
+    "planned_qty": 5000,
+    "status": "RELEASED",
+    "remarks": "",
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingjob",
+  "pk": 18,
+  "fields": {
+    "created_at": "2026-09-10T10:21:04.854Z",
+    "updated_at": "2026-09-10T16:55:29.324Z",
+    "created_by": null,
+    "updated_by": null,
+    "plan_line": 21,
+    "job_number": "PJ-0006",
+    "target_qty": 20000,
+    "status": "COMPLETED",
+    "packaging_profile_version": 6,
+    "pieces_per_pouch": 50,
+    "pouches_per_carton": 6,
+    "remarks": "",
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingjob",
+  "pk": 19,
+  "fields": {
+    "created_at": "2026-09-10T10:21:10.197Z",
+    "updated_at": "2026-09-10T16:25:20.680Z",
+    "created_by": null,
+    "updated_by": null,
+    "plan_line": 22,
+    "job_number": "PJ-0007",
+    "target_qty": 20000,
+    "status": "STOPPED",
+    "packaging_profile_version": 9,
+    "pieces_per_pouch": 25,
+    "pouches_per_carton": 12,
+    "remarks": "",
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingjob",
+  "pk": 20,
+  "fields": {
+    "created_at": "2026-09-10T17:32:04.290Z",
+    "updated_at": "2026-09-10T17:49:32.104Z",
+    "created_by": null,
+    "updated_by": null,
+    "plan_line": 23,
+    "job_number": "PJ-0008",
+    "target_qty": 25000,
+    "status": "COMPLETED",
+    "packaging_profile_version": 9,
+    "pieces_per_pouch": 25,
+    "pouches_per_carton": 12,
+    "remarks": "",
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingjob",
+  "pk": 21,
+  "fields": {
+    "created_at": "2026-09-10T17:50:19.747Z",
+    "updated_at": "2026-09-11T11:32:43.779Z",
+    "created_by": null,
+    "updated_by": null,
+    "plan_line": 24,
+    "job_number": "PJ-0009",
+    "target_qty": 21000,
+    "status": "COMPLETED",
+    "packaging_profile_version": 9,
+    "pieces_per_pouch": 25,
+    "pouches_per_carton": 12,
+    "remarks": "",
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingjob",
+  "pk": 22,
+  "fields": {
+    "created_at": "2026-09-11T11:35:07.146Z",
+    "updated_at": "2026-09-11T11:35:07.146Z",
+    "created_by": null,
+    "updated_by": null,
+    "plan_line": 25,
+    "job_number": "PJ-0010",
+    "target_qty": 25000,
+    "status": "AWAITING_MATERIAL",
+    "packaging_profile_version": 9,
+    "pieces_per_pouch": 25,
+    "pouches_per_carton": 12,
+    "remarks": "",
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingjob",
+  "pk": 23,
+  "fields": {
+    "created_at": "2026-09-11T11:38:58.339Z",
+    "updated_at": "2026-09-11T11:40:28.877Z",
+    "created_by": null,
+    "updated_by": null,
+    "plan_line": 26,
+    "job_number": "PJ-0011",
+    "target_qty": 5000,
+    "status": "ON_HOLD",
+    "packaging_profile_version": 6,
+    "pieces_per_pouch": 50,
+    "pouches_per_carton": 6,
+    "remarks": "",
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingjobevent",
+  "pk": 4,
+  "fields": {
+    "created_at": "2026-09-10T16:25:20.684Z",
+    "updated_at": "2026-09-10T16:25:20.684Z",
+    "created_by": null,
+    "updated_by": null,
+    "job": 19,
+    "event_type": "STOP",
+    "reason": "Quality Issue",
+    "remarks": "",
+    "details": {
+      "return_to_demand": true
+    },
+    "performed_by": 1,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingjobevent",
+  "pk": 5,
+  "fields": {
+    "created_at": "2026-09-10T16:55:29.326Z",
+    "updated_at": "2026-09-10T16:55:29.326Z",
+    "created_by": null,
+    "updated_by": null,
+    "job": 18,
+    "event_type": "COMPLETE",
+    "reason": "",
+    "remarks": "",
+    "details": {},
+    "performed_by": 1,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingjobevent",
+  "pk": 6,
+  "fields": {
+    "created_at": "2026-09-10T17:49:32.106Z",
+    "updated_at": "2026-09-10T17:49:32.107Z",
+    "created_by": null,
+    "updated_by": null,
+    "job": 20,
+    "event_type": "COMPLETE",
+    "reason": "",
+    "remarks": "",
+    "details": {},
+    "performed_by": 1,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingjobevent",
+  "pk": 7,
+  "fields": {
+    "created_at": "2026-09-10T17:50:05.652Z",
+    "updated_at": "2026-09-10T17:50:05.652Z",
+    "created_by": null,
+    "updated_by": null,
+    "job": 20,
+    "event_type": "RESCHEDULE",
+    "reason": "",
+    "remarks": "",
+    "details": {
+      "new": {
+        "bay": 1,
+        "qty": 21000,
+        "date": "2026-09-12",
+        "shift": 1
+      },
+      "old": {
+        "bay": 1,
+        "qty": 21750,
+        "date": "2026-09-12",
+        "shift": 1
+      }
+    },
+    "performed_by": 1,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingjobevent",
+  "pk": 8,
+  "fields": {
+    "created_at": "2026-09-11T11:06:14.968Z",
+    "updated_at": "2026-09-11T11:06:14.968Z",
+    "created_by": null,
+    "updated_by": null,
+    "job": 21,
+    "event_type": "PAUSE",
+    "reason": "Material Issue",
+    "remarks": "",
+    "details": {
+      "release_work_centres": true
+    },
+    "performed_by": 1,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingjobevent",
+  "pk": 9,
+  "fields": {
+    "created_at": "2026-09-11T11:06:28.743Z",
+    "updated_at": "2026-09-11T11:06:28.743Z",
+    "created_by": null,
+    "updated_by": null,
+    "job": 21,
+    "event_type": "RESUME",
+    "reason": "",
+    "remarks": "",
+    "details": {},
+    "performed_by": 1,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingjobevent",
+  "pk": 10,
+  "fields": {
+    "created_at": "2026-09-11T11:12:43.317Z",
+    "updated_at": "2026-09-11T11:12:43.317Z",
+    "created_by": null,
+    "updated_by": null,
+    "job": 21,
+    "event_type": "PAUSE",
+    "reason": "Material Issue",
+    "remarks": "",
+    "details": {
+      "release_work_centres": false
+    },
+    "performed_by": 1,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingjobevent",
+  "pk": 11,
+  "fields": {
+    "created_at": "2026-09-11T11:12:49.904Z",
+    "updated_at": "2026-09-11T11:12:49.904Z",
+    "created_by": null,
+    "updated_by": null,
+    "job": 21,
+    "event_type": "RESUME",
+    "reason": "",
+    "remarks": "",
+    "details": {},
+    "performed_by": 1,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingjobevent",
+  "pk": 12,
+  "fields": {
+    "created_at": "2026-09-11T11:16:32.601Z",
+    "updated_at": "2026-09-11T11:16:32.601Z",
+    "created_by": null,
+    "updated_by": null,
+    "job": 21,
+    "event_type": "PAUSE",
+    "reason": "Machine Issue",
+    "remarks": "",
+    "details": {
+      "release_work_centres": false
+    },
+    "performed_by": 1,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingjobevent",
+  "pk": 13,
+  "fields": {
+    "created_at": "2026-09-11T11:18:00.491Z",
+    "updated_at": "2026-09-11T11:18:00.491Z",
+    "created_by": null,
+    "updated_by": null,
+    "job": 21,
+    "event_type": "RESUME",
+    "reason": "",
+    "remarks": "",
+    "details": {},
+    "performed_by": 1,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingjobevent",
+  "pk": 14,
+  "fields": {
+    "created_at": "2026-09-11T11:18:35.503Z",
+    "updated_at": "2026-09-11T11:18:35.503Z",
+    "created_by": null,
+    "updated_by": null,
+    "job": 21,
+    "event_type": "PAUSE",
+    "reason": "Priority Change",
+    "remarks": "",
+    "details": {
+      "release_work_centres": true
+    },
+    "performed_by": 1,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingjobevent",
+  "pk": 15,
+  "fields": {
+    "created_at": "2026-09-11T11:32:43.781Z",
+    "updated_at": "2026-09-11T11:32:43.781Z",
+    "created_by": null,
+    "updated_by": null,
+    "job": 21,
+    "event_type": "COMPLETE",
+    "reason": "",
+    "remarks": "",
+    "details": {},
+    "performed_by": 1,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingjobevent",
+  "pk": 16,
+  "fields": {
+    "created_at": "2026-09-11T11:40:28.878Z",
+    "updated_at": "2026-09-11T11:40:28.878Z",
+    "created_by": null,
+    "updated_by": null,
+    "job": 23,
+    "event_type": "PAUSE",
+    "reason": "Other",
+    "remarks": "",
+    "details": {
+      "release_work_centres": false
+    },
+    "performed_by": 1,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingmaterialrequest",
+  "pk": 7,
+  "fields": {
+    "created_at": "2026-09-10T14:17:56.768Z",
+    "updated_at": "2026-09-10T14:17:56.768Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "job": 18,
+    "source_location": null,
+    "required_by": null,
+    "remarks": "",
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingmaterialrequest",
+  "pk": 8,
+  "fields": {
+    "created_at": "2026-09-10T14:18:04.503Z",
+    "updated_at": "2026-09-10T14:18:04.503Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "job": 18,
+    "source_location": null,
+    "required_by": null,
+    "remarks": "",
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingmaterialrequest",
+  "pk": 9,
+  "fields": {
+    "created_at": "2026-09-10T16:24:16.046Z",
+    "updated_at": "2026-09-10T16:24:16.046Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "job": 19,
+    "source_location": null,
+    "required_by": null,
+    "remarks": "",
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingmaterialrequest",
+  "pk": 10,
+  "fields": {
+    "created_at": "2026-09-10T17:11:54.239Z",
+    "updated_at": "2026-09-10T17:11:54.239Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "job": 19,
+    "source_location": null,
+    "required_by": null,
+    "remarks": "",
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingmaterialrequest",
+  "pk": 11,
+  "fields": {
+    "created_at": "2026-09-10T17:11:58.182Z",
+    "updated_at": "2026-09-10T17:11:58.182Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "job": 19,
+    "source_location": null,
+    "required_by": null,
+    "remarks": "",
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingmaterialrequest",
+  "pk": 12,
+  "fields": {
+    "created_at": "2026-09-10T17:45:23.686Z",
+    "updated_at": "2026-09-10T17:45:23.686Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "job": 20,
+    "source_location": null,
+    "required_by": null,
+    "remarks": "",
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingmaterialrequest",
+  "pk": 13,
+  "fields": {
+    "created_at": "2026-09-10T17:45:49.097Z",
+    "updated_at": "2026-09-10T17:45:49.097Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "job": 20,
+    "source_location": null,
+    "required_by": null,
+    "remarks": "",
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingmaterialrequest",
+  "pk": 14,
+  "fields": {
+    "created_at": "2026-09-10T17:45:53.027Z",
+    "updated_at": "2026-09-10T17:45:53.027Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "job": 20,
+    "source_location": null,
+    "required_by": null,
+    "remarks": "",
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingmaterialrequest",
+  "pk": 15,
+  "fields": {
+    "created_at": "2026-09-10T17:50:37.411Z",
+    "updated_at": "2026-09-10T17:50:37.411Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "job": 21,
+    "source_location": null,
+    "required_by": null,
+    "remarks": "",
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingmaterialrequest",
+  "pk": 16,
+  "fields": {
+    "created_at": "2026-09-11T11:39:28.513Z",
+    "updated_at": "2026-09-11T11:39:28.513Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "job": 23,
+    "source_location": null,
+    "required_by": null,
+    "remarks": "",
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingmaterialrequestline",
+  "pk": 7,
+  "fields": {
+    "created_at": "2026-09-10T14:17:56.782Z",
+    "updated_at": "2026-09-10T14:17:56.782Z",
+    "created_by": null,
+    "updated_by": null,
+    "request": 7,
+    "item": 4,
+    "uom": "PC",
+    "required_qty": 20000,
+    "requested_qty": 20000,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingmaterialrequestline",
+  "pk": 8,
+  "fields": {
+    "created_at": "2026-09-10T14:18:04.505Z",
+    "updated_at": "2026-09-10T14:18:04.505Z",
+    "created_by": null,
+    "updated_by": null,
+    "request": 8,
+    "item": 5,
+    "uom": "PC",
+    "required_qty": 67,
+    "requested_qty": 67,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingmaterialrequestline",
+  "pk": 9,
+  "fields": {
+    "created_at": "2026-09-10T16:24:16.061Z",
+    "updated_at": "2026-09-10T16:24:16.061Z",
+    "created_by": null,
+    "updated_by": null,
+    "request": 9,
+    "item": 10,
+    "uom": "PC",
+    "required_qty": 20000,
+    "requested_qty": 20000,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingmaterialrequestline",
+  "pk": 10,
+  "fields": {
+    "created_at": "2026-09-10T17:11:54.243Z",
+    "updated_at": "2026-09-10T17:11:54.243Z",
+    "created_by": null,
+    "updated_by": null,
+    "request": 10,
+    "item": 12,
+    "uom": "PC",
+    "required_qty": 67,
+    "requested_qty": 67,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingmaterialrequestline",
+  "pk": 11,
+  "fields": {
+    "created_at": "2026-09-10T17:11:58.186Z",
+    "updated_at": "2026-09-10T17:11:58.186Z",
+    "created_by": null,
+    "updated_by": null,
+    "request": 11,
+    "item": 13,
+    "uom": "PC",
+    "required_qty": 804,
+    "requested_qty": 804,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingmaterialrequestline",
+  "pk": 12,
+  "fields": {
+    "created_at": "2026-09-10T17:45:23.704Z",
+    "updated_at": "2026-09-10T17:45:23.704Z",
+    "created_by": null,
+    "updated_by": null,
+    "request": 12,
+    "item": 10,
+    "uom": "PC",
+    "required_qty": 25000,
+    "requested_qty": 25000,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingmaterialrequestline",
+  "pk": 13,
+  "fields": {
+    "created_at": "2026-09-10T17:45:49.101Z",
+    "updated_at": "2026-09-10T17:45:49.101Z",
+    "created_by": null,
+    "updated_by": null,
+    "request": 13,
+    "item": 12,
+    "uom": "PC",
+    "required_qty": 84,
+    "requested_qty": 84,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingmaterialrequestline",
+  "pk": 14,
+  "fields": {
+    "created_at": "2026-09-10T17:45:53.031Z",
+    "updated_at": "2026-09-10T17:45:53.031Z",
+    "created_by": null,
+    "updated_by": null,
+    "request": 14,
+    "item": 13,
+    "uom": "PC",
+    "required_qty": 1008,
+    "requested_qty": 1008,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingmaterialrequestline",
+  "pk": 15,
+  "fields": {
+    "created_at": "2026-09-10T17:50:37.417Z",
+    "updated_at": "2026-09-10T17:50:37.417Z",
+    "created_by": null,
+    "updated_by": null,
+    "request": 15,
+    "item": 10,
+    "uom": "PC",
+    "required_qty": 21000,
+    "requested_qty": 21000,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingmaterialrequestline",
+  "pk": 16,
+  "fields": {
+    "created_at": "2026-09-11T11:39:28.521Z",
+    "updated_at": "2026-09-11T11:39:28.521Z",
+    "created_by": null,
+    "updated_by": null,
+    "request": 16,
+    "item": 4,
+    "uom": "PC",
+    "required_qty": 5000,
+    "requested_qty": 5000,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingmaterialmovement",
+  "pk": 7,
+  "fields": {
+    "created_at": "2026-09-10T14:20:28.989Z",
+    "updated_at": "2026-09-10T14:20:28.989Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "request_line": 7,
+    "date": "2026-09-10",
+    "quantity_issued": 20000,
+    "quantity_received": 20000,
+    "remarks": "",
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingmaterialmovement",
+  "pk": 8,
+  "fields": {
+    "created_at": "2026-09-10T16:24:21.457Z",
+    "updated_at": "2026-09-10T16:24:21.457Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "request_line": 9,
+    "date": "2026-09-10",
+    "quantity_issued": 20000,
+    "quantity_received": 20000,
+    "remarks": "",
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingmaterialmovement",
+  "pk": 9,
+  "fields": {
+    "created_at": "2026-09-10T16:49:12.759Z",
+    "updated_at": "2026-09-10T16:49:12.760Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "request_line": 8,
+    "date": "2026-09-10",
+    "quantity_issued": 67,
+    "quantity_received": 67,
+    "remarks": "",
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingmaterialmovement",
+  "pk": 10,
+  "fields": {
+    "created_at": "2026-09-10T17:11:56.011Z",
+    "updated_at": "2026-09-10T17:11:56.011Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "request_line": 10,
+    "date": "2026-09-10",
+    "quantity_issued": 67,
+    "quantity_received": 67,
+    "remarks": "",
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingmaterialmovement",
+  "pk": 11,
+  "fields": {
+    "created_at": "2026-09-10T17:12:00.699Z",
+    "updated_at": "2026-09-10T17:12:00.699Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "request_line": 11,
+    "date": "2026-09-10",
+    "quantity_issued": 804,
+    "quantity_received": 804,
+    "remarks": "",
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingmaterialmovement",
+  "pk": 12,
+  "fields": {
+    "created_at": "2026-09-10T17:45:28.126Z",
+    "updated_at": "2026-09-10T17:45:28.126Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "request_line": 12,
+    "date": "2026-09-10",
+    "quantity_issued": 25000,
+    "quantity_received": 25000,
+    "remarks": "",
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingmaterialmovement",
+  "pk": 13,
+  "fields": {
+    "created_at": "2026-09-10T17:45:55.101Z",
+    "updated_at": "2026-09-10T17:45:55.101Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "request_line": 13,
+    "date": "2026-09-10",
+    "quantity_issued": 84,
+    "quantity_received": 84,
+    "remarks": "",
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingmaterialmovement",
+  "pk": 14,
+  "fields": {
+    "created_at": "2026-09-10T17:45:56.405Z",
+    "updated_at": "2026-09-10T17:45:56.405Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "request_line": 14,
+    "date": "2026-09-10",
+    "quantity_issued": 1008,
+    "quantity_received": 1008,
+    "remarks": "",
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingmaterialmovement",
+  "pk": 15,
+  "fields": {
+    "created_at": "2026-09-10T17:50:38.483Z",
+    "updated_at": "2026-09-10T17:50:38.483Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "request_line": 15,
+    "date": "2026-09-10",
+    "quantity_issued": 21000,
+    "quantity_received": 21000,
+    "remarks": "",
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingmaterialmovement",
+  "pk": 16,
+  "fields": {
+    "created_at": "2026-09-11T11:39:36.867Z",
+    "updated_at": "2026-09-11T11:39:36.867Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "request_line": 16,
+    "date": "2026-09-11",
+    "quantity_issued": 5000,
+    "quantity_received": 5000,
+    "remarks": "",
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingexecutionconfig",
+  "pk": 1,
+  "fields": {
+    "created_at": "2026-09-07T17:38:37.692Z",
+    "updated_at": "2026-09-07T17:38:37.692Z",
+    "created_by": null,
+    "updated_by": null,
+    "organization": 1,
+    "recording_mode": "INTERVAL_BASED",
+    "default_interval_minutes": 60,
+    "auto_create_expected_intervals": true,
+    "allow_late_entry": true,
+    "missing_record_warning_minutes": 15,
+    "plan_calculation": "STANDARD_RATE",
+    "allow_partial_interval_on_sku_change": true
+  }
+},
+{
+  "model": "packing.packingrecordingschedule",
+  "pk": 1,
+  "fields": {
+    "created_at": "2026-09-10T09:12:22.586Z",
+    "updated_at": "2026-09-10T09:12:22.587Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Standard Shift 1",
+    "shift": 1,
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingrecordingschedule",
+  "pk": 2,
+  "fields": {
+    "created_at": "2026-09-10T14:57:46.073Z",
+    "updated_at": "2026-09-10T14:57:46.073Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Schedule 2",
+    "shift": 1,
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingrecordingscheduleversion",
+  "pk": 1,
+  "fields": {
+    "created_at": "2026-09-10T09:12:22.647Z",
+    "updated_at": "2026-09-10T09:14:04.039Z",
+    "created_by": null,
+    "updated_by": null,
+    "schedule": 1,
+    "version_number": 1,
+    "status": "ACTIVE",
+    "recording_mode": "FLEXIBLE",
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingrecordingscheduleversion",
+  "pk": 2,
+  "fields": {
+    "created_at": "2026-09-10T14:57:46.103Z",
+    "updated_at": "2026-09-10T14:57:46.103Z",
+    "created_by": null,
+    "updated_by": null,
+    "schedule": 2,
+    "version_number": 1,
+    "status": "DRAFT",
+    "recording_mode": "FLEXIBLE",
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingrecordingscheduleversion",
+  "pk": 3,
+  "fields": {
+    "created_at": "2026-09-10T14:57:54.332Z",
+    "updated_at": "2026-09-10T14:57:54.332Z",
+    "created_by": null,
+    "updated_by": null,
+    "schedule": 1,
+    "version_number": 2,
+    "status": "DRAFT",
+    "recording_mode": "FLEXIBLE",
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingrecordingscheduleversion",
+  "pk": 4,
+  "fields": {
+    "created_at": "2026-09-10T14:58:07.036Z",
+    "updated_at": "2026-09-10T14:58:07.036Z",
+    "created_by": null,
+    "updated_by": null,
+    "schedule": 1,
+    "version_number": 3,
+    "status": "DRAFT",
+    "recording_mode": "FLEXIBLE",
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingrecordingscheduleversion",
+  "pk": 5,
+  "fields": {
+    "created_at": "2026-09-10T14:58:16.502Z",
+    "updated_at": "2026-09-10T14:58:16.502Z",
+    "created_by": null,
+    "updated_by": null,
+    "schedule": 1,
+    "version_number": 4,
+    "status": "DRAFT",
+    "recording_mode": "FLEXIBLE",
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingrecordingscheduleversion",
+  "pk": 6,
+  "fields": {
+    "created_at": "2026-09-10T14:58:20.753Z",
+    "updated_at": "2026-09-10T14:58:20.753Z",
+    "created_by": null,
+    "updated_by": null,
+    "schedule": 1,
+    "version_number": 5,
+    "status": "DRAFT",
+    "recording_mode": "FLEXIBLE",
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingrecordingblock",
+  "pk": 1,
+  "fields": {
+    "created_at": "2026-09-10T09:13:53.321Z",
+    "updated_at": "2026-09-10T09:13:53.321Z",
+    "created_by": null,
+    "updated_by": null,
+    "version": 1,
+    "sequence": 1,
+    "from_time": "08:30:00",
+    "to_time": "10:30:00",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingrecordingblock",
+  "pk": 2,
+  "fields": {
+    "created_at": "2026-09-10T09:13:53.328Z",
+    "updated_at": "2026-09-10T09:13:53.328Z",
+    "created_by": null,
+    "updated_by": null,
+    "version": 1,
+    "sequence": 2,
+    "from_time": "10:30:00",
+    "to_time": "12:30:00",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingrecordingblock",
+  "pk": 3,
+  "fields": {
+    "created_at": "2026-09-10T14:57:54.334Z",
+    "updated_at": "2026-09-10T14:57:54.334Z",
+    "created_by": null,
+    "updated_by": null,
+    "version": 3,
+    "sequence": 1,
+    "from_time": "08:30:00",
+    "to_time": "10:30:00",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingrecordingblock",
+  "pk": 4,
+  "fields": {
+    "created_at": "2026-09-10T14:57:54.340Z",
+    "updated_at": "2026-09-10T14:57:54.340Z",
+    "created_by": null,
+    "updated_by": null,
+    "version": 3,
+    "sequence": 2,
+    "from_time": "10:30:00",
+    "to_time": "12:30:00",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingrecordingblock",
+  "pk": 5,
+  "fields": {
+    "created_at": "2026-09-10T14:58:07.038Z",
+    "updated_at": "2026-09-10T14:58:07.038Z",
+    "created_by": null,
+    "updated_by": null,
+    "version": 4,
+    "sequence": 1,
+    "from_time": "08:30:00",
+    "to_time": "10:30:00",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingrecordingblock",
+  "pk": 6,
+  "fields": {
+    "created_at": "2026-09-10T14:58:07.039Z",
+    "updated_at": "2026-09-10T14:58:07.039Z",
+    "created_by": null,
+    "updated_by": null,
+    "version": 4,
+    "sequence": 2,
+    "from_time": "10:30:00",
+    "to_time": "12:30:00",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingrecordingblock",
+  "pk": 7,
+  "fields": {
+    "created_at": "2026-09-10T14:58:16.504Z",
+    "updated_at": "2026-09-10T14:58:16.504Z",
+    "created_by": null,
+    "updated_by": null,
+    "version": 5,
+    "sequence": 1,
+    "from_time": "08:30:00",
+    "to_time": "10:30:00",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingrecordingblock",
+  "pk": 8,
+  "fields": {
+    "created_at": "2026-09-10T14:58:16.505Z",
+    "updated_at": "2026-09-10T14:58:16.505Z",
+    "created_by": null,
+    "updated_by": null,
+    "version": 5,
+    "sequence": 2,
+    "from_time": "10:30:00",
+    "to_time": "12:30:00",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingrecordingblock",
+  "pk": 9,
+  "fields": {
+    "created_at": "2026-09-10T14:58:20.755Z",
+    "updated_at": "2026-09-10T14:58:20.755Z",
+    "created_by": null,
+    "updated_by": null,
+    "version": 6,
+    "sequence": 1,
+    "from_time": "08:30:00",
+    "to_time": "10:30:00",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingrecordingblock",
+  "pk": 10,
+  "fields": {
+    "created_at": "2026-09-10T14:58:20.756Z",
+    "updated_at": "2026-09-10T14:58:20.756Z",
+    "created_by": null,
+    "updated_by": null,
+    "version": 6,
+    "sequence": 2,
+    "from_time": "10:30:00",
+    "to_time": "12:30:00",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingshift",
+  "pk": 11,
+  "fields": {
+    "created_at": "2026-09-10T12:45:51.073Z",
+    "updated_at": "2026-09-10T12:45:51.087Z",
+    "created_by": null,
+    "updated_by": null,
+    "date": "2026-09-11",
+    "shift": 1,
+    "recording_schedule_version": 1,
+    "status": "RUNNING",
+    "started_at": "2026-09-10T12:45:51.087Z",
+    "started_by": 1,
+    "stopped_at": null,
+    "stopped_by": null,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingshift",
+  "pk": 12,
+  "fields": {
+    "created_at": "2026-09-10T17:46:15.382Z",
+    "updated_at": "2026-09-11T11:05:52.995Z",
+    "created_by": null,
+    "updated_by": null,
+    "date": "2026-09-12",
+    "shift": 1,
+    "recording_schedule_version": null,
+    "status": "RUNNING",
+    "started_at": "2026-09-11T11:05:52.995Z",
+    "started_by": 1,
+    "stopped_at": "2026-09-11T09:44:47.672Z",
+    "stopped_by": 1,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingworkcentresession",
+  "pk": 16,
+  "fields": {
+    "created_at": "2026-09-10T12:45:51.097Z",
+    "updated_at": "2026-09-10T16:24:59.771Z",
+    "created_by": null,
+    "updated_by": null,
+    "packing_shift": 11,
+    "work_centre": 5,
+    "bay": 1,
+    "status": "ISSUE",
+    "started_at": "2026-09-10T12:45:51.092Z",
+    "stopped_at": null,
+    "stop_reason": "",
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingworkcentresession",
+  "pk": 17,
+  "fields": {
+    "created_at": "2026-09-10T12:52:05.313Z",
+    "updated_at": "2026-09-10T16:55:29.323Z",
+    "created_by": null,
+    "updated_by": null,
+    "packing_shift": 11,
+    "work_centre": 3,
+    "bay": 1,
+    "status": "IDLE",
+    "started_at": "2026-09-10T12:52:05.312Z",
+    "stopped_at": null,
+    "stop_reason": "",
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingworkcentresession",
+  "pk": 18,
+  "fields": {
+    "created_at": "2026-09-10T17:46:15.394Z",
+    "updated_at": "2026-09-11T11:40:28.876Z",
+    "created_by": null,
+    "updated_by": null,
+    "packing_shift": 12,
+    "work_centre": 5,
+    "bay": 1,
+    "status": "IDLE",
+    "started_at": "2026-09-10T17:46:15.391Z",
+    "stopped_at": "2026-09-10T17:47:53.204Z",
+    "stop_reason": "Work Centre Issue",
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingworkcentresession",
+  "pk": 19,
+  "fields": {
+    "created_at": "2026-09-11T11:05:53.006Z",
+    "updated_at": "2026-09-11T11:32:43.778Z",
+    "created_by": null,
+    "updated_by": null,
+    "packing_shift": 12,
+    "work_centre": 3,
+    "bay": 1,
+    "status": "IDLE",
+    "started_at": "2026-09-11T11:05:53.002Z",
+    "stopped_at": null,
+    "stop_reason": "",
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingworkcentresession",
+  "pk": 20,
+  "fields": {
+    "created_at": "2026-09-11T11:30:04.397Z",
+    "updated_at": "2026-09-11T11:32:43.777Z",
+    "created_by": null,
+    "updated_by": null,
+    "packing_shift": 12,
+    "work_centre": 4,
+    "bay": 1,
+    "status": "IDLE",
+    "started_at": "2026-09-11T11:30:04.396Z",
+    "stopped_at": null,
+    "stop_reason": "",
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingworkcentresession",
+  "pk": 21,
+  "fields": {
+    "created_at": "2026-09-11T11:30:40.356Z",
+    "updated_at": "2026-09-11T11:32:43.779Z",
+    "created_by": null,
+    "updated_by": null,
+    "packing_shift": 12,
+    "work_centre": 1,
+    "bay": 1,
+    "status": "IDLE",
+    "started_at": "2026-09-11T11:30:40.355Z",
+    "stopped_at": null,
+    "stop_reason": "",
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingworkcentresessionoperator",
+  "pk": 26,
+  "fields": {
+    "created_at": "2026-09-10T12:45:51.109Z",
+    "updated_at": "2026-09-10T12:45:51.109Z",
+    "created_by": null,
+    "updated_by": null,
+    "session": 16,
+    "employee": 2,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingworkcentresessionoperator",
+  "pk": 27,
+  "fields": {
+    "created_at": "2026-09-10T12:45:51.114Z",
+    "updated_at": "2026-09-10T12:45:51.114Z",
+    "created_by": null,
+    "updated_by": null,
+    "session": 16,
+    "employee": 1,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingworkcentresessionoperator",
+  "pk": 28,
+  "fields": {
+    "created_at": "2026-09-10T12:52:05.317Z",
+    "updated_at": "2026-09-10T12:52:05.317Z",
+    "created_by": null,
+    "updated_by": null,
+    "session": 17,
+    "employee": 4,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingworkcentresessionoperator",
+  "pk": 29,
+  "fields": {
+    "created_at": "2026-09-10T12:52:05.319Z",
+    "updated_at": "2026-09-10T12:52:05.319Z",
+    "created_by": null,
+    "updated_by": null,
+    "session": 17,
+    "employee": 5,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingworkcentresessionoperator",
+  "pk": 30,
+  "fields": {
+    "created_at": "2026-09-10T17:46:15.403Z",
+    "updated_at": "2026-09-10T17:46:15.403Z",
+    "created_by": null,
+    "updated_by": null,
+    "session": 18,
+    "employee": 2,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingworkcentresessionoperator",
+  "pk": 31,
+  "fields": {
+    "created_at": "2026-09-10T17:46:15.409Z",
+    "updated_at": "2026-09-10T17:46:15.409Z",
+    "created_by": null,
+    "updated_by": null,
+    "session": 18,
+    "employee": 4,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingworkcentresessionoperator",
+  "pk": 32,
+  "fields": {
+    "created_at": "2026-09-11T11:05:53.022Z",
+    "updated_at": "2026-09-11T11:05:53.022Z",
+    "created_by": null,
+    "updated_by": null,
+    "session": 19,
+    "employee": 1,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingworkcentresessionoperator",
+  "pk": 33,
+  "fields": {
+    "created_at": "2026-09-11T11:05:53.027Z",
+    "updated_at": "2026-09-11T11:05:53.027Z",
+    "created_by": null,
+    "updated_by": null,
+    "session": 19,
+    "employee": 5,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingworkcentresessionoperator",
+  "pk": 34,
+  "fields": {
+    "created_at": "2026-09-11T11:30:04.406Z",
+    "updated_at": "2026-09-11T11:30:04.406Z",
+    "created_by": null,
+    "updated_by": null,
+    "session": 20,
+    "employee": 11,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingworkcentresessionoperator",
+  "pk": 35,
+  "fields": {
+    "created_at": "2026-09-11T11:30:04.408Z",
+    "updated_at": "2026-09-11T11:30:04.408Z",
+    "created_by": null,
+    "updated_by": null,
+    "session": 20,
+    "employee": 12,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingworkcentresessionoperator",
+  "pk": 36,
+  "fields": {
+    "created_at": "2026-09-11T11:30:40.358Z",
+    "updated_at": "2026-09-11T11:30:40.358Z",
+    "created_by": null,
+    "updated_by": null,
+    "session": 21,
+    "employee": 15,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingworkcentresessionoperator",
+  "pk": 37,
+  "fields": {
+    "created_at": "2026-09-11T11:30:40.359Z",
+    "updated_at": "2026-09-11T11:30:40.359Z",
+    "created_by": null,
+    "updated_by": null,
+    "session": 21,
+    "employee": 7,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingworkcentreallocation",
+  "pk": 17,
+  "fields": {
+    "created_at": "2026-09-10T12:45:51.195Z",
+    "updated_at": "2026-09-10T16:25:20.676Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "session": 16,
+    "job": 19,
+    "process_version": 1,
+    "sequence": 1,
+    "assigned_qty": 20000,
+    "status": "CANCELLED",
+    "started_at": "2026-09-10T16:03:23.828Z",
+    "completed_at": null,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingworkcentreallocation",
+  "pk": 18,
+  "fields": {
+    "created_at": "2026-09-10T12:52:05.414Z",
+    "updated_at": "2026-09-10T16:55:29.315Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "session": 17,
+    "job": 18,
+    "process_version": 1,
+    "sequence": 1,
+    "assigned_qty": 20000,
+    "status": "CANCELLED",
+    "started_at": "2026-09-10T12:52:05.520Z",
+    "completed_at": null,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingworkcentreallocation",
+  "pk": 19,
+  "fields": {
+    "created_at": "2026-09-10T17:46:15.495Z",
+    "updated_at": "2026-09-10T17:49:32.101Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "session": 18,
+    "job": 20,
+    "process_version": 1,
+    "sequence": 1,
+    "assigned_qty": 25000,
+    "status": "CANCELLED",
+    "started_at": "2026-09-10T17:47:20.103Z",
+    "completed_at": null,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingworkcentreallocation",
+  "pk": 20,
+  "fields": {
+    "created_at": "2026-09-11T09:50:10.055Z",
+    "updated_at": "2026-09-11T11:06:14.963Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "session": 18,
+    "job": 21,
+    "process_version": 1,
+    "sequence": 2,
+    "assigned_qty": 5000,
+    "status": "CANCELLED",
+    "started_at": "2026-09-11T09:50:10.137Z",
+    "completed_at": null,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingworkcentreallocation",
+  "pk": 21,
+  "fields": {
+    "created_at": "2026-09-11T11:05:53.164Z",
+    "updated_at": "2026-09-11T11:06:14.963Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "session": 19,
+    "job": 21,
+    "process_version": 1,
+    "sequence": 1,
+    "assigned_qty": 10000,
+    "status": "CANCELLED",
+    "started_at": "2026-09-11T11:05:53.256Z",
+    "completed_at": null,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingworkcentreallocation",
+  "pk": 22,
+  "fields": {
+    "created_at": "2026-09-11T11:11:38.911Z",
+    "updated_at": "2026-09-11T11:18:35.498Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "session": 18,
+    "job": 21,
+    "process_version": 1,
+    "sequence": 3,
+    "assigned_qty": 10000,
+    "status": "CANCELLED",
+    "started_at": "2026-09-11T11:18:00.489Z",
+    "completed_at": null,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingworkcentreallocation",
+  "pk": 23,
+  "fields": {
+    "created_at": "2026-09-11T11:12:02.080Z",
+    "updated_at": "2026-09-11T11:18:35.498Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "session": 19,
+    "job": 21,
+    "process_version": 1,
+    "sequence": 2,
+    "assigned_qty": 6000,
+    "status": "CANCELLED",
+    "started_at": "2026-09-11T11:18:00.487Z",
+    "completed_at": null,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingworkcentreallocation",
+  "pk": 24,
+  "fields": {
+    "created_at": "2026-09-11T11:29:23.205Z",
+    "updated_at": "2026-09-11T11:32:43.775Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "session": 18,
+    "job": 21,
+    "process_version": 1,
+    "sequence": 4,
+    "assigned_qty": 5000,
+    "status": "CANCELLED",
+    "started_at": "2026-09-11T11:29:38.287Z",
+    "completed_at": null,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingworkcentreallocation",
+  "pk": 25,
+  "fields": {
+    "created_at": "2026-09-11T11:30:04.500Z",
+    "updated_at": "2026-09-11T11:32:43.775Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "session": 20,
+    "job": 21,
+    "process_version": 1,
+    "sequence": 1,
+    "assigned_qty": 5000,
+    "status": "CANCELLED",
+    "started_at": "2026-09-11T11:30:04.579Z",
+    "completed_at": null,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingworkcentreallocation",
+  "pk": 26,
+  "fields": {
+    "created_at": "2026-09-11T11:30:17.555Z",
+    "updated_at": "2026-09-11T11:32:43.775Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "session": 19,
+    "job": 21,
+    "process_version": 1,
+    "sequence": 3,
+    "assigned_qty": 5000,
+    "status": "CANCELLED",
+    "started_at": "2026-09-11T11:30:19.795Z",
+    "completed_at": null,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingworkcentreallocation",
+  "pk": 27,
+  "fields": {
+    "created_at": "2026-09-11T11:30:40.456Z",
+    "updated_at": "2026-09-11T11:32:43.775Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "session": 21,
+    "job": 21,
+    "process_version": 1,
+    "sequence": 1,
+    "assigned_qty": 6000,
+    "status": "CANCELLED",
+    "started_at": "2026-09-11T11:30:40.529Z",
+    "completed_at": null,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingworkcentreallocation",
+  "pk": 28,
+  "fields": {
+    "created_at": "2026-09-11T11:40:10.821Z",
+    "updated_at": "2026-09-11T11:40:28.874Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "session": 18,
+    "job": 23,
+    "process_version": 1,
+    "sequence": 5,
+    "assigned_qty": 5000,
+    "status": "ON_HOLD",
+    "started_at": "2026-09-11T11:40:10.864Z",
+    "completed_at": null,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.workcentreissueevent",
+  "pk": 5,
+  "fields": {
+    "created_at": "2026-09-10T16:24:59.762Z",
+    "updated_at": "2026-09-10T16:24:59.762Z",
+    "created_by": null,
+    "updated_by": null,
+    "session": 16,
+    "allocation": null,
+    "issue_type": "MACHINE",
+    "description": "",
+    "stops_productive_time": true,
+    "started_at": "2026-09-10T16:24:59.762Z",
+    "resolved_at": null,
+    "reported_by": 1,
+    "resolved_by": null,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingintervalrecord",
+  "pk": 12,
+  "fields": {
+    "created_at": "2026-09-10T16:54:50.947Z",
+    "updated_at": "2026-09-10T16:54:50.947Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "allocation": 18,
+    "record_type": "SUMMARY",
+    "schedule_block": null,
+    "from_time": "2026-09-10T12:52:05.520Z",
+    "to_time": "2026-09-10T16:54:50.840Z",
+    "scheduled_minutes": 242,
+    "downtime_minutes": 0,
+    "available_minutes": 242,
+    "standard_rate_snapshot": null,
+    "planned_output": 0,
+    "premium_qty": 17000,
+    "standard_qty": 2000,
+    "reject_qty": 1000,
+    "cleaned_qty": 0,
+    "pouches_packed": 0,
+    "loose_pieces_packed": 680,
+    "pieces_packed": 680,
+    "cartons_completed": 0,
+    "status": "ENTERED",
+    "entered_by": 1,
+    "entered_at": "2026-09-10T16:54:50.946Z",
+    "is_late_entry": false,
+    "covers_unrecorded_only": true,
+    "is_final_summary": false,
+    "remarks": "",
+    "execution": 22,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingintervalrecord",
+  "pk": 13,
+  "fields": {
+    "created_at": "2026-09-10T17:48:45.720Z",
+    "updated_at": "2026-09-10T17:48:45.720Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "allocation": 19,
+    "record_type": "SUMMARY",
+    "schedule_block": null,
+    "from_time": "2026-09-10T17:47:20.103Z",
+    "to_time": "2026-09-10T17:48:45.617Z",
+    "scheduled_minutes": 1,
+    "downtime_minutes": 0,
+    "available_minutes": 1,
+    "standard_rate_snapshot": null,
+    "planned_output": 0,
+    "premium_qty": 3000,
+    "standard_qty": 200,
+    "reject_qty": 50,
+    "cleaned_qty": 0,
+    "pouches_packed": 120,
+    "loose_pieces_packed": 0,
+    "pieces_packed": 3000,
+    "cartons_completed": 0,
+    "status": "ENTERED",
+    "entered_by": 1,
+    "entered_at": "2026-09-10T17:48:45.719Z",
+    "is_late_entry": false,
+    "covers_unrecorded_only": true,
+    "is_final_summary": false,
+    "remarks": "",
+    "execution": 23,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingintervalrecord",
+  "pk": 14,
+  "fields": {
+    "created_at": "2026-09-11T11:32:10.948Z",
+    "updated_at": "2026-09-11T11:32:10.948Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "allocation": 25,
+    "record_type": "SUMMARY",
+    "schedule_block": null,
+    "from_time": "2026-09-11T11:30:04.579Z",
+    "to_time": "2026-09-11T11:32:10.890Z",
+    "scheduled_minutes": 2,
+    "downtime_minutes": 0,
+    "available_minutes": 2,
+    "standard_rate_snapshot": null,
+    "planned_output": 0,
+    "premium_qty": 4500,
+    "standard_qty": 300,
+    "reject_qty": 100,
+    "cleaned_qty": 0,
+    "pouches_packed": 0,
+    "loose_pieces_packed": 0,
+    "pieces_packed": 0,
+    "cartons_completed": 0,
+    "status": "ENTERED",
+    "entered_by": 1,
+    "entered_at": "2026-09-11T11:32:10.948Z",
+    "is_late_entry": false,
+    "covers_unrecorded_only": true,
+    "is_final_summary": false,
+    "remarks": "",
+    "execution": 24,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingintervalrecord",
+  "pk": 15,
+  "fields": {
+    "created_at": "2026-09-11T11:32:10.966Z",
+    "updated_at": "2026-09-11T11:32:10.966Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "allocation": 26,
+    "record_type": "SUMMARY",
+    "schedule_block": null,
+    "from_time": "2026-09-11T11:30:19.795Z",
+    "to_time": "2026-09-11T11:32:10.957Z",
+    "scheduled_minutes": 1,
+    "downtime_minutes": 0,
+    "available_minutes": 1,
+    "standard_rate_snapshot": null,
+    "planned_output": 0,
+    "premium_qty": 4600,
+    "standard_qty": 300,
+    "reject_qty": 50,
+    "cleaned_qty": 0,
+    "pouches_packed": 0,
+    "loose_pieces_packed": 0,
+    "pieces_packed": 0,
+    "cartons_completed": 0,
+    "status": "ENTERED",
+    "entered_by": 1,
+    "entered_at": "2026-09-11T11:32:10.966Z",
+    "is_late_entry": false,
+    "covers_unrecorded_only": true,
+    "is_final_summary": false,
+    "remarks": "",
+    "execution": 25,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingintervalrecord",
+  "pk": 16,
+  "fields": {
+    "created_at": "2026-09-11T11:32:10.976Z",
+    "updated_at": "2026-09-11T11:32:10.976Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "allocation": 24,
+    "record_type": "SUMMARY",
+    "schedule_block": null,
+    "from_time": "2026-09-11T11:29:38.287Z",
+    "to_time": "2026-09-11T11:32:10.967Z",
+    "scheduled_minutes": 2,
+    "downtime_minutes": 0,
+    "available_minutes": 2,
+    "standard_rate_snapshot": null,
+    "planned_output": 0,
+    "premium_qty": 4550,
+    "standard_qty": 250,
+    "reject_qty": 100,
+    "cleaned_qty": 0,
+    "pouches_packed": 0,
+    "loose_pieces_packed": 0,
+    "pieces_packed": 0,
+    "cartons_completed": 0,
+    "status": "ENTERED",
+    "entered_by": 1,
+    "entered_at": "2026-09-11T11:32:10.976Z",
+    "is_late_entry": false,
+    "covers_unrecorded_only": true,
+    "is_final_summary": false,
+    "remarks": "",
+    "execution": 26,
+    "organization": 1
+  }
+},
+{
+  "model": "packing.packingintervalrecord",
+  "pk": 17,
+  "fields": {
+    "created_at": "2026-09-11T11:32:10.986Z",
+    "updated_at": "2026-09-11T11:32:10.986Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "allocation": 27,
+    "record_type": "SUMMARY",
+    "schedule_block": null,
+    "from_time": "2026-09-11T11:30:40.529Z",
+    "to_time": "2026-09-11T11:32:10.978Z",
+    "scheduled_minutes": 1,
+    "downtime_minutes": 0,
+    "available_minutes": 1,
+    "standard_rate_snapshot": null,
+    "planned_output": 0,
+    "premium_qty": 4650,
+    "standard_qty": 150,
+    "reject_qty": 100,
+    "cleaned_qty": 0,
+    "pouches_packed": 0,
+    "loose_pieces_packed": 0,
+    "pieces_packed": 0,
+    "cartons_completed": 0,
+    "status": "ENTERED",
+    "entered_by": 1,
+    "entered_at": "2026-09-11T11:32:10.986Z",
+    "is_late_entry": false,
+    "covers_unrecorded_only": true,
+    "is_final_summary": false,
+    "remarks": "",
+    "execution": 27,
+    "organization": 1
+  }
+},
+{
+  "model": "processes.processcategory",
+  "pk": 1,
+  "fields": {
+    "created_at": "2026-09-05T04:58:00.309Z",
+    "updated_at": "2026-09-05T04:58:00.310Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Packing",
+    "organization": 1,
+    "is_active": true
+  }
+},
+{
+  "model": "processes.processdefinition",
+  "pk": 1,
+  "fields": {
+    "created_at": "2026-09-05T06:28:36.377Z",
+    "updated_at": "2026-09-05T06:52:20.075Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Sorting_Cleaning_Packing",
+    "code": "SORTING_CLEANING_PACKING",
+    "organization": 1,
+    "is_active": true
+  }
+},
+{
+  "model": "processes.processdefinitionversion",
+  "pk": 1,
+  "fields": {
+    "created_at": "2026-09-05T06:28:36.409Z",
+    "updated_at": "2026-09-05T07:02:14.266Z",
+    "created_by": null,
+    "updated_by": null,
+    "process_definition": 1,
+    "version_number": 1,
+    "status": "ACTIVE",
+    "category": 1,
+    "work_centre_requirement": "STATION",
+    "operator_required": true,
+    "standard_rate_config_level": "WORK_CENTRE",
+    "capture_mode": "WORK_CENTRE_TOTAL",
+    "position_label": "",
+    "default_position_count": null,
+    "allow_work_centre_override": true,
+    "allow_different_sku_per_position": true,
+    "allow_manual_standard_rate": true,
+    "reserve_machine_derived_rate": true,
+    "batch_lot_mode": "REQUIRED",
+    "transaction_frequency": "MANUAL",
+    "partial_output_forward": false,
+    "allow_over_production": false,
+    "over_production_tolerance_percent": null,
+    "input_consumption_mode": "MANUAL",
+    "completion_mode": "OPERATOR",
+    "qc_requirement": "NONE",
+    "allow_correction_with_audit_trail": true,
+    "allow_destructive_delete": false,
+    "permit_machine_generated_source": true,
+    "description": "Sorting, Cleaning, & Packing of plates per station",
+    "organization": 1
+  }
+},
+{
+  "model": "processes.processinputdefinition",
+  "pk": 1,
+  "fields": {
+    "created_at": "2026-09-05T06:52:36.581Z",
+    "updated_at": "2026-09-05T06:52:36.581Z",
+    "created_by": null,
+    "updated_by": null,
+    "process_version": 1,
+    "sequence": 1,
+    "input_type": "WIP",
+    "item": 8,
+    "uom": "PC",
+    "quantity_capture": "MANUAL",
+    "is_required": true,
+    "organization": 1
+  }
+},
+{
+  "model": "processes.outputclassification",
+  "pk": 1,
+  "fields": {
+    "created_at": "2026-08-29T12:25:12.993Z",
+    "updated_at": "2026-08-29T12:25:12.993Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Premium",
+    "organization": 1,
+    "is_active": true
+  }
+},
+{
+  "model": "processes.outputclassification",
+  "pk": 2,
+  "fields": {
+    "created_at": "2026-08-29T12:25:12.994Z",
+    "updated_at": "2026-08-29T12:25:12.994Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Standard",
+    "organization": 1,
+    "is_active": true
+  }
+},
+{
+  "model": "processes.outputclassification",
+  "pk": 3,
+  "fields": {
+    "created_at": "2026-08-29T12:25:12.995Z",
+    "updated_at": "2026-08-29T12:25:12.995Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Good",
+    "organization": 1,
+    "is_active": true
+  }
+},
+{
+  "model": "processes.outputclassification",
+  "pk": 4,
+  "fields": {
+    "created_at": "2026-08-29T12:25:12.995Z",
+    "updated_at": "2026-08-29T12:25:12.995Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Reject",
+    "organization": 1,
+    "is_active": true
+  }
+},
+{
+  "model": "processes.outputclassification",
+  "pk": 5,
+  "fields": {
+    "created_at": "2026-08-29T12:25:12.996Z",
+    "updated_at": "2026-08-29T12:25:12.996Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Scrap",
+    "organization": 1,
+    "is_active": true
+  }
+},
+{
+  "model": "processes.outputclassification",
+  "pk": 6,
+  "fields": {
+    "created_at": "2026-08-29T12:25:12.997Z",
+    "updated_at": "2026-08-29T12:25:12.997Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Other",
+    "organization": 1,
+    "is_active": true
+  }
+},
+{
+  "model": "processes.processoutputdefinition",
+  "pk": 1,
+  "fields": {
+    "created_at": "2026-09-05T06:53:21.817Z",
+    "updated_at": "2026-09-05T06:53:21.817Z",
+    "created_by": null,
+    "updated_by": null,
+    "process_version": 1,
+    "sequence": 1,
+    "item_type": "PRODUCT",
+    "item": 4,
+    "uom": "PC",
+    "classification": 3,
+    "can_move_forward": true,
+    "creates_traceable_output": true,
+    "default_storage_destination": "",
+    "organization": 1
+  }
+},
+{
+  "model": "processes.processoutputdefinition",
+  "pk": 2,
+  "fields": {
+    "created_at": "2026-09-05T06:54:04.749Z",
+    "updated_at": "2026-09-05T06:54:04.749Z",
+    "created_by": null,
+    "updated_by": null,
+    "process_version": 1,
+    "sequence": 2,
+    "item_type": "PRODUCT",
+    "item": 9,
+    "uom": "PC",
+    "classification": 2,
+    "can_move_forward": true,
+    "creates_traceable_output": true,
+    "default_storage_destination": "",
+    "organization": 1
+  }
+},
+{
+  "model": "processes.processoutputdefinition",
+  "pk": 3,
+  "fields": {
+    "created_at": "2026-09-05T06:54:22.564Z",
+    "updated_at": "2026-09-05T06:54:22.564Z",
+    "created_by": null,
+    "updated_by": null,
+    "process_version": 1,
+    "sequence": 3,
+    "item_type": "MATERIAL",
+    "item": 6,
+    "uom": "PC",
+    "classification": 5,
+    "can_move_forward": true,
+    "creates_traceable_output": true,
+    "default_storage_destination": "",
+    "organization": 1
+  }
+},
+{
+  "model": "processes.processexecution",
+  "pk": 19,
+  "fields": {
+    "created_at": "2026-09-10T09:20:01.029Z",
+    "updated_at": "2026-09-10T09:20:01.029Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "process_version": 1,
+    "work_centre": 2,
+    "export_order_line": 5,
+    "date": "2026-09-10",
+    "batch_lot_number": "20260910-S1-WC-02-0918",
+    "remarks": "",
+    "organization": 1,
+    "employees": []
+  }
+},
+{
+  "model": "processes.processexecution",
+  "pk": 20,
+  "fields": {
+    "created_at": "2026-09-10T09:59:05.881Z",
+    "updated_at": "2026-09-10T09:59:05.882Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "process_version": 1,
+    "work_centre": 2,
+    "export_order_line": 5,
+    "date": "2026-09-10",
+    "batch_lot_number": "20260910-S1-WC-02-0950",
+    "remarks": "",
+    "organization": 1,
+    "employees": []
+  }
+},
+{
+  "model": "processes.processexecution",
+  "pk": 21,
+  "fields": {
+    "created_at": "2026-09-10T10:00:41.039Z",
+    "updated_at": "2026-09-10T10:00:41.039Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "process_version": 1,
+    "work_centre": 2,
+    "export_order_line": 5,
+    "date": "2026-09-10",
+    "batch_lot_number": "20260910-S1-WC-02-0959",
+    "remarks": "",
+    "organization": 1,
+    "employees": []
+  }
+},
+{
+  "model": "processes.processexecution",
+  "pk": 22,
+  "fields": {
+    "created_at": "2026-09-10T16:54:50.891Z",
+    "updated_at": "2026-09-10T16:54:50.891Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "process_version": 1,
+    "work_centre": 3,
+    "export_order_line": 4,
+    "date": "2026-09-10",
+    "batch_lot_number": "20260910-S1-CSP-03-1252",
+    "remarks": "",
+    "organization": 1,
+    "employees": [
+      4,
+      5
+    ]
+  }
+},
+{
+  "model": "processes.processexecution",
+  "pk": 23,
+  "fields": {
+    "created_at": "2026-09-10T17:48:45.678Z",
+    "updated_at": "2026-09-10T17:48:45.678Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "process_version": 1,
+    "work_centre": 5,
+    "export_order_line": 5,
+    "date": "2026-09-10",
+    "batch_lot_number": "20260910-S1-CSP-05-1747",
+    "remarks": "",
+    "organization": 1,
+    "employees": [
+      2,
+      4
+    ]
+  }
+},
+{
+  "model": "processes.processexecution",
+  "pk": 24,
+  "fields": {
+    "created_at": "2026-09-11T11:32:10.919Z",
+    "updated_at": "2026-09-11T11:32:10.919Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "process_version": 1,
+    "work_centre": 4,
+    "export_order_line": 5,
+    "date": "2026-09-11",
+    "batch_lot_number": "20260911-S1-CSP-04-1130",
+    "remarks": "",
+    "organization": 1,
+    "employees": [
+      11,
+      12
+    ]
+  }
+},
+{
+  "model": "processes.processexecution",
+  "pk": 25,
+  "fields": {
+    "created_at": "2026-09-11T11:32:10.964Z",
+    "updated_at": "2026-09-11T11:32:10.964Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "process_version": 1,
+    "work_centre": 3,
+    "export_order_line": 5,
+    "date": "2026-09-11",
+    "batch_lot_number": "20260911-S1-CSP-03-1130",
+    "remarks": "",
+    "organization": 1,
+    "employees": [
+      1,
+      5
+    ]
+  }
+},
+{
+  "model": "processes.processexecution",
+  "pk": 26,
+  "fields": {
+    "created_at": "2026-09-11T11:32:10.974Z",
+    "updated_at": "2026-09-11T11:32:10.974Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "process_version": 1,
+    "work_centre": 5,
+    "export_order_line": 5,
+    "date": "2026-09-11",
+    "batch_lot_number": "20260911-S1-CSP-05-1129",
+    "remarks": "",
+    "organization": 1,
+    "employees": [
+      2,
+      4
+    ]
+  }
+},
+{
+  "model": "processes.processexecution",
+  "pk": 27,
+  "fields": {
+    "created_at": "2026-09-11T11:32:10.985Z",
+    "updated_at": "2026-09-11T11:32:10.985Z",
+    "created_by": 1,
+    "updated_by": 1,
+    "process_version": 1,
+    "work_centre": 1,
+    "export_order_line": 5,
+    "date": "2026-09-11",
+    "batch_lot_number": "20260911-S1-WC-01-1130",
+    "remarks": "",
+    "organization": 1,
+    "employees": [
+      15,
+      7
+    ]
+  }
+},
+{
+  "model": "processes.processexecutioninput",
+  "pk": 19,
+  "fields": {
+    "created_at": "2026-09-10T09:20:01.044Z",
+    "updated_at": "2026-09-10T09:20:01.044Z",
+    "created_by": null,
+    "updated_by": null,
+    "execution": 19,
+    "input_definition": 1,
+    "quantity": 100,
+    "organization": 1
+  }
+},
+{
+  "model": "processes.processexecutioninput",
+  "pk": 20,
+  "fields": {
+    "created_at": "2026-09-10T09:59:06.132Z",
+    "updated_at": "2026-09-10T09:59:06.133Z",
+    "created_by": null,
+    "updated_by": null,
+    "execution": 20,
+    "input_definition": 1,
+    "quantity": 5000,
+    "organization": 1
+  }
+},
+{
+  "model": "processes.processexecutioninput",
+  "pk": 21,
+  "fields": {
+    "created_at": "2026-09-10T10:00:41.070Z",
+    "updated_at": "2026-09-10T10:00:41.070Z",
+    "created_by": null,
+    "updated_by": null,
+    "execution": 21,
+    "input_definition": 1,
+    "quantity": 500,
+    "organization": 1
+  }
+},
+{
+  "model": "processes.processexecutioninput",
+  "pk": 22,
+  "fields": {
+    "created_at": "2026-09-10T16:54:50.929Z",
+    "updated_at": "2026-09-10T16:54:50.929Z",
+    "created_by": null,
+    "updated_by": null,
+    "execution": 22,
+    "input_definition": 1,
+    "quantity": 20000,
+    "organization": 1
+  }
+},
+{
+  "model": "processes.processexecutioninput",
+  "pk": 23,
+  "fields": {
+    "created_at": "2026-09-10T17:48:45.697Z",
+    "updated_at": "2026-09-10T17:48:45.697Z",
+    "created_by": null,
+    "updated_by": null,
+    "execution": 23,
+    "input_definition": 1,
+    "quantity": 3250,
+    "organization": 1
+  }
+},
+{
+  "model": "processes.processexecutioninput",
+  "pk": 24,
+  "fields": {
+    "created_at": "2026-09-11T11:32:10.933Z",
+    "updated_at": "2026-09-11T11:32:10.933Z",
+    "created_by": null,
+    "updated_by": null,
+    "execution": 24,
+    "input_definition": 1,
+    "quantity": 4900,
+    "organization": 1
+  }
+},
+{
+  "model": "processes.processexecutioninput",
+  "pk": 25,
+  "fields": {
+    "created_at": "2026-09-11T11:32:10.965Z",
+    "updated_at": "2026-09-11T11:32:10.965Z",
+    "created_by": null,
+    "updated_by": null,
+    "execution": 25,
+    "input_definition": 1,
+    "quantity": 4950,
+    "organization": 1
+  }
+},
+{
+  "model": "processes.processexecutioninput",
+  "pk": 26,
+  "fields": {
+    "created_at": "2026-09-11T11:32:10.975Z",
+    "updated_at": "2026-09-11T11:32:10.975Z",
+    "created_by": null,
+    "updated_by": null,
+    "execution": 26,
+    "input_definition": 1,
+    "quantity": 4900,
+    "organization": 1
+  }
+},
+{
+  "model": "processes.processexecutioninput",
+  "pk": 27,
+  "fields": {
+    "created_at": "2026-09-11T11:32:10.986Z",
+    "updated_at": "2026-09-11T11:32:10.986Z",
+    "created_by": null,
+    "updated_by": null,
+    "execution": 27,
+    "input_definition": 1,
+    "quantity": 4900,
+    "organization": 1
+  }
+},
+{
+  "model": "processes.processexecutionoutput",
+  "pk": 55,
+  "fields": {
+    "created_at": "2026-09-10T09:20:01.053Z",
+    "updated_at": "2026-09-10T09:20:01.053Z",
+    "created_by": null,
+    "updated_by": null,
+    "execution": 19,
+    "output_definition": 1,
+    "quantity": 100,
+    "organization": 1
+  }
+},
+{
+  "model": "processes.processexecutionoutput",
+  "pk": 56,
+  "fields": {
+    "created_at": "2026-09-10T09:20:01.061Z",
+    "updated_at": "2026-09-10T09:20:01.061Z",
+    "created_by": null,
+    "updated_by": null,
+    "execution": 19,
+    "output_definition": 2,
+    "quantity": 0,
+    "organization": 1
+  }
+},
+{
+  "model": "processes.processexecutionoutput",
+  "pk": 57,
+  "fields": {
+    "created_at": "2026-09-10T09:20:01.061Z",
+    "updated_at": "2026-09-10T09:20:01.061Z",
+    "created_by": null,
+    "updated_by": null,
+    "execution": 19,
+    "output_definition": 3,
+    "quantity": 0,
+    "organization": 1
+  }
+},
+{
+  "model": "processes.processexecutionoutput",
+  "pk": 58,
+  "fields": {
+    "created_at": "2026-09-10T09:59:06.185Z",
+    "updated_at": "2026-09-10T09:59:06.185Z",
+    "created_by": null,
+    "updated_by": null,
+    "execution": 20,
+    "output_definition": 1,
+    "quantity": 4420,
+    "organization": 1
+  }
+},
+{
+  "model": "processes.processexecutionoutput",
+  "pk": 59,
+  "fields": {
+    "created_at": "2026-09-10T09:59:06.216Z",
+    "updated_at": "2026-09-10T09:59:06.216Z",
+    "created_by": null,
+    "updated_by": null,
+    "execution": 20,
+    "output_definition": 2,
+    "quantity": 380,
+    "organization": 1
+  }
+},
+{
+  "model": "processes.processexecutionoutput",
+  "pk": 60,
+  "fields": {
+    "created_at": "2026-09-10T09:59:06.222Z",
+    "updated_at": "2026-09-10T09:59:06.222Z",
+    "created_by": null,
+    "updated_by": null,
+    "execution": 20,
+    "output_definition": 3,
+    "quantity": 200,
+    "organization": 1
+  }
+},
+{
+  "model": "processes.processexecutionoutput",
+  "pk": 61,
+  "fields": {
+    "created_at": "2026-09-10T10:00:41.079Z",
+    "updated_at": "2026-09-10T10:00:41.079Z",
+    "created_by": null,
+    "updated_by": null,
+    "execution": 21,
+    "output_definition": 1,
+    "quantity": 500,
+    "organization": 1
+  }
+},
+{
+  "model": "processes.processexecutionoutput",
+  "pk": 62,
+  "fields": {
+    "created_at": "2026-09-10T10:00:41.086Z",
+    "updated_at": "2026-09-10T10:00:41.086Z",
+    "created_by": null,
+    "updated_by": null,
+    "execution": 21,
+    "output_definition": 2,
+    "quantity": 0,
+    "organization": 1
+  }
+},
+{
+  "model": "processes.processexecutionoutput",
+  "pk": 63,
+  "fields": {
+    "created_at": "2026-09-10T10:00:41.089Z",
+    "updated_at": "2026-09-10T10:00:41.089Z",
+    "created_by": null,
+    "updated_by": null,
+    "execution": 21,
+    "output_definition": 3,
+    "quantity": 0,
+    "organization": 1
+  }
+},
+{
+  "model": "processes.processexecutionoutput",
+  "pk": 64,
+  "fields": {
+    "created_at": "2026-09-10T16:54:50.939Z",
+    "updated_at": "2026-09-10T16:54:50.939Z",
+    "created_by": null,
+    "updated_by": null,
+    "execution": 22,
+    "output_definition": 1,
+    "quantity": 17000,
+    "organization": 1
+  }
+},
+{
+  "model": "processes.processexecutionoutput",
+  "pk": 65,
+  "fields": {
+    "created_at": "2026-09-10T16:54:50.945Z",
+    "updated_at": "2026-09-10T16:54:50.945Z",
+    "created_by": null,
+    "updated_by": null,
+    "execution": 22,
+    "output_definition": 2,
+    "quantity": 2000,
+    "organization": 1
+  }
+},
+{
+  "model": "processes.processexecutionoutput",
+  "pk": 66,
+  "fields": {
+    "created_at": "2026-09-10T16:54:50.945Z",
+    "updated_at": "2026-09-10T16:54:50.945Z",
+    "created_by": null,
+    "updated_by": null,
+    "execution": 22,
+    "output_definition": 3,
+    "quantity": 1000,
+    "organization": 1
+  }
+},
+{
+  "model": "processes.processexecutionoutput",
+  "pk": 67,
+  "fields": {
+    "created_at": "2026-09-10T17:48:45.704Z",
+    "updated_at": "2026-09-10T17:48:45.704Z",
+    "created_by": null,
+    "updated_by": null,
+    "execution": 23,
+    "output_definition": 1,
+    "quantity": 3000,
+    "organization": 1
+  }
+},
+{
+  "model": "processes.processexecutionoutput",
+  "pk": 68,
+  "fields": {
+    "created_at": "2026-09-10T17:48:45.708Z",
+    "updated_at": "2026-09-10T17:48:45.708Z",
+    "created_by": null,
+    "updated_by": null,
+    "execution": 23,
+    "output_definition": 2,
+    "quantity": 200,
+    "organization": 1
+  }
+},
+{
+  "model": "processes.processexecutionoutput",
+  "pk": 69,
+  "fields": {
+    "created_at": "2026-09-10T17:48:45.709Z",
+    "updated_at": "2026-09-10T17:48:45.709Z",
+    "created_by": null,
+    "updated_by": null,
+    "execution": 23,
+    "output_definition": 3,
+    "quantity": 50,
+    "organization": 1
+  }
+},
+{
+  "model": "processes.processexecutionoutput",
+  "pk": 70,
+  "fields": {
+    "created_at": "2026-09-11T11:32:10.941Z",
+    "updated_at": "2026-09-11T11:32:10.941Z",
+    "created_by": null,
+    "updated_by": null,
+    "execution": 24,
+    "output_definition": 1,
+    "quantity": 4500,
+    "organization": 1
+  }
+},
+{
+  "model": "processes.processexecutionoutput",
+  "pk": 71,
+  "fields": {
+    "created_at": "2026-09-11T11:32:10.948Z",
+    "updated_at": "2026-09-11T11:32:10.948Z",
+    "created_by": null,
+    "updated_by": null,
+    "execution": 24,
+    "output_definition": 2,
+    "quantity": 300,
+    "organization": 1
+  }
+},
+{
+  "model": "processes.processexecutionoutput",
+  "pk": 72,
+  "fields": {
+    "created_at": "2026-09-11T11:32:10.948Z",
+    "updated_at": "2026-09-11T11:32:10.948Z",
+    "created_by": null,
+    "updated_by": null,
+    "execution": 24,
+    "output_definition": 3,
+    "quantity": 100,
+    "organization": 1
+  }
+},
+{
+  "model": "processes.processexecutionoutput",
+  "pk": 73,
+  "fields": {
+    "created_at": "2026-09-11T11:32:10.965Z",
+    "updated_at": "2026-09-11T11:32:10.965Z",
+    "created_by": null,
+    "updated_by": null,
+    "execution": 25,
+    "output_definition": 1,
+    "quantity": 4600,
+    "organization": 1
+  }
+},
+{
+  "model": "processes.processexecutionoutput",
+  "pk": 74,
+  "fields": {
+    "created_at": "2026-09-11T11:32:10.965Z",
+    "updated_at": "2026-09-11T11:32:10.965Z",
+    "created_by": null,
+    "updated_by": null,
+    "execution": 25,
+    "output_definition": 2,
+    "quantity": 300,
+    "organization": 1
+  }
+},
+{
+  "model": "processes.processexecutionoutput",
+  "pk": 75,
+  "fields": {
+    "created_at": "2026-09-11T11:32:10.966Z",
+    "updated_at": "2026-09-11T11:32:10.966Z",
+    "created_by": null,
+    "updated_by": null,
+    "execution": 25,
+    "output_definition": 3,
+    "quantity": 50,
+    "organization": 1
+  }
+},
+{
+  "model": "processes.processexecutionoutput",
+  "pk": 76,
+  "fields": {
+    "created_at": "2026-09-11T11:32:10.976Z",
+    "updated_at": "2026-09-11T11:32:10.976Z",
+    "created_by": null,
+    "updated_by": null,
+    "execution": 26,
+    "output_definition": 1,
+    "quantity": 4550,
+    "organization": 1
+  }
+},
+{
+  "model": "processes.processexecutionoutput",
+  "pk": 77,
+  "fields": {
+    "created_at": "2026-09-11T11:32:10.976Z",
+    "updated_at": "2026-09-11T11:32:10.976Z",
+    "created_by": null,
+    "updated_by": null,
+    "execution": 26,
+    "output_definition": 2,
+    "quantity": 250,
+    "organization": 1
+  }
+},
+{
+  "model": "processes.processexecutionoutput",
+  "pk": 78,
+  "fields": {
+    "created_at": "2026-09-11T11:32:10.976Z",
+    "updated_at": "2026-09-11T11:32:10.976Z",
+    "created_by": null,
+    "updated_by": null,
+    "execution": 26,
+    "output_definition": 3,
+    "quantity": 100,
+    "organization": 1
+  }
+},
+{
+  "model": "processes.processexecutionoutput",
+  "pk": 79,
+  "fields": {
+    "created_at": "2026-09-11T11:32:10.986Z",
+    "updated_at": "2026-09-11T11:32:10.986Z",
+    "created_by": null,
+    "updated_by": null,
+    "execution": 27,
+    "output_definition": 1,
+    "quantity": 4650,
+    "organization": 1
+  }
+},
+{
+  "model": "processes.processexecutionoutput",
+  "pk": 80,
+  "fields": {
+    "created_at": "2026-09-11T11:32:10.986Z",
+    "updated_at": "2026-09-11T11:32:10.986Z",
+    "created_by": null,
+    "updated_by": null,
+    "execution": 27,
+    "output_definition": 2,
+    "quantity": 150,
+    "organization": 1
+  }
+},
+{
+  "model": "processes.processexecutionoutput",
+  "pk": 81,
+  "fields": {
+    "created_at": "2026-09-11T11:32:10.986Z",
+    "updated_at": "2026-09-11T11:32:10.986Z",
+    "created_by": null,
+    "updated_by": null,
+    "execution": 27,
+    "output_definition": 3,
+    "quantity": 100,
+    "organization": 1
+  }
+},
+{
+  "model": "product_routes.storagelocation",
+  "pk": 1,
+  "fields": {
+    "created_at": "2026-09-11T09:15:12.195Z",
+    "updated_at": "2026-09-11T09:15:31.532Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "LS1 Warehouse",
+    "organization": 1,
+    "is_active": true
+  }
+},
+{
+  "model": "product_routes.storagelocation",
+  "pk": 2,
+  "fields": {
+    "created_at": "2026-09-11T09:15:23.292Z",
+    "updated_at": "2026-09-11T09:15:23.292Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "LS2 Warehouse",
+    "organization": 1,
+    "is_active": true
+  }
+},
+{
+  "model": "product_routes.storagelocation",
+  "pk": 3,
+  "fields": {
+    "created_at": "2026-09-11T09:15:52.066Z",
+    "updated_at": "2026-09-11T09:15:52.066Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Factory Floor",
+    "organization": 1,
+    "is_active": true
+  }
+},
+{
+  "model": "product_routes.storagelocation",
+  "pk": 4,
+  "fields": {
+    "created_at": "2026-09-11T09:16:07.139Z",
+    "updated_at": "2026-09-11T09:16:07.139Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Bommasandra BLR",
+    "organization": 1,
+    "is_active": true
+  }
+},
+{
+  "model": "product_routes.storagelocation",
+  "pk": 5,
+  "fields": {
+    "created_at": "2026-09-11T09:16:30.745Z",
+    "updated_at": "2026-09-11T09:16:30.745Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Ujire Neerachilume",
+    "organization": 1,
+    "is_active": true
+  }
+},
+{
+  "model": "tooling.toolingtype",
+  "pk": 1,
+  "fields": {
+    "created_at": "2026-08-29T12:25:13.688Z",
+    "updated_at": "2026-08-29T12:25:13.688Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Mould",
+    "organization": 1,
+    "is_active": true
+  }
+},
+{
+  "model": "tooling.toolingtype",
+  "pk": 2,
+  "fields": {
+    "created_at": "2026-08-29T12:25:13.689Z",
+    "updated_at": "2026-08-29T12:25:13.689Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Die",
+    "organization": 1,
+    "is_active": true
+  }
+},
+{
+  "model": "tooling.toolingtype",
+  "pk": 3,
+  "fields": {
+    "created_at": "2026-08-29T12:25:13.690Z",
+    "updated_at": "2026-08-29T12:25:13.690Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Jig",
+    "organization": 1,
+    "is_active": true
+  }
+},
+{
+  "model": "tooling.toolingtype",
+  "pk": 4,
+  "fields": {
+    "created_at": "2026-08-29T12:25:13.691Z",
+    "updated_at": "2026-08-29T12:25:13.691Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Fixture",
+    "organization": 1,
+    "is_active": true
+  }
+},
+{
+  "model": "tooling.toolingtype",
+  "pk": 5,
+  "fields": {
+    "created_at": "2026-08-29T12:25:13.692Z",
+    "updated_at": "2026-08-29T12:25:13.692Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Cutting Tool",
+    "organization": 1,
+    "is_active": true
+  }
+},
+{
+  "model": "tooling.toolingtype",
+  "pk": 6,
+  "fields": {
+    "created_at": "2026-08-29T12:25:13.693Z",
+    "updated_at": "2026-08-29T12:25:13.693Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Forming Tool",
+    "organization": 1,
+    "is_active": true
+  }
+},
+{
+  "model": "tooling.toolingtype",
+  "pk": 7,
+  "fields": {
+    "created_at": "2026-08-29T12:25:13.694Z",
+    "updated_at": "2026-08-29T12:25:13.694Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Other",
+    "organization": 1,
+    "is_active": true
+  }
+},
+{
+  "model": "tooling.workcentreposition",
+  "pk": 1,
+  "fields": {
+    "created_at": "2026-09-08T08:12:16.935Z",
+    "updated_at": "2026-09-08T08:12:16.935Z",
+    "created_by": null,
+    "updated_by": null,
+    "work_centre": 5,
+    "position_index": 1,
+    "display_label": "",
+    "is_active": true,
+    "organization": 1
+  }
+},
+{
+  "model": "work_centres.workcentretype",
+  "pk": 1,
+  "fields": {
+    "created_at": "2026-08-29T12:25:18.902Z",
+    "updated_at": "2026-08-29T12:25:18.902Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Machine",
+    "organization": 1,
+    "is_active": true
+  }
+},
+{
+  "model": "work_centres.workcentretype",
+  "pk": 2,
+  "fields": {
+    "created_at": "2026-08-29T12:25:18.903Z",
+    "updated_at": "2026-08-29T12:25:18.903Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Station",
+    "organization": 1,
+    "is_active": true
+  }
+},
+{
+  "model": "work_centres.bay",
+  "pk": 1,
+  "fields": {
+    "created_at": "2026-09-05T08:31:14.941Z",
+    "updated_at": "2026-09-05T08:31:14.941Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Bay 1",
+    "code": "BAY1",
+    "organization": 1,
+    "is_active": true
+  }
+},
+{
+  "model": "work_centres.workcentre",
+  "pk": 1,
+  "fields": {
+    "created_at": "2026-09-05T08:31:14.950Z",
+    "updated_at": "2026-09-05T08:31:14.950Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Station 1",
+    "code": "WC-01",
+    "type": 2,
+    "bay": 1,
+    "operator_count": 2,
+    "organization": 1,
+    "is_active": true
+  }
+},
+{
+  "model": "work_centres.workcentre",
+  "pk": 2,
+  "fields": {
+    "created_at": "2026-09-05T10:13:05.436Z",
+    "updated_at": "2026-09-05T10:13:05.436Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Station 2",
+    "code": "WC-02",
+    "type": 1,
+    "bay": 1,
+    "operator_count": 2,
+    "organization": 1,
+    "is_active": true
+  }
+},
+{
+  "model": "work_centres.workcentre",
+  "pk": 3,
+  "fields": {
+    "created_at": "2026-09-08T08:11:00.952Z",
+    "updated_at": "2026-09-10T02:34:30.589Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Counting_Sorting_Packing Station",
+    "code": "CSP-03",
+    "type": 2,
+    "bay": 1,
+    "operator_count": 3,
+    "organization": 1,
+    "is_active": true
+  }
+},
+{
+  "model": "work_centres.workcentre",
+  "pk": 4,
+  "fields": {
+    "created_at": "2026-09-08T08:11:38.901Z",
+    "updated_at": "2026-09-08T09:40:52.408Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Counting_Sorting_Packing Station",
+    "code": "CSP-04",
+    "type": 2,
+    "bay": 1,
+    "operator_count": 2,
+    "organization": 1,
+    "is_active": true
+  }
+},
+{
+  "model": "work_centres.workcentre",
+  "pk": 5,
+  "fields": {
+    "created_at": "2026-09-08T08:12:08.522Z",
+    "updated_at": "2026-09-08T09:40:47.060Z",
+    "created_by": null,
+    "updated_by": null,
+    "name": "Counting_Sorting_Packing Station",
+    "code": "CSP-05",
+    "type": 2,
+    "bay": 1,
+    "operator_count": 2,
+    "organization": 1,
+    "is_active": true
+  }
+},
+{
+  "model": "work_centres.workcentreprocesscapability",
+  "pk": 1,
+  "fields": {
+    "created_at": "2026-09-05T10:03:10.761Z",
+    "updated_at": "2026-09-05T10:03:10.761Z",
+    "created_by": null,
+    "updated_by": null,
+    "work_centre": 1,
+    "process_definition": 1,
+    "standard_rate": null,
+    "organization": 1
+  }
+},
+{
+  "model": "work_centres.workcentreprocesscapability",
+  "pk": 3,
+  "fields": {
+    "created_at": "2026-09-05T10:13:37.645Z",
+    "updated_at": "2026-09-05T10:13:37.645Z",
+    "created_by": null,
+    "updated_by": null,
+    "work_centre": 2,
+    "process_definition": 1,
+    "standard_rate": null,
+    "organization": 1
+  }
+},
+{
+  "model": "work_centres.workcentreprocesscapability",
+  "pk": 4,
+  "fields": {
+    "created_at": "2026-09-08T08:11:15.012Z",
+    "updated_at": "2026-09-08T08:11:15.012Z",
+    "created_by": null,
+    "updated_by": null,
+    "work_centre": 3,
+    "process_definition": 1,
+    "standard_rate": null,
+    "organization": 1
+  }
+},
+{
+  "model": "work_centres.workcentreprocesscapability",
+  "pk": 5,
+  "fields": {
+    "created_at": "2026-09-08T08:11:45.967Z",
+    "updated_at": "2026-09-08T08:11:45.967Z",
+    "created_by": null,
+    "updated_by": null,
+    "work_centre": 4,
+    "process_definition": 1,
+    "standard_rate": null,
+    "organization": 1
+  }
+},
+{
+  "model": "work_centres.workcentreprocesscapability",
+  "pk": 6,
+  "fields": {
+    "created_at": "2026-09-08T08:12:12.750Z",
+    "updated_at": "2026-09-08T08:12:12.750Z",
+    "created_by": null,
+    "updated_by": null,
+    "work_centre": 5,
+    "process_definition": 1,
+    "standard_rate": null,
+    "organization": 1
+  }
+}
+]
