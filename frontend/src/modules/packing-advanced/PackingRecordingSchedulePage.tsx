@@ -195,7 +195,7 @@ export default function PackingRecordingSchedulePage() {
     <div>
       <Breadcrumb
         style={{ marginBottom: 12 }}
-        items={[{ title: <Link to="/packing/settings">Packing</Link> }, { title: 'Recording Schedule' }]}
+        items={[{ title: <Link to="/packing-advanced/settings">Packing</Link> }, { title: 'Recording Schedule' }]}
       />
       <Card
         title={

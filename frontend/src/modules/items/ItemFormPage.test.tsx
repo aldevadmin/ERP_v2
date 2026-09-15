@@ -9,6 +9,7 @@ import type {
   ItemFieldRule,
   ItemFieldRuleField,
   ItemFieldRuleState,
+  ItemGroupListResponse,
   MaterialTypeListResponse,
   NamingTemplateListResponse,
   ProductTypeListResponse,
@@ -56,6 +57,7 @@ const uoms: UOMListResponse = {
   results: [{ id: 3, code: 'PC', name: 'Piece', decimal_scale: 0, is_active: true }],
 }
 const shapes: ShapeListResponse = { count: 0, next: null, previous: null, results: [] }
+const itemGroups: ItemGroupListResponse = { count: 0, next: null, previous: null, results: [] }
 const namingTemplates: NamingTemplateListResponse = {
   count: 0,
   next: null,
@@ -99,6 +101,7 @@ function setup() {
   mockedApi.listMaterialTypes.mockResolvedValue(materialTypes)
   mockedApi.listUOMs.mockResolvedValue(uoms)
   mockedApi.listShapes.mockResolvedValue(shapes)
+  mockedApi.listItemGroups.mockResolvedValue(itemGroups)
   mockedApi.listNamingTemplates.mockResolvedValue(namingTemplates)
   mockedApi.listItemFieldRules.mockResolvedValue(fieldRules)
 }

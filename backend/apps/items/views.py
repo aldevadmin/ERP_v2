@@ -4,10 +4,20 @@ from rest_framework.permissions import BasePermission
 
 from apps.core.mixins import ProtectedDestroyMixin
 
-from .models import UOM, Item, ItemFieldRule, MaterialType, NamingTemplate, ProductType, Shape
+from .models import (
+    UOM,
+    Item,
+    ItemFieldRule,
+    ItemGroup,
+    MaterialType,
+    NamingTemplate,
+    ProductType,
+    Shape,
+)
 from .permissions import CanManageItems, IsInternalStaff
 from .serializers import (
     ItemFieldRuleSerializer,
+    ItemGroupSerializer,
     ItemSerializer,
     MaterialTypeSerializer,
     NamingTemplateSerializer,
@@ -141,6 +151,38 @@ class ShapeViewSet(
         return queryset
 
 
+class ItemGroupViewSet(
+    ProtectedDestroyMixin,
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.UpdateModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet,
+):
+    """`is_active` is the usual deactivation mechanism; `destroy` is also
+    available, blocked with a friendly error if any Item still uses this
+    group.
+    """
+
+    queryset = ItemGroup.objects.all()
+    serializer_class = ItemGroupSerializer
+    filter_backends = [filters.SearchFilter]
+    search_fields = ["name"]
+
+    def get_permissions(self) -> list[BasePermission]:
+        if self.action in ("create", "update", "partial_update", "destroy"):
+            return [CanManageItems()]
+        return [IsInternalStaff()]
+
+    def get_queryset(self) -> QuerySet[ItemGroup]:
+        queryset = super().get_queryset()
+        is_active = self.request.query_params.get("is_active")
+        if is_active is not None:
+            queryset = queryset.filter(is_active=is_active.lower() in ("true", "1"))
+        return queryset
+
+
 class ItemFieldRuleViewSet(
     mixins.ListModelMixin,
     mixins.UpdateModelMixin,
@@ -214,7 +256,9 @@ class ItemViewSet(
     compatibility/assignment, Product Route, Export Order line, ...).
     """
 
-    queryset = Item.objects.select_related("product_type", "material_type", "inventory_uom")
+    queryset = Item.objects.select_related(
+        "product_type", "material_type", "inventory_uom", "classification", "item_group"
+    )
     serializer_class = ItemSerializer
     filter_backends = [filters.SearchFilter]
     search_fields = ["code", "name"]
@@ -242,6 +286,10 @@ class ItemViewSet(
         material_type = self.request.query_params.get("material_type")
         if material_type is not None:
             queryset = queryset.filter(material_type_id=material_type)
+
+        item_group = self.request.query_params.get("item_group")
+        if item_group is not None:
+            queryset = queryset.filter(item_group_id=item_group)
 
         capability = self.request.query_params.get("capability")
         if capability in ("purchasable", "manufacturable", "stockable", "sellable"):

@@ -34,6 +34,7 @@ import {
   createShape,
   getItem,
   listItemFieldRules,
+  listItemGroups,
   listMaterialTypes,
   listNamingTemplates,
   listProductTypes,
@@ -57,6 +58,7 @@ import type {
   ItemClass,
   ItemFieldRule,
   ItemFormValues,
+  ItemGroup,
   MaterialType,
   NamingTemplate,
   ProductType,
@@ -166,6 +168,7 @@ export default function ItemFormPage() {
   const [productTypes, setProductTypes] = useState<ProductType[]>([])
   const [materialTypes, setMaterialTypes] = useState<MaterialType[]>([])
   const [shapes, setShapes] = useState<Shape[]>([])
+  const [itemGroups, setItemGroups] = useState<ItemGroup[]>([])
   const [uoms, setUoms] = useState<UOM[]>([])
   const [namingTemplates, setNamingTemplates] = useState<NamingTemplate[]>([])
   const [fieldRules, setFieldRules] = useState<ItemFieldRule[]>([])
@@ -207,6 +210,7 @@ export default function ItemFormPage() {
     listProductTypes({ isActive: true }).then((response) => setProductTypes(response.results))
     listMaterialTypes({ isActive: true }).then((response) => setMaterialTypes(response.results))
     listShapes({ isActive: true }).then((response) => setShapes(response.results))
+    listItemGroups({ isActive: true }).then((response) => setItemGroups(response.results))
     listUOMs({ isActive: true }).then((response) => setUoms(response.results))
     listNamingTemplates({ isActive: true }).then((response) => setNamingTemplates(response.results))
     listItemFieldRules().then(setFieldRules)
@@ -523,6 +527,21 @@ export default function ItemFormPage() {
               </Flex>
             </Form.Item>
           )}
+
+          <Form.Item
+            label="Item Group (optional)"
+            name="item_group"
+            tooltip='A free-form tag for "items interchangeable at this role/stage" — e.g. "WIP – Sorted Plate – Areca Palm – Sq10x10". Set this and a generic Process/Route can match against the whole family, instead of one Process per SKU size.'
+          >
+            <Select
+              allowClear
+              size="large"
+              style={{ maxWidth: 320 }}
+              options={itemGroups.map((g) => ({ value: g.id, label: g.name }))}
+              showSearch
+              optionFilterProp="label"
+            />
+          </Form.Item>
 
           {showDimensions && (
             <Form.Item

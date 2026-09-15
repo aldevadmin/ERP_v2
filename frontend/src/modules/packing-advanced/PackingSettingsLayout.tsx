@@ -3,8 +3,8 @@ import { Tabs } from 'antd'
 import { useLocation, useNavigate } from 'react-router'
 
 const TABS = [
-  { key: 'execution', label: 'Execution', path: '/packing/settings/execution' },
-  { key: 'recording-schedule', label: 'Recording Schedule', path: '/packing/settings/recording-schedule' },
+  { key: 'execution', label: 'Execution', path: '/packing-advanced/settings/execution' },
+  { key: 'recording-schedule', label: 'Recording Schedule', path: '/packing-advanced/settings/recording-schedule' },
 ] as const
 
 /** Sub-nav for the two Packing-specific configuration screens, reached via

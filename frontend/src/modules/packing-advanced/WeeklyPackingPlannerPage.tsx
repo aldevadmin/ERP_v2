@@ -66,8 +66,8 @@ export default function WeeklyPackingPlannerPage() {
     try {
       const job = await releasePackingPlanLine(line.id)
       message.success(`Released as ${job.job_number}.`)
-      navigate(`/packing/jobs/${job.id}`, {
-        state: { from: { label: 'Weekly Planner', path: '/packing/planner' } },
+      navigate(`/packing-advanced/jobs/${job.id}`, {
+        state: { from: { label: 'Weekly Planner', path: '/packing-advanced/planner' } },
       })
     } catch (err) {
       message.error(err instanceof ApiError ? err.message : 'Could not release this plan.')
@@ -168,8 +168,8 @@ export default function WeeklyPackingPlannerPage() {
                         }}
                         onClick={() => {
                           if (line.has_job && line.job_id) {
-                            navigate(`/packing/jobs/${line.job_id}`, {
-                              state: { from: { label: 'Weekly Planner', path: '/packing/planner' } },
+                            navigate(`/packing-advanced/jobs/${line.job_id}`, {
+                              state: { from: { label: 'Weekly Planner', path: '/packing-advanced/planner' } },
                             })
                           }
                         }}

@@ -20,14 +20,21 @@ type NavItem =
   | { key: string; icon: ReactNode; label: ReactNode; children: { key: string; label: ReactNode }[] }
   | { type: 'divider' }
 
-// Packing's two children in the sidebar. "Orders" lands on the Packing
-// Orders/Weekly Planner/Packing Floor screen, which keeps its own
-// horizontal tab bar (PackingLayout) to switch between those three —
-// they're one connected workflow, not separate sidebar destinations.
-// "Settings" is the module's own config, kept apart from that workflow.
-const PACKING_CHILDREN = [
-  { key: '/packing/orders', label: 'Orders', matches: ['/packing/orders', '/packing/planner', '/packing/today'] },
-  { key: '/packing/settings', label: 'Settings', matches: ['/packing/settings'] },
+// The prior, feature-complete Packing build — parked at /packing-advanced
+// rather than deleted (see `modules/packing-advanced/`) while a simpler
+// rebuild takes over the plain "Packing" entry below. Its own two
+// children: "Orders" lands on the Packing Orders/Weekly Planner/Packing
+// Floor screen, which keeps its own horizontal tab bar (PackingLayout) to
+// switch between those three — they're one connected workflow, not
+// separate sidebar destinations. "Settings" is the module's own config,
+// kept apart from that workflow.
+const PACKING_ADVANCED_CHILDREN = [
+  {
+    key: '/packing-advanced/orders',
+    label: 'Orders',
+    matches: ['/packing-advanced/orders', '/packing-advanced/planner', '/packing-advanced/today'],
+  },
+  { key: '/packing-advanced/settings', label: 'Settings', matches: ['/packing-advanced/settings'] },
 ]
 
 const NAV_ITEMS: NavItem[] = [
@@ -42,11 +49,12 @@ const NAV_ITEMS: NavItem[] = [
     icon: <DeploymentUnitOutlined />,
     label: <Link to="/production">Production</Link>,
   },
+  { key: '/packing', icon: <InboxOutlined />, label: <Link to="/packing">Packing</Link> },
   {
-    key: '/packing',
+    key: '/packing-advanced',
     icon: <InboxOutlined />,
-    label: 'Packing',
-    children: PACKING_CHILDREN.map((child) => ({
+    label: 'Packing (Advanced)',
+    children: PACKING_ADVANCED_CHILDREN.map((child) => ({
       key: child.key,
       label: <Link to={child.key}>{child.label}</Link>,
     })),
@@ -56,20 +64,24 @@ const NAV_ITEMS: NavItem[] = [
   { key: '/settings', icon: <SettingOutlined />, label: <Link to="/settings">Settings</Link> },
 ]
 
-function packingChildFor(pathname: string): string {
-  // e.g. /packing/planner or /packing/settings/recording-schedule both
-  // need to highlight their owning child; bare /packing falls back to
-  // Orders, its default landing page.
-  const match = PACKING_CHILDREN.find((child) => child.matches.some((prefix) => pathname.startsWith(prefix)))
-  return match?.key ?? '/packing/orders'
+function packingAdvancedChildFor(pathname: string): string {
+  // e.g. /packing-advanced/planner or /packing-advanced/settings/recording-schedule
+  // both need to highlight their owning child; the bare prefix falls back
+  // to Orders, its default landing page.
+  const match = PACKING_ADVANCED_CHILDREN.find((child) =>
+    child.matches.some((prefix) => pathname.startsWith(prefix)),
+  )
+  return match?.key ?? '/packing-advanced/orders'
 }
 
 function selectedKeyFor(pathname: string): string {
   if (pathname === '/') return '/'
-  if (pathname.startsWith('/packing')) return packingChildFor(pathname)
+  // Check the more specific "-advanced" prefix first — plain /packing
+  // (the fresh rebuild) is otherwise a substring match of it too.
+  if (pathname.startsWith('/packing-advanced')) return packingAdvancedChildFor(pathname)
   const match = NAV_ITEMS.filter(
     (item): item is Extract<NavItem, { key: string }> =>
-      'key' in item && item.key !== '/' && item.key !== '/packing' && pathname.startsWith(item.key),
+      'key' in item && item.key !== '/' && item.key !== '/packing-advanced' && pathname.startsWith(item.key),
   )
   // Every page that isn't one of the other top-level sections above is
   // reached by drilling into Settings (master data, operations config) —
@@ -93,17 +105,17 @@ export default function AppSidebar() {
   const location = useLocation()
   const [collapsed, setCollapsed] = useState(false)
   const [openKeys, setOpenKeys] = useState<string[]>(
-    location.pathname.startsWith('/packing') ? ['/packing'] : [],
+    location.pathname.startsWith('/packing-advanced') ? ['/packing-advanced'] : [],
   )
   const { state, logout } = useAuth()
   const user = state.user
 
-  // Keep the Packing submenu expanded whenever we're anywhere under
-  // /packing — e.g. arriving via a Link from another page, not just by
-  // clicking the submenu header itself.
+  // Keep the Packing (Advanced) submenu expanded whenever we're anywhere
+  // under /packing-advanced — e.g. arriving via a Link from another page,
+  // not just by clicking the submenu header itself.
   useEffect(() => {
-    if (location.pathname.startsWith('/packing')) {
-      setOpenKeys((keys) => (keys.includes('/packing') ? keys : [...keys, '/packing']))
+    if (location.pathname.startsWith('/packing-advanced')) {
+      setOpenKeys((keys) => (keys.includes('/packing-advanced') ? keys : [...keys, '/packing-advanced']))
     }
   }, [location.pathname])
 

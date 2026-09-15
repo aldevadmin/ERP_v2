@@ -54,6 +54,40 @@ class Shape(BaseModel):
         return self.name
 
 
+class ItemGroup(BaseModel):
+    """A free-form, admin-curated tag for "items interchangeable at this
+    role/stage" — e.g. "WIP — Sorted Plate — Areca Palm — Sq10x10" or
+    "Reject — Plate — Areca Palm" (deliberately not size-specific, since
+    rejects share one disposition regardless of exact size).
+
+    Distinct from `ProductType`/`MaterialType`/`Shape`, which describe an
+    item's physical nature — this describes what stage/role it plays in a
+    process chain, a different, orthogonal concern those fields were never
+    meant to capture (a 10x10 Areca Palm plate and a 10x10 Wood Veneer
+    plate share nothing production-wise despite matching shape/size; a
+    vendor-presorted plate and an internally-sorted plate are functionally
+    the same input to the next process despite being different SKUs for
+    traceability). No structural sub-fields (no product_type/material_type
+    link) by design: which items belong together is a judgment call only
+    an admin can make case by case — a computed rule from other fields
+    would get exactly the vendor-presorted case above wrong. This is what
+    a generic `apps.processes_v1` Process Input/Output slot matches
+    against, and what `apps.product_routes_v1.ProcessRoute` is scoped to.
+    """
+
+    name = models.CharField(max_length=150, unique=True)
+    is_active = models.BooleanField(default=True)
+    organization = models.ForeignKey(
+        "core.Organization", on_delete=models.PROTECT, related_name="item_groups"
+    )
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self) -> str:
+        return self.name
+
+
 class Item(BaseModel):
     """The universal item master — raw materials, WIP, finished goods,
     packaging materials, consumables, and scrap/by-products all live here,
@@ -108,6 +142,37 @@ class Item(BaseModel):
     )
     shape = models.ForeignKey(
         Shape, on_delete=models.PROTECT, null=True, blank=True, related_name="items"
+    )
+    # Which "role/stage" this item plays in a process chain (e.g. "WIP —
+    # Sorted Plate — Areca Palm — Sq10x10", "Reject — Plate — Areca Palm")
+    # — see `ItemGroup` below for why this stays a plain admin-curated tag
+    # rather than a computed combination of product_type/material_type/
+    # shape. Optional and unrestricted by `item_class` — every class from
+    # Raw Material through Finished Good can plausibly need grouping for
+    # a generic Process to match against.
+    item_group = models.ForeignKey(
+        "ItemGroup",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="items",
+    )
+    # Which output grade this item itself represents (Good/Standard/Reject/
+    # Scrap/...) — reuses `processes.OutputClassification`, the same
+    # vocabulary a Process's output slot already carries. Optional, and only
+    # meaningful for items that come *out* of a process (WIP/Finished Good/
+    # Scrap — see `ItemFormPage`'s visibility rule). What this unlocks: two
+    # items that share product_type/material_type/shape/dimensions but
+    # differ only by this field are the same physical size in different
+    # grades (e.g. "10SQPL_PLM" Good vs "10SQPL_STD_PLM" Standard) — a
+    # generic Process can resolve "the Standard sibling of this SKU" from
+    # that match instead of needing a separate item hardcoded per size.
+    classification = models.ForeignKey(
+        "processes.OutputClassification",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="items",
     )
     # Physical dimensions — optional on every class, only ever populated
     # where meaningful (chiefly Finished Good/WIP/Packaging Material).

@@ -59,6 +59,7 @@ function Suggestion({ value, onUse }: { value: string | null; onUse: () => void 
 
 const STEPS = [
   { key: 'basics', label: 'Basics' },
+  { key: 'recipe', label: 'Recipe' },
   { key: 'materials', label: 'Materials' },
   { key: 'specifications', label: 'Specifications' },
   { key: 'review', label: 'Review' },
@@ -74,6 +75,7 @@ export default function PackagingProfileFormPage() {
     ? undefined
     : (location.state as { duplicateFrom?: PackagingProfile } | null)?.duplicateFrom
   const [basicsForm] = Form.useForm<PackagingProfileFormValues>()
+  const [recipeForm] = Form.useForm()
   const [specForm] = Form.useForm()
 
   const [profile, setProfile] = useState<PackagingProfile | null>(null)
@@ -84,6 +86,11 @@ export default function PackagingProfileFormPage() {
   const [error, setError] = useState<string | null>(null)
   const [finishedItems, setFinishedItems] = useState<Item[]>([])
   const [packagingItems, setPackagingItems] = useState<Item[]>([])
+  // Every active item, unfiltered by class — Recipe's five stage pickers
+  // can each point at a different class (a raw leaf, WIP at two stages, a
+  // Finished Good sibling, a Scrap by-product), so unlike Finished Item or
+  // Materials above, there's no single class to narrow this list to.
+  const [allItems, setAllItems] = useState<Item[]>([])
   const [uoms, setUoms] = useState<UOM[]>([])
   // Duplicating seeds these two from the source profile's current version
   // right at mount (lazy initializer, so it only runs once) — everything
@@ -175,6 +182,7 @@ export default function PackagingProfileFormPage() {
     listItems({ isActive: true, itemClass: 'PACKAGING_MATERIAL' }).then((response) =>
       setPackagingItems(response.results),
     )
+    listItems({ isActive: true }).then((response) => setAllItems(response.results))
     listUOMs({ isActive: true }).then((response) => setUoms(response.results))
   }, [])
 
@@ -210,6 +218,7 @@ export default function PackagingProfileFormPage() {
       getPackagingProfileVersion(versionId).then((v) => {
         setVersion(v)
         specForm.setFieldsValue(v)
+        recipeForm.setFieldsValue(v)
         setMaterialRows(
           v.materials.map((m) => ({
             id: m.id,
@@ -227,7 +236,7 @@ export default function PackagingProfileFormPage() {
         )
       })
     },
-    [specForm],
+    [specForm, recipeForm],
   )
 
   // `saveBasics` navigates here (with `replace`) right after creating a new
@@ -307,6 +316,7 @@ export default function PackagingProfileFormPage() {
         const patched = await updatePackagingProfileVersion(versionId, versionPatch)
         setVersion(patched)
         specForm.setFieldsValue(patched)
+        recipeForm.setFieldsValue(patched)
         // A brand-new version's materials are always empty server-side —
         // syncing from `patched.materials` here would wipe out the rows
         // already staged locally (duplicated ones included) before the
@@ -328,10 +338,32 @@ export default function PackagingProfileFormPage() {
         const fetched = await getPackagingProfileVersion(versionId)
         setVersion(fetched)
         specForm.setFieldsValue(fetched)
+        recipeForm.setFieldsValue(fetched)
       }
-      setCurrentStep('materials')
+      setCurrentStep('recipe')
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not save this profile.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const saveRecipe = async () => {
+    if (!version) return
+    let values: Record<string, unknown>
+    try {
+      values = await recipeForm.validateFields()
+    } catch {
+      return
+    }
+    setError(null)
+    setSubmitting(true)
+    try {
+      const saved = await updatePackagingProfileVersion(version.id, values)
+      setVersion(saved)
+      setCurrentStep('materials')
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Could not save the recipe.')
     } finally {
       setSubmitting(false)
     }
@@ -612,6 +644,100 @@ export default function PackagingProfileFormPage() {
                 </Flex>
               </Form>
             )}
+
+            {currentStep === 'recipe' &&
+              (profile ? (
+                <Form form={recipeForm} layout="vertical" disabled={!editable}>
+                  <Text type="secondary" style={{ display: 'block', marginBottom: 16, fontSize: 13 }}>
+                    This SKU's production chain — what it's made from, and its Standard/Scrap
+                    siblings. All optional, and only needed once a Process is set up to run
+                    generically across a whole family of sizes rather than one item at a time.
+                  </Text>
+
+                  <Form.Item label="Finished (Good)">
+                    <Input size="large" disabled value={profile.finished_item_name} />
+                  </Form.Item>
+
+                  <Form.Item
+                    label="Chopped from (optional)"
+                    name="recipe_source_item"
+                    tooltip="What this SKU starts out as — a raw leaf, or a Template."
+                  >
+                    <Select
+                      allowClear
+                      size="large"
+                      showSearch
+                      optionFilterProp="label"
+                      options={allItems.map((i) => ({ value: i.id, label: `${i.name} (${i.code})` }))}
+                    />
+                  </Form.Item>
+                  <Form.Item
+                    label="Untrimmed WIP (optional)"
+                    name="recipe_untrimmed_item"
+                    tooltip="The stage right after Pressing, before Trimming."
+                  >
+                    <Select
+                      allowClear
+                      size="large"
+                      showSearch
+                      optionFilterProp="label"
+                      options={allItems.map((i) => ({ value: i.id, label: `${i.name} (${i.code})` }))}
+                    />
+                  </Form.Item>
+                  <Form.Item
+                    label="Trimmed WIP (optional)"
+                    name="recipe_trimmed_item"
+                    tooltip="What a Sorting/Cleaning/Packing process consumes as its input."
+                  >
+                    <Select
+                      allowClear
+                      size="large"
+                      showSearch
+                      optionFilterProp="label"
+                      options={allItems.map((i) => ({ value: i.id, label: `${i.name} (${i.code})` }))}
+                    />
+                  </Form.Item>
+                  <Form.Item
+                    label="Standard sibling (optional)"
+                    name="recipe_standard_item"
+                    tooltip="This SKU's Standard-grade counterpart output."
+                  >
+                    <Select
+                      allowClear
+                      size="large"
+                      showSearch
+                      optionFilterProp="label"
+                      options={allItems.map((i) => ({ value: i.id, label: `${i.name} (${i.code})` }))}
+                    />
+                  </Form.Item>
+                  <Form.Item
+                    label="Scrap sibling (optional)"
+                    name="recipe_scrap_item"
+                    tooltip="This SKU's Scrap-grade counterpart output."
+                  >
+                    <Select
+                      allowClear
+                      size="large"
+                      showSearch
+                      optionFilterProp="label"
+                      options={allItems.map((i) => ({ value: i.id, label: `${i.name} (${i.code})` }))}
+                    />
+                  </Form.Item>
+
+                  <Flex justify="end">
+                    <Button
+                      type="primary"
+                      loading={submitting}
+                      disabled={!editable}
+                      onClick={() => void saveRecipe()}
+                    >
+                      Save &amp; Continue →
+                    </Button>
+                  </Flex>
+                </Form>
+              ) : (
+                <Empty description="Save Basics first." style={{ paddingTop: 48 }} />
+              ))}
 
             {currentStep === 'materials' &&
               (profile ? (

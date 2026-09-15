@@ -13,6 +13,7 @@ import {
   GoldOutlined,
   IdcardOutlined,
   InboxOutlined,
+  PartitionOutlined,
   ShopOutlined,
   SwapOutlined,
   TableOutlined,
@@ -66,6 +67,12 @@ export const SETTINGS_GROUPS: SettingsGroupConfig[] = [
       },
       { key: 'shapes', label: 'Shapes', icon: <BorderOutlined />, path: '/shapes' },
       {
+        key: 'item-groups',
+        label: 'Item Groups',
+        icon: <PartitionOutlined />,
+        path: '/item-groups',
+      },
+      {
         key: 'uoms',
         label: 'Units of Measure',
         icon: <ColumnWidthOutlined />,
@@ -103,6 +110,12 @@ export const SETTINGS_GROUPS: SettingsGroupConfig[] = [
     items: [
       { key: 'processes', label: 'Processes', icon: <ApartmentOutlined />, path: '/processes' },
       {
+        key: 'processes-v1',
+        label: 'Processes V1',
+        icon: <ApartmentOutlined />,
+        path: '/processes-v1',
+      },
+      {
         key: 'process-categories',
         label: 'Process Categories',
         icon: <TagsOutlined />,
@@ -119,6 +132,12 @@ export const SETTINGS_GROUPS: SettingsGroupConfig[] = [
         label: 'Product Routes',
         icon: <BranchesOutlined />,
         path: '/product-routes',
+      },
+      {
+        key: 'product-routes-v1',
+        label: 'Product Routes V1',
+        icon: <BranchesOutlined />,
+        path: '/product-routes-v1',
       },
       {
         key: 'storage-locations',

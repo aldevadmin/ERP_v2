@@ -4,7 +4,16 @@ from rest_framework import serializers
 
 from apps.core.models import Organization
 
-from .models import UOM, Item, ItemFieldRule, MaterialType, NamingTemplate, ProductType, Shape
+from .models import (
+    UOM,
+    Item,
+    ItemFieldRule,
+    ItemGroup,
+    MaterialType,
+    NamingTemplate,
+    ProductType,
+    Shape,
+)
 
 # `dimensions` (one ItemFieldRule row) maps to six actual Item columns —
 # each measurement plus its own unit — there's no single "dimensions" field
@@ -58,6 +67,15 @@ class MaterialTypeSerializer(serializers.ModelSerializer):
         return MaterialType.objects.create(
             organization=Organization.get_default(), **validated_data
         )
+
+
+class ItemGroupSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ItemGroup
+        fields = ["id", "name", "is_active"]
+
+    def create(self, validated_data: dict[str, Any]) -> ItemGroup:
+        return ItemGroup.objects.create(organization=Organization.get_default(), **validated_data)
 
 
 class ItemFieldRuleSerializer(serializers.ModelSerializer):
@@ -140,6 +158,10 @@ class ItemSerializer(serializers.ModelSerializer):
         source="material_type.name", read_only=True, default=""
     )
     shape_name = serializers.CharField(source="shape.name", read_only=True, default="")
+    item_group_name = serializers.CharField(source="item_group.name", read_only=True, default="")
+    classification_name = serializers.CharField(
+        source="classification.name", read_only=True, default=""
+    )
     inventory_uom_code = serializers.CharField(
         source="inventory_uom.code", read_only=True, default=""
     )
@@ -158,6 +180,10 @@ class ItemSerializer(serializers.ModelSerializer):
             "material_type_name",
             "shape",
             "shape_name",
+            "item_group",
+            "item_group_name",
+            "classification",
+            "classification_name",
             "length",
             "breadth",
             "height",

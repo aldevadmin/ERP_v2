@@ -16,6 +16,8 @@ import ProductTypeFormPage from '../modules/items/ProductTypeFormPage'
 import ProductTypeListPage from '../modules/items/ProductTypeListPage'
 import MaterialTypeFormPage from '../modules/items/MaterialTypeFormPage'
 import MaterialTypeListPage from '../modules/items/MaterialTypeListPage'
+import ItemGroupFormPage from '../modules/items/ItemGroupFormPage'
+import ItemGroupListPage from '../modules/items/ItemGroupListPage'
 import ShapeFormPage from '../modules/items/ShapeFormPage'
 import ShapeListPage from '../modules/items/ShapeListPage'
 import NamingTemplateFormPage from '../modules/items/NamingTemplateFormPage'
@@ -29,6 +31,8 @@ import OutputClassificationFormPage from '../modules/processes/OutputClassificat
 import OutputClassificationListPage from '../modules/processes/OutputClassificationListPage'
 import ProcessFormPage from '../modules/processes/ProcessFormPage'
 import ProcessListPage from '../modules/processes/ProcessListPage'
+import ProcessV1FormPage from '../modules/processes-v1/ProcessV1FormPage'
+import ProcessV1ListPage from '../modules/processes-v1/ProcessV1ListPage'
 import BayFormPage from '../modules/work-centres/BayFormPage'
 import BayListPage from '../modules/work-centres/BayListPage'
 import OperatorFormPage from '../modules/accounts/OperatorFormPage'
@@ -39,6 +43,8 @@ import WorkCentreTypeFormPage from '../modules/work-centres/WorkCentreTypeFormPa
 import WorkCentreTypeListPage from '../modules/work-centres/WorkCentreTypeListPage'
 import ProductRouteFormPage from '../modules/product-routes/ProductRouteFormPage'
 import ProductRouteListPage from '../modules/product-routes/ProductRouteListPage'
+import ProductRouteV1FormPage from '../modules/product-routes-v1/ProductRouteV1FormPage'
+import ProductRouteV1ListPage from '../modules/product-routes-v1/ProductRouteV1ListPage'
 import StorageLocationFormPage from '../modules/product-routes/StorageLocationFormPage'
 import StorageLocationListPage from '../modules/product-routes/StorageLocationListPage'
 import ToolingFormPage from '../modules/tooling/ToolingFormPage'
@@ -48,16 +54,20 @@ import ToolingTypeListPage from '../modules/tooling/ToolingTypeListPage'
 import SettingsLayout from '../modules/settings/SettingsLayout'
 import SettingsRedirect from '../modules/settings/SettingsRedirect'
 import ProductionPage from '../modules/production/ProductionPage'
-import PackingLayout from '../modules/packing/PackingLayout'
-import PackingOrdersPage from '../modules/packing/PackingOrdersPage'
-import WeeklyPackingPlannerPage from '../modules/packing/WeeklyPackingPlannerPage'
-import TodaysWorkPage from '../modules/packing/TodaysWorkPage'
-import PackingJobPage from '../modules/packing/PackingJobPage'
-import PackingSettingsLayout from '../modules/packing/PackingSettingsLayout'
-import PackingExecutionConfigPage from '../modules/packing/PackingExecutionConfigPage'
-import PackingRecordingSchedulePage from '../modules/packing/PackingRecordingSchedulePage'
-import ShiftListPage from '../modules/packing/ShiftListPage'
-import ShiftFormPage from '../modules/packing/ShiftFormPage'
+import NewPackingLayout from '../modules/packing/PackingLayout'
+import AllOrdersPage from '../modules/packing/AllOrdersPage'
+import NewTodaysWorkPage from '../modules/packing/TodaysWorkPage'
+import TransactionsPage from '../modules/packing/TransactionsPage'
+import PackingLayout from '../modules/packing-advanced/PackingLayout'
+import PackingOrdersPage from '../modules/packing-advanced/PackingOrdersPage'
+import WeeklyPackingPlannerPage from '../modules/packing-advanced/WeeklyPackingPlannerPage'
+import TodaysWorkPage from '../modules/packing-advanced/TodaysWorkPage'
+import PackingJobPage from '../modules/packing-advanced/PackingJobPage'
+import PackingSettingsLayout from '../modules/packing-advanced/PackingSettingsLayout'
+import PackingExecutionConfigPage from '../modules/packing-advanced/PackingExecutionConfigPage'
+import PackingRecordingSchedulePage from '../modules/packing-advanced/PackingRecordingSchedulePage'
+import ShiftListPage from '../modules/packing-advanced/ShiftListPage'
+import ShiftFormPage from '../modules/packing-advanced/ShiftFormPage'
 import InventoryPage from '../modules/inventory/InventoryPage'
 import ExportOrderDetailPage from '../modules/export-orders/ExportOrderDetailPage'
 import ExportOrderEditPage from '../modules/export-orders/ExportOrderEditPage'
@@ -263,6 +273,30 @@ function AuthenticatedShell() {
                 }
               />
               <Route
+                path="/item-groups"
+                element={
+                  <SettingsLayout>
+                    <ItemGroupListPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/item-groups/new"
+                element={
+                  <SettingsLayout>
+                    <ItemGroupFormPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/item-groups/:id/edit"
+                element={
+                  <SettingsLayout>
+                    <ItemGroupFormPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
                 path="/naming-templates"
                 element={
                   <SettingsLayout>
@@ -391,6 +425,30 @@ function AuthenticatedShell() {
                 }
               />
               <Route
+                path="/processes-v1"
+                element={
+                  <SettingsLayout>
+                    <ProcessV1ListPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/processes-v1/new"
+                element={
+                  <SettingsLayout>
+                    <ProcessV1FormPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/processes-v1/:id/edit"
+                element={
+                  <SettingsLayout>
+                    <ProcessV1FormPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
                 path="/work-centres"
                 element={
                   <SettingsLayout>
@@ -511,6 +569,30 @@ function AuthenticatedShell() {
                 }
               />
               <Route
+                path="/product-routes-v1"
+                element={
+                  <SettingsLayout>
+                    <ProductRouteV1ListPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/product-routes-v1/new"
+                element={
+                  <SettingsLayout>
+                    <ProductRouteV1FormPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
+                path="/product-routes-v1/:id/edit"
+                element={
+                  <SettingsLayout>
+                    <ProductRouteV1FormPage />
+                  </SettingsLayout>
+                }
+              />
+              <Route
                 path="/storage-locations"
                 element={
                   <SettingsLayout>
@@ -586,13 +668,37 @@ function AuthenticatedShell() {
               <Route
                 path="/packing"
                 element={
-                  <PackingLayout>
-                    <PackingOrdersPage />
-                  </PackingLayout>
+                  <NewPackingLayout>
+                    <AllOrdersPage />
+                  </NewPackingLayout>
                 }
               />
               <Route
                 path="/packing/orders"
+                element={
+                  <NewPackingLayout>
+                    <AllOrdersPage />
+                  </NewPackingLayout>
+                }
+              />
+              <Route
+                path="/packing/today"
+                element={
+                  <NewPackingLayout>
+                    <NewTodaysWorkPage />
+                  </NewPackingLayout>
+                }
+              />
+              <Route
+                path="/packing/transactions"
+                element={
+                  <NewPackingLayout>
+                    <TransactionsPage />
+                  </NewPackingLayout>
+                }
+              />
+              <Route
+                path="/packing-advanced"
                 element={
                   <PackingLayout>
                     <PackingOrdersPage />
@@ -600,7 +706,15 @@ function AuthenticatedShell() {
                 }
               />
               <Route
-                path="/packing/planner"
+                path="/packing-advanced/orders"
+                element={
+                  <PackingLayout>
+                    <PackingOrdersPage />
+                  </PackingLayout>
+                }
+              />
+              <Route
+                path="/packing-advanced/planner"
                 element={
                   <PackingLayout>
                     <WeeklyPackingPlannerPage />
@@ -608,16 +722,16 @@ function AuthenticatedShell() {
                 }
               />
               <Route
-                path="/packing/today"
+                path="/packing-advanced/today"
                 element={
                   <PackingLayout>
                     <TodaysWorkPage />
                   </PackingLayout>
                 }
               />
-              <Route path="/packing/jobs/:jobId" element={<PackingJobPage />} />
+              <Route path="/packing-advanced/jobs/:jobId" element={<PackingJobPage />} />
               <Route
-                path="/packing/settings"
+                path="/packing-advanced/settings"
                 element={
                   <PackingSettingsLayout>
                     <PackingExecutionConfigPage />
@@ -625,7 +739,7 @@ function AuthenticatedShell() {
                 }
               />
               <Route
-                path="/packing/settings/execution"
+                path="/packing-advanced/settings/execution"
                 element={
                   <PackingSettingsLayout>
                     <PackingExecutionConfigPage />
@@ -633,7 +747,7 @@ function AuthenticatedShell() {
                 }
               />
               <Route
-                path="/packing/settings/recording-schedule"
+                path="/packing-advanced/settings/recording-schedule"
                 element={
                   <PackingSettingsLayout>
                     <PackingRecordingSchedulePage />

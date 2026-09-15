@@ -95,6 +95,56 @@ class PackagingProfileVersion(BaseModel):
     pieces_per_selling_unit = models.PositiveIntegerField(null=True, blank=True)
     cbm = models.DecimalField(max_digits=10, decimal_places=4, null=True, blank=True)
 
+    # The Recipe — this SKU's own production chain, one item per stage. All
+    # optional: a profile with none of these set behaves exactly as before
+    # this existed. What it's for: a generic Process (see
+    # `apps.processes.ProcessInputDefinition`/`ProcessOutputDefinition`,
+    # which can be configured by Product Type rather than one hardcoded
+    # item) resolves *which* concrete item applies for this SKU from here,
+    # instead of every size needing its own separately-configured Process.
+    # The chain's own endpoint — "Finished (Good)" — isn't a field here; it
+    # *is* `profile.finished_item`, so there's nothing to duplicate.
+    recipe_source_item = models.ForeignKey(
+        "items.Item",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="as_recipe_source",
+        help_text="What this SKU is chopped/cut from (e.g. a raw leaf or a Template).",
+    )
+    recipe_untrimmed_item = models.ForeignKey(
+        "items.Item",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="as_recipe_untrimmed",
+        help_text="The untrimmed WIP stage, after Pressing, before Trimming.",
+    )
+    recipe_trimmed_item = models.ForeignKey(
+        "items.Item",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="as_recipe_trimmed",
+        help_text="The trimmed WIP stage — what a Sorting/Cleaning/Packing process consumes as its input.",
+    )
+    recipe_standard_item = models.ForeignKey(
+        "items.Item",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="as_recipe_standard_sibling",
+        help_text="This SKU's Standard-grade sibling output.",
+    )
+    recipe_scrap_item = models.ForeignKey(
+        "items.Item",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="as_recipe_scrap_sibling",
+        help_text="This SKU's Scrap-grade sibling output.",
+    )
+
     organization = models.ForeignKey(
         "core.Organization", on_delete=models.PROTECT, related_name="packaging_profile_versions"
     )

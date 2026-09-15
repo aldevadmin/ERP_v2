@@ -71,7 +71,7 @@ export default function PackingJobPage() {
               {job.order_no} • {job.customer_name} • {job.plan_code}
             </Text>
           </div>
-          <Link to={`/packing/today?date=${job.date}&shift=${job.shift}&bay=${job.bay}`}>
+          <Link to={`/packing-advanced/today?date=${job.date}&shift=${job.shift}&bay=${job.bay}`}>
             <Button>View on Packing Floor</Button>
           </Link>
         </div>

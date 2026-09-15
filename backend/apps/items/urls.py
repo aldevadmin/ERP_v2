@@ -3,6 +3,7 @@ from rest_framework.routers import DefaultRouter
 
 from .views import (
     ItemFieldRuleViewSet,
+    ItemGroupViewSet,
     ItemViewSet,
     MaterialTypeViewSet,
     NamingTemplateViewSet,
@@ -15,6 +16,7 @@ router = DefaultRouter()
 router.register("items", ItemViewSet, basename="item")
 router.register("product-types", ProductTypeViewSet, basename="product-type")
 router.register("material-types", MaterialTypeViewSet, basename="material-type")
+router.register("item-groups", ItemGroupViewSet, basename="item-group")
 router.register("shapes", ShapeViewSet, basename="shape")
 router.register("uoms", UOMViewSet, basename="uom")
 router.register("naming-templates", NamingTemplateViewSet, basename="naming-template")

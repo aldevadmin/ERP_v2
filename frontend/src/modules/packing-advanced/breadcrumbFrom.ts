@@ -10,7 +10,7 @@ export interface PackingBreadcrumbFrom {
   path: string
 }
 
-const DEFAULT_FROM: PackingBreadcrumbFrom = { label: 'Packing Orders', path: '/packing/orders' }
+const DEFAULT_FROM: PackingBreadcrumbFrom = { label: 'Packing Orders', path: '/packing-advanced/orders' }
 
 export function packingBreadcrumbFrom(state: unknown): PackingBreadcrumbFrom {
   if (

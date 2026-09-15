@@ -42,13 +42,16 @@ INSTALLED_APPS = [
     "apps.products",
     "apps.items",
     "apps.processes",
+    "apps.processes_v1",
     "apps.work_centres",
     "apps.product_routes",
+    "apps.product_routes_v1",
     "apps.tooling",
     "apps.packaging",
     "apps.customer_mappings",
     "apps.export_orders",
     "apps.packing",
+    "apps.packing_lite",
 ]
 
 MIDDLEWARE = [

@@ -87,6 +87,10 @@ export interface Item {
   material_type_name: string
   shape: number | null
   shape_name: string
+  item_group: number | null
+  item_group_name: string
+  classification: number | null
+  classification_name: string
   length: string | null
   breadth: string | null
   height: string | null
@@ -119,6 +123,8 @@ export interface ItemFormValues {
   product_type: number | null
   material_type: number | null
   shape: number | null
+  item_group: number | null
+  classification: number | null
   length: number | null
   breadth: number | null
   height: number | null
@@ -220,6 +226,30 @@ export interface ShapeListResponse {
 export interface ShapeFormValues {
   name: string
   short_code: string
+  is_active: boolean
+}
+
+/** A free-form, admin-curated tag for "items interchangeable at this
+ * role/stage" — e.g. "WIP – Sorted Plate – Areca Palm – Sq10x10" or
+ * "Reject – Plate – Areca Palm". Distinct from Product Type/Material
+ * Type/Shape, which describe an item's physical nature — this describes
+ * what stage/role it plays in a process chain. What
+ * `processes_v1`/`product_routes_v1` Input/Output slots match against. */
+export interface ItemGroup {
+  id: number
+  name: string
+  is_active: boolean
+}
+
+export interface ItemGroupListResponse {
+  count: number
+  next: string | null
+  previous: string | null
+  results: ItemGroup[]
+}
+
+export interface ItemGroupFormValues {
+  name: string
   is_active: boolean
 }
 

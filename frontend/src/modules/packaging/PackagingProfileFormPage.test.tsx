@@ -85,21 +85,21 @@ afterEach(() => {
 })
 
 describe('PackagingProfileFormPage — wizard shell', () => {
-  it('shows all 4 steps', async () => {
+  it('shows all 5 steps', async () => {
     render(
       <MemoryRouter>
         <PackagingProfileFormPage />
       </MemoryRouter>,
     )
 
-    for (const label of ['Basics', 'Materials', 'Specifications', 'Review']) {
+    for (const label of ['Basics', 'Recipe', 'Materials', 'Specifications', 'Review']) {
       expect(screen.getByText(label)).toBeInTheDocument()
     }
   })
 })
 
 describe('PackagingProfileFormPage — Basics', () => {
-  it('creates the profile and moves to the Materials step on Continue', async () => {
+  it('creates the profile, lands on Recipe, then moves to Materials on Continue', async () => {
     const created: PackagingProfile = {
       id: 1,
       code: 'PKG-1',
@@ -133,6 +133,7 @@ describe('PackagingProfileFormPage — Basics', () => {
     }
     mockedApi.createPackagingProfile.mockResolvedValue(created)
     mockedApi.getPackagingProfileVersion.mockResolvedValue(created.current_version!)
+    mockedApi.updatePackagingProfileVersion.mockResolvedValue(created.current_version!)
 
     render(
       <MemoryRouter>
@@ -159,6 +160,12 @@ describe('PackagingProfileFormPage — Basics', () => {
         is_active: true,
       }),
     )
+
+    expect(await screen.findByText('Finished (Good)')).toBeInTheDocument()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Save & Continue →' }))
+
+    await waitFor(() => expect(mockedApi.updatePackagingProfileVersion).toHaveBeenCalled())
     expect(
       await screen.findByText('What packaging materials does this profile use?'),
     ).toBeInTheDocument()

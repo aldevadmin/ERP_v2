@@ -5,6 +5,9 @@ import type {
   ItemFieldRule,
   ItemFieldRuleState,
   ItemFormValues,
+  ItemGroup,
+  ItemGroupFormValues,
+  ItemGroupListResponse,
   ItemListResponse,
   MaterialType,
   MaterialTypeFormValues,
@@ -28,6 +31,7 @@ export interface ListItemsParams {
   itemClass?: ItemClass
   productType?: number
   materialType?: number
+  itemGroup?: number
   isActive?: boolean
   capability?: 'purchasable' | 'manufacturable' | 'stockable' | 'sellable'
 }
@@ -38,6 +42,7 @@ export function listItems(params: ListItemsParams = {}): Promise<ItemListRespons
   if (params.itemClass) query.set('item_class', params.itemClass)
   if (params.productType !== undefined) query.set('product_type', String(params.productType))
   if (params.materialType !== undefined) query.set('material_type', String(params.materialType))
+  if (params.itemGroup !== undefined) query.set('item_group', String(params.itemGroup))
   if (params.isActive !== undefined) query.set('is_active', String(params.isActive))
   if (params.capability) query.set('capability', params.capability)
   const queryString = query.toString()
@@ -232,6 +237,40 @@ export function updateShape(id: number, values: ShapeFormValues): Promise<Shape>
 
 export function deleteShape(id: number): Promise<void> {
   return apiFetch<void>(`/shapes/${id}/`, { method: 'DELETE' })
+}
+
+export interface ListItemGroupsParams {
+  search?: string
+  isActive?: boolean
+}
+
+export function listItemGroups(
+  params: ListItemGroupsParams = {},
+): Promise<ItemGroupListResponse> {
+  const query = new URLSearchParams()
+  if (params.search) query.set('search', params.search)
+  if (params.isActive !== undefined) query.set('is_active', String(params.isActive))
+  const queryString = query.toString()
+  return apiFetch<ItemGroupListResponse>(`/item-groups/${queryString ? `?${queryString}` : ''}`)
+}
+
+export function getItemGroup(id: number): Promise<ItemGroup> {
+  return apiFetch<ItemGroup>(`/item-groups/${id}/`)
+}
+
+export function createItemGroup(values: ItemGroupFormValues): Promise<ItemGroup> {
+  return apiFetch<ItemGroup>('/item-groups/', { method: 'POST', body: JSON.stringify(values) })
+}
+
+export function updateItemGroup(id: number, values: ItemGroupFormValues): Promise<ItemGroup> {
+  return apiFetch<ItemGroup>(`/item-groups/${id}/`, {
+    method: 'PATCH',
+    body: JSON.stringify(values),
+  })
+}
+
+export function deleteItemGroup(id: number): Promise<void> {
+  return apiFetch<void>(`/item-groups/${id}/`, { method: 'DELETE' })
 }
 
 export interface ListNamingTemplatesParams {

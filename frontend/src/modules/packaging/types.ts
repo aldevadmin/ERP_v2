@@ -57,6 +57,18 @@ export interface PackagingProfileVersion {
   pieces_per_selling_unit: number | null
   cbm: string | null
   materials: PackagingProfileMaterial[]
+  // The Recipe — this SKU's own production chain. All optional; "Finished
+  // (Good)" isn't here since it's just `PackagingProfile.finished_item`.
+  recipe_source_item: number | null
+  recipe_source_item_name: string
+  recipe_untrimmed_item: number | null
+  recipe_untrimmed_item_name: string
+  recipe_trimmed_item: number | null
+  recipe_trimmed_item_name: string
+  recipe_standard_item: number | null
+  recipe_standard_item_name: string
+  recipe_scrap_item: number | null
+  recipe_scrap_item_name: string
 }
 
 export interface PackagingProfile {
@@ -121,6 +133,11 @@ export interface PackagingProfileVersionFormValues {
   carton_height_mm: number | null
   carton_net_weight_kg: number | null
   carton_gross_weight_kg: number | null
+  recipe_source_item: number | null
+  recipe_untrimmed_item: number | null
+  recipe_trimmed_item: number | null
+  recipe_standard_item: number | null
+  recipe_scrap_item: number | null
 }
 
 export interface PackagingMaterialRow {

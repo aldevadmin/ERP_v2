@@ -75,6 +75,21 @@ class PackagingProfileVersionSerializer(serializers.ModelSerializer):
     profile_name = serializers.CharField(source="profile.name", read_only=True)
     selling_uom_code = serializers.CharField(source="selling_uom.code", read_only=True)
     materials = PackagingProfileMaterialSerializer(many=True, read_only=True)
+    recipe_source_item_name = serializers.CharField(
+        source="recipe_source_item.name", read_only=True, default=""
+    )
+    recipe_untrimmed_item_name = serializers.CharField(
+        source="recipe_untrimmed_item.name", read_only=True, default=""
+    )
+    recipe_trimmed_item_name = serializers.CharField(
+        source="recipe_trimmed_item.name", read_only=True, default=""
+    )
+    recipe_standard_item_name = serializers.CharField(
+        source="recipe_standard_item.name", read_only=True, default=""
+    )
+    recipe_scrap_item_name = serializers.CharField(
+        source="recipe_scrap_item.name", read_only=True, default=""
+    )
 
     class Meta:
         model = PackagingProfileVersion
@@ -99,6 +114,16 @@ class PackagingProfileVersionSerializer(serializers.ModelSerializer):
             "pieces_per_selling_unit",
             "cbm",
             "materials",
+            "recipe_source_item",
+            "recipe_source_item_name",
+            "recipe_untrimmed_item",
+            "recipe_untrimmed_item_name",
+            "recipe_trimmed_item",
+            "recipe_trimmed_item_name",
+            "recipe_standard_item",
+            "recipe_standard_item_name",
+            "recipe_scrap_item",
+            "recipe_scrap_item_name",
         ]
         read_only_fields = ["pieces_per_selling_unit", "cbm"]
 
